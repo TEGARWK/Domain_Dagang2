@@ -83,4 +83,4 @@ git reset --hard [ID_COMMIT_STABIL]
 ```
 
 ---
-*Dikelola oleh Tim Admin & Cybersecurity Domain-Dagang*
+*happy coding :p | Agam Gusriyandi, S.T. *
