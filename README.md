@@ -51,6 +51,16 @@ Proyek ini menggunakan **Auto-Deployment** via GitHub Actions.
 
 ---
 
+## 🌿 Alur Kerja Tim (Branching Strategy)
+Untuk menjaga kestabilan website produksi, seluruh tim pengembang **WAJIB** mengikuti aturan ini:
+
+1. **JANGAN EDIT LANGSUNG DI `main`**: Branch `main` hanya untuk kode yang sudah siap tampil di website (Live).
+2. **Buat Branch Fitur**: Sebelum mulai koding, buatlah branch baru dari `main` dengan nama yang jelas (contoh: `fitur/tambah-voucher` atau `fix/bug-login`).
+3. **Pull Request (PR)**: Setelah selesai koding di branch fitur, lakukan **Push** dan buatlah **Pull Request** di GitHub.
+4. **Review & Merge**: Master Proyek akan mereview kode. Begitu disetujui dan di-**Merge** ke `main`, Robot (CI/CD) akan otomatis mengupdate website aslinya.
+
+---
+
 ## ↩️ Rollback (Kembali ke Versi Sebelumnya)
 Jika ada kesalahan fatal setelah deploy, ikuti langkah ini untuk mengembalikan ke versi stabil:
 
