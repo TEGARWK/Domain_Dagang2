@@ -10,6 +10,22 @@ Selamat datang di repositori resmi **Domain-Dagang**. Proyek ini adalah platform
 
 ---
 
+## 📜 Standard Operating Procedure (SOP) Wajib
+Seluruh tim produksi (termasuk Tegar dan anggota lainnya) **WAJIB** mematuhi aturan berikut demi menjaga kesehatan website:
+
+### 1. Wajib Update `CHANGELOG.md`
+Setiap kali Anda melakukan **Merge** ke branch `main`, Anda **HARUS** mencatatkan perubahan tersebut di file `CHANGELOG.md`. 
+- **Tujuannya:** Agar Master Proyek (Bos Agam) dan tim lain tahu persis apa yang baru saja "naik" ke server produksi.
+- **Format:** Tanggal, Nama Pengembang, dan daftar perubahan (lihat contoh di dalam file tersebut).
+
+### 2. Verifikasi Pasca-Deploy
+Setelah status di tab **Actions** berubah menjadi Hijau (Success), pengembang yang melakukan merge **WAJIB** membuka website [domaindagang.com](https://domaindagang.com) dan dashboard untuk memastikan fitur berjalan normal.
+
+### 3. Komunikasi
+Jika Robot CI/CD gagal (Merah), segera laporkan kepada System Admin atau lakukan Rollback mandiri sesuai panduan di bawah.
+
+---
+
 ## 📂 Struktur Folder
 - `/src`: Berisi kode sumber frontend (React components, pages, hooks).
 - `/backend`: Berisi logika server, database, dan integrasi API Registrar.
