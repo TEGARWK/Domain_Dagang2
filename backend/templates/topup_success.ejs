@@ -1,0 +1,36 @@
+<%- include('header') %>
+    <h3 class="text-orange font-bold text-center" style="font-size: 20px; border-bottom: 2px solid #fdba74; padding-bottom: 10px; margin-top: 0;">Top Up Saldo Berhasil</h3>
+    
+    <p>Halo <strong class="font-bold"><%= user.name %></strong>,</p>
+    
+    <div style="background-color: #dcfce7; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0; color: #166534;">
+        <strong class="font-bold">✅ Saldo Bertambah!</strong> Saldo wallet Anda telah berhasil ditambahkan.
+    </div>
+
+    <p>Berikut adalah rincian transaksi top up Anda ke dalam dompet DagangDomain:</p>
+
+    <table class="table-wrap">
+        <tr>
+            <td style="font-weight: 600; width: 140px;">No. Invoice</td>
+            <td><strong class="text-orange">#<%= invoice.id %></strong></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Nominal Top Up</td>
+            <td class="font-bold">Rp <%= parseInt(amount).toLocaleString('id-ID') %></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Tanggal</td>
+            <td><%= new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) %></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Metode</td>
+            <td><%= invoice.payment_method %></td>
+        </tr>
+    </table>
+
+    <p style="margin-top: 20px;">Saldo Anda sekarang dapat digunakan secara instan untuk transaksi pembelian, perpanjangan, atau transfer domain tanpa hambatan.</p>
+
+    <div class="text-center">
+        <a href="<%= process.env.FRONTEND_URL || 'http://localhost:5173' %>/dashboard/wallet" class="btn">Cek Saldo Wallet</a>
+    </div>
+<%- include('footer') %>

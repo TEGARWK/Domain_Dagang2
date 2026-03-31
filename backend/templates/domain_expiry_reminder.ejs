@@ -1,0 +1,32 @@
+<%- include('header') %>
+    <h3 class="text-orange font-bold text-center" style="font-size: 20px; border-bottom: 2px solid #fdba74; padding-bottom: 10px; margin-top: 0;">Peringatan Perpanjangan Domain</h3>
+    
+    <p>Halo <strong class="font-bold"><%= user.name %></strong>,</p>
+    
+    <div style="background-color: #fef08a; border-left: 4px solid #eab308; padding: 15px; margin: 20px 0; color: #854d0e;">
+        <strong class="font-bold">⚠️ Perhatian!</strong> Domain <strong class="text-orange"><%= domain %></strong> akan segera berakhir masa aktifnya dalam waktu <strong><%= days %> hari</strong>!
+    </div>
+
+    <p>Sistem kami mencatat bahwa layanan penyewaan untuk domain Anda mendekati tanggal kedaluwarsa. Kami menyarankan Anda untuk segera memperbarui layanan guna menghindari suspensi dan hilangnya kepemilikan nama domain tersebut.</p>
+
+    <table class="table-wrap">
+        <tr>
+            <td style="font-weight: 600; width: 140px;">Domain</td>
+            <td><strong class="text-orange"><%= domain %></strong></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Tanggal Berakhir</td>
+            <td class="font-bold"><%= new Date(expiryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) %></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Sisa Waktu</td>
+            <td class="font-bold" style="color: #dc2626;"><%= days %> Hari</td>
+        </tr>
+    </table>
+
+    <p style="margin-top: 20px;">Anda dapat menggunakan saldo dompet Anda atau metode pembayaran otomatis jika Auto-Renewal telah diaktifkan.</p>
+
+    <div class="text-center">
+        <a href="<%= process.env.FRONTEND_URL || 'http://localhost:5173' %>/dashboard/domains" class="btn">Perpanjang Sekarang</a>
+    </div>
+<%- include('footer') %>

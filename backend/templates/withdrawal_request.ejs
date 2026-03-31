@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; }
+        .header { background-color: #f97316; color: white; padding: 15px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { padding: 20px; }
+        .footer { text-align: center; font-size: 12px; color: #aaa; margin-top: 20px; }
+        .amount { font-size: 24px; font-weight: bold; color: #f97316; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Permintaan Penarikan Diterima</h2>
+        </div>
+        <div class="content">
+            <p>Halo <%= user.name %>,</p>
+            <p>Permintaan penarikan saldo Anda telah kami terima dan sedang dalam proses peninjauan admin.</p>
+            
+            <p>Detail Permintaan:</p>
+            <ul>
+                <li>Nominal: <span class="amount">Rp <%= amount %></span></li>
+                <li>Metode: <%= method.toUpperCase() %></li>
+                <li>Tujuan: <%= account_number %> (a.n <%= account_name %>)</li>
+                <li>Waktu: <%= date %></li>
+            </ul>
+
+            <p>Kami akan memberitahu Anda segera setelah permintaan ini disetujui.</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 DagangDomain. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

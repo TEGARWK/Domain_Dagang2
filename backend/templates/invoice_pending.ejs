@@ -1,0 +1,37 @@
+<%- include('header') %>
+    <h3>Halo, <%= user.name %></h3>
+    <p>Terima kasih atas pesanan Anda. Berikut adalah detail tagihan yang harus dibayar:</p>
+    
+    <p><strong>Nomor Invoice:</strong> <%= invoice.id %></p>
+    <p><strong>Total Tagihan:</strong> Rp <%= Number(invoice.total).toLocaleString('id-ID') %></p>
+    
+    <h4>Detail Item:</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Durasi</th>
+                <th>Harga</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% items.forEach(function(item) { %>
+                <tr>
+                    <td><%= item.name %></td>
+                    <td><%= item.duration %> Tahun</td>
+                    <td>Rp <%= Number(item.total_line_price || item.price).toLocaleString('id-ID') %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+    
+    <br>
+    <p>Silakan lakukan pembayaran agar domain Anda segera aktif.</p>
+    
+    <% if (typeof process !== 'undefined' && process.env.CLIENT_URL) { %>
+    <a href="<%= process.env.CLIENT_URL %>/dashboard/billing" class="btn">Bayar Sekarang</a>
+    <% } else { %>
+    <p>Login ke dashboard untuk membayar.</p>
+    <% } %>
+
+<%- include('footer') %>

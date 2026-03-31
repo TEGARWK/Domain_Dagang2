@@ -1,0 +1,12 @@
+<%- include('header') %>
+    <h3>Selamat! Domain Anda Aktif 🚀</h3>
+    <p>Halo <%= user.name %>,</p>
+    <p>Domain <strong><%= domain %></strong> telah berhasil didaftarkan dan sekarang aktif.</p>
+    <p>Anda dapat mengelola DNS dan pengaturan lainnya melalui dashboard member area.</p>
+    <br>
+    
+    <% if (typeof process !== 'undefined' && process.env.CLIENT_URL) { %>
+    <a href="<%= process.env.CLIENT_URL %>/dashboard/domains" class="btn">Kelola Domain</a>
+    <% } %>
+
+<%- include('footer') %>

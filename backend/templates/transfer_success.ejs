@@ -1,0 +1,32 @@
+<%- include('header') %>
+    <h3 class="text-orange font-bold text-center" style="font-size: 20px; border-bottom: 2px solid #fdba74; padding-bottom: 10px; margin-top: 0;">Transfer Domain Berhasil</h3>
+    
+    <p>Halo <strong class="font-bold"><%= user.name %></strong>,</p>
+    
+    <div style="background-color: #dcfce7; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0; color: #166534;">
+        <strong class="font-bold">✅ Berhasil!</strong> Domain <strong class="text-orange"><%= domain %></strong> telah berhasil ditransfer ke DagangDomain.
+    </div>
+
+    <p>Selamat! Proses kepindahan domain Anda telah selesai sepenuhnya. Domain Anda saat ini telah aktif di dalam ekosistem sistem kami. Berikut ringkasannya:</p>
+
+    <table class="table-wrap">
+        <tr>
+            <td style="font-weight: 600; width: 140px;">Domain</td>
+            <td><strong class="text-orange"><%= domain %></strong></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Tanggal Selesai</td>
+            <td><%= new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) %></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Status</td>
+            <td><span class="badge badge-green">Aktif</span></td>
+        </tr>
+    </table>
+
+    <p style="margin-top: 20px;">Anda sekarang memiliki kendali penuh untuk mengelola DNS Record, pengaturan name server, dan fitur tambahan lainnya melalui dashboard member area secara terpusat.</p>
+
+    <div class="text-center">
+        <a href="<%= process.env.FRONTEND_URL || 'http://localhost:5173' %>/dashboard/domains" class="btn">Kelola Domain Sekarang</a>
+    </div>
+<%- include('footer') %>

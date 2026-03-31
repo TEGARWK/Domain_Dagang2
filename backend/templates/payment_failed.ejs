@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; border-bottom: 1px solid #eee; }
+        .content { padding: 30px 20px; }
+        .footer { text-align: center; font-size: 12px; color: #aaa; margin-top: 30px; }
+        .error-box { background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; text-align: center; margin-bottom: 20px; }
+        .btn { display: inline-block; background-color: #dc3545; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Pembayaran Gagal</h2>
+        </div>
+        <div class="content">
+            <p>Halo <strong><%= user.name %></strong>,</p>
+            
+            <div class="error-box">
+                ❌ Pembayaran Anda untuk Invoice #<%= invoice.id %> gagal diproses.
+            </div>
+
+            <p>Alasan kegagalan:</p>
+            <p style="font-weight: bold; color: #dc3545;"><%= reason || 'Saldo tidak mencukupi' %></p>
+
+            <p>Mohon pastikan saldo wallet Anda mencukupi atau gunakan metode pembayaran lain.</p>
+
+            <div style="text-align: center;">
+                <a href="<%= process.env.FRONTEND_URL || 'http://localhost:5173' %>/dashboard/invoices/<%= invoice.id %>" class="btn">Coba Lagi</a>
+            </div>
+        </div>
+        <div class="footer">
+            &copy; <%= new Date().getFullYear() %> DagangDomain. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>
