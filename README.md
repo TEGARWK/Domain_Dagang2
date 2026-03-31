@@ -50,4 +50,27 @@ Proyek ini menggunakan **Auto-Deployment** via GitHub Actions.
 - **Monitoring:** Anda dapat melihat status deployment di tab **Actions** di GitHub.
 
 ---
+
+## ↩️ Rollback (Kembali ke Versi Sebelumnya)
+Jika ada kesalahan fatal setelah deploy, ikuti langkah ini untuk mengembalikan ke versi stabil:
+
+### 1. Rollback via Git (Direkomendasikan)
+Cara ini paling aman karena tetap mengikuti alur CI/CD:
+```bash
+# Batalkan commit terakhir
+git revert HEAD
+# Push perubahan pembatalan ke GitHub
+git push origin main
+```
+Sistem akan otomatis mendeteksi "perubahan pembatalan" ini dan melakukan build ulang dari versi yang sebelumnya stabil.
+
+### 2. Rollback Manual (Darurat di Server)
+Jika GitHub Actions bermasalah, lakukan ini di VPS:
+```bash
+cd /home/domaindagang/Domain-Dagang
+git reset --hard [ID_COMMIT_STABIL]
+/bin/bash /home/domaindagang/deploy.sh
+```
+
+---
 *Dikelola oleh Tim Admin & Cybersecurity Domain-Dagang*
