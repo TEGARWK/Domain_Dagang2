@@ -1,102 +1,87 @@
-# Domain-Dagang (Project Dashboard) 🚀
+# Panduan Santuy Tim Domain-Dagang 🚀
 
-Selamat datang di repositori resmi **Domain-Dagang**. Proyek ini adalah platform manajemen domain yang terintegrasi dengan berbagai layanan registrar.
-
-## 🛠 Tech Stack
-- **Frontend:** React + Vite + TailwindCSS
-- **Backend:** Node.js (Express)
-- **Database:** PostgreSQL
-- **Server:** Nginx + PM2
+Halo Cuy! Lo udah masuk ke tim produksi **Domain-Dagang**. Biar kodingan lo nggak bikin server meledak, baca ini dulu ya. Santai aja, nggak bakal ribet kok!
 
 ---
 
-## 📜 Standard Operating Procedure (SOP) Wajib
-Seluruh tim produksi (termasuk Tegar dan anggota lainnya) **WAJIB** mematuhi aturan berikut demi menjaga kesehatan website:
+## 🧐 Gue Harus Ngapain Dulu? (Step Awal)
 
-### 1. Wajib Update `CHANGELOG.md`
-Setiap kali Anda melakukan **Merge** ke branch `main`, Anda **HARUS** mencatatkan perubahan tersebut di file `CHANGELOG.md`. 
-- **Tujuannya:** Agar Master Proyek (Bos Agam) dan tim lain tahu persis apa yang baru saja "naik" ke server produksi.
-- **Format:** Tanggal, Nama Pengembang, dan daftar perubahan (lihat contoh di dalam file tersebut).
+### 1. Terima Undangan GitHub
+- Cek email lo. Ada undangan masuk dari GitHub Bos Agam.
+- Klik tombol **"Accept Invitation"**.
+- Wajib! Kalau nggak klik, lo cuma bisa liat tapi nggak bisa kirim kerjaan.
 
-### 2. Verifikasi Pasca-Deploy
-Setelah status di tab **Actions** berubah menjadi Hijau (Success), pengembang yang melakukan merge **WAJIB** membuka website [domaindagang.com](https://domaindagang.com) dan dashboard untuk memastikan fitur berjalan normal.
-
-### 3. Komunikasi
-Jika Robot CI/CD gagal (Merah), segera laporkan kepada System Admin atau lakukan Rollback mandiri sesuai panduan di bawah.
+### 2. Isi "Tas Tempur" Lo (Install Tools)
+PC atau Mac lo butuh 3 barang ini:
+- **Node.js:** (Pilih yang versi LTS). Download di [nodejs.org](https://nodejs.org/).
+- **Git:** Biar kodingan lo bisa mondar-mandir ke server. Download di [git-scm.com](https://git-scm.com/).
+- **VS Code:** Buat ngetik kode. Download di [code.visualstudio.com](https://code.visualstudio.com/).
 
 ---
 
-## 📂 Struktur Folder
-- `/src`: Berisi kode sumber frontend (React components, pages, hooks).
-- `/backend`: Berisi logika server, database, dan integrasi API Registrar.
-- `/public`: Aset statis frontend (image, fonts).
-- `CHANGELOG.md`: Catatan pembaruan teknis oleh Admin.
+## 💻 Mulai Koding (Meja Kerja Lo)
 
-## 💻 Cara Menjalankan di Lokal
+Gampangnya gini: **Branch `main`** itu **Etalase Toko**. Jangan diacak-acak. 
+Kerjaan lo itu di **Meja Kerja** (Branch baru).
 
-### 1. Prasyarat
-- Node.js versi 20.x atau lebih baru.
-
-### 2. Frontend
+### Cara Ambil Kodingan ke PC (Clone)
+Buka Terminal (Mac) atau CMD (Windows), terus ketik ini:
 ```bash
-npm install
-npm run dev
+git clone https://github.com/agamgusriyandi/Domain-Dagang.git
+cd Domain-Dagang
 ```
 
-### 3. Backend
+### Cara Setup Pertama Kali
 ```bash
-cd backend
+# Biar fitur-fiturnya keinstall semua di PC lo
 npm install
+```
+
+### Cara Mulai Ngedit (PENTING!)
+Jangan koding di branch `main`. Bahaya cuy! Buat "Meja Kerja" sendiri:
+```bash
+# Ganti "fitur-baru" pake nama kerjaan lo
+git checkout -b fitur-baru
+```
+
+### Cara Liat Hasil Kodingan di Browser
+```bash
 npm run dev
 ```
-*(Pastikan Anda sudah memiliki file `.env` yang sesuai di lokal).*
+Terus buka `localhost:5173` di Chrome. Keliatan deh hasil editan lo!
 
 ---
 
-## 🔐 Standar Keamanan & Kode
-- **API Requests:** Selalu gunakan instance `api` dari `src/services/api.js`. JANGAN gunakan `fetch()` mentah untuk menghindari masalah autentikasi (401).
-- **Environment:** Jangan pernah meng-push file `.env` ke repositori. Gunakan `.env.example` sebagai referensi.
+## 🚀 Kirim Hasil Kerja (Push ke Boss)
+
+Udah kelar koding? Bagus! Sekarang kirim balik ke GitHub Bos Agam:
+
+1. **Simpan:** `git add .`
+2. **Kasih Nama:** `git commit -m "Udah beres edit warna tombol"`
+3. **Kirim:** `git push origin fitur-baru` (Ganti "fitur-baru" sama nama branch lo).
 
 ---
 
-## 🚀 Alur Deployment (CI/CD)
-Proyek ini menggunakan **Auto-Deployment** via GitHub Actions.
-- **Cara Deploy:** Cukup lakukan `git push` atau `Merge` ke branch `main`.
-- **Proses:** Server VPS akan secara otomatis menarik kode terbaru, membangun ulang frontend, dan merestart backend.
-- **Monitoring:** Anda dapat melihat status deployment di tab **Actions** di GitHub.
+## 🚦 Aturan Main (SOP Gak Pake Ribet)
 
----
+### 1. Wajib Update CHANGELOG.md!
+Sebelum lo minta Bos Agam buat **Merge** (gabungin kodingan lo ke website asli), lo **HARUS** tulis apa yang lo rubah di file `CHANGELOG.md`. 
+- Biar Bos Agam nggak bingung pas nge-cek.
+- Tulis aja: Tanggal - Nama Lo - Apa yang dirubah.
 
-## 🌿 Alur Kerja Tim (Branching Strategy)
-Untuk menjaga kestabilan website produksi, seluruh tim pengembang **WAJIB** mengikuti aturan ini:
+### 2. Minta Izin (Pull Request)
+Di halaman GitHub, klik tombol hijau **"Compare & Pull Request"**. 
+Tunggu Bos Agam klik **"Merge"**. 
+Begitu diklik, **ROBOT** kita bakal langsung update website aslinya secara otomatis. Lo nggak usah ngapa-ngapain lagi!
 
-1. **JANGAN EDIT LANGSUNG DI `main`**: Branch `main` hanya untuk kode yang sudah siap tampil di website (Live).
-2. **Buat Branch Fitur**: Sebelum mulai koding, buatlah branch baru dari `main` dengan nama yang jelas (contoh: `fitur/tambah-voucher` atau `fix/bug-login`).
-3. **Pull Request (PR)**: Setelah selesai koding di branch fitur, lakukan **Push** dan buatlah **Pull Request** di GitHub.
-4. **Review & Merge**: Master Proyek akan mereview kode. Begitu disetujui dan di-**Merge** ke `main`, Robot (CI/CD) akan otomatis mengupdate website aslinya.
-
----
-
-## ↩️ Rollback (Kembali ke Versi Sebelumnya)
-Jika ada kesalahan fatal setelah deploy, ikuti langkah ini untuk mengembalikan ke versi stabil:
-
-### 1. Rollback via Git (Direkomendasikan)
-Cara ini paling aman karena tetap mengikuti alur CI/CD:
+### 3. Waduh, Error! (Rollback)
+Kalo habis update terus websitenya malah rusak, tenang! Gak usah panik.
+Ketik ini di terminal lo:
 ```bash
-# Batalkan commit terakhir
 git revert HEAD
-# Push perubahan pembatalan ke GitHub
 git push origin main
 ```
-Sistem akan otomatis mendeteksi "perubahan pembatalan" ini dan melakukan build ulang dari versi yang sebelumnya stabil.
-
-### 2. Rollback Manual (Darurat di Server)
-Jika GitHub Actions bermasalah, lakukan ini di VPS:
-```bash
-cd /home/domaindagang/Domain-Dagang
-git reset --hard [ID_COMMIT_STABIL]
-/bin/bash /home/domaindagang/deploy.sh
-```
+Sistem bakal otomatis balik ke versi sebelumnya yang aman. Beres!
 
 ---
-*happy coding :p | Agam Gusriyandi, S.T. *
+*Happy Coding cuy! Titipan dari Bos Agam buat kita semua. :p | Agam Gusriyandi, S.T.*
