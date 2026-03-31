@@ -1,0 +1,19 @@
+name: Auto Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Server Deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: 157.66.56.62
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 5224
+          script: /home/domaindagang/deploy.sh
