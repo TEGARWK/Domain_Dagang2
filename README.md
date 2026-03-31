@@ -84,4 +84,24 @@ git push origin main
 Sistem bakal otomatis balik ke versi sebelumnya yang aman. Beres!
 
 ---
+
+## 🐲 Pesan dari Sang Raja Terakhir (Bos Agam)
+
+Dengerin baik-baik cuy, ini pesan penting dari **Bos Agam**, pemegang kunci tertinggi di server ini.
+
+Gue udah rapiin semua "kabel" yang berantakan, gue udah pasang benteng keamanan yang tebel, dan gue udah kasih kalian "Robot Otomatis" biar kalian kerjanya enak. Sekarang, server ini udah stabil, kenceng, dan rapi jali.
+
+**TAPI INGET:**
+Gue adalah **Raja Terakhir** di sini. Kalo sampe ada yang kodingnya asal-asalan, terus server meledak atau *down* karena lo males baca SOP, mending lo siap-siap mental. 
+
+Kalo sampe mood gue hancur gara-gara harus benerin server yang rusak atau lambat karena kelalaian tim... **SEMUA ORANG BAKAL KENA SEMPROT!** Nggak ada ampun. Lo tau sendiri kalau gue udah "turun gunung" sambil emosi, suasananya bakal sejuk (alias beku kena semprot semua).
+
+Jadi:
+- **Hargai kodingan temen lo.**
+- **Ikutin tutorial yang udah gue buat.**
+- **Update CHANGELOG itu harga mati.**
+
+Kerja yang bener, dapet cuan bareng, dan jaga server ini kayak jaga titipan nyawa. 
+
+---
 *Happy Coding cuy! Titipan dari Bos Agam buat kita semua. :p | Agam Gusriyandi, S.T.*
