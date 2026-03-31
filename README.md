@@ -1,18 +1,53 @@
-# React + Vite
+# Domain-Dagang (Project Dashboard) 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Selamat datang di repositori resmi **Domain-Dagang**. Proyek ini adalah platform manajemen domain yang terintegrasi dengan berbagai layanan registrar.
 
-Currently, two official plugins are available:
+## 🛠 Tech Stack
+- **Frontend:** React + Vite + TailwindCSS
+- **Backend:** Node.js (Express)
+- **Database:** PostgreSQL
+- **Server:** Nginx + PM2
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 📂 Struktur Folder
+- `/src`: Berisi kode sumber frontend (React components, pages, hooks).
+- `/backend`: Berisi logika server, database, dan integrasi API Registrar.
+- `/public`: Aset statis frontend (image, fonts).
+- `CHANGELOG.md`: Catatan pembaruan teknis oleh Admin.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 💻 Cara Menjalankan di Lokal
 
-## Expanding the ESLint configuration
+### 1. Prasyarat
+- Node.js versi 20.x atau lebih baru.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 2. Frontend
+```bash
+npm install
+npm run dev
+```
 
-### Status CI/CD: AKTIF 🚀 (Terakhir diupdate: $(date))
+### 3. Backend
+```bash
+cd backend
+npm install
+npm run dev
+```
+*(Pastikan Anda sudah memiliki file `.env` yang sesuai di lokal).*
+
+---
+
+## 🔐 Standar Keamanan & Kode
+- **API Requests:** Selalu gunakan instance `api` dari `src/services/api.js`. JANGAN gunakan `fetch()` mentah untuk menghindari masalah autentikasi (401).
+- **Environment:** Jangan pernah meng-push file `.env` ke repositori. Gunakan `.env.example` sebagai referensi.
+
+---
+
+## 🚀 Alur Deployment (CI/CD)
+Proyek ini menggunakan **Auto-Deployment** via GitHub Actions.
+- **Cara Deploy:** Cukup lakukan `git push` atau `Merge` ke branch `main`.
+- **Proses:** Server VPS akan secara otomatis menarik kode terbaru, membangun ulang frontend, dan merestart backend.
+- **Monitoring:** Anda dapat melihat status deployment di tab **Actions** di GitHub.
+
+---
+*Dikelola oleh Tim Admin & Cybersecurity Domain-Dagang*
