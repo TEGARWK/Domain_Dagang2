@@ -9,7 +9,7 @@ exports.updateUser = (req, res) => {
   const { id: currentUserId, role } = req.user;
 
   // Security Check: Only Owner OR Admin can update
-  if (userId !== currentUserId && role !== 'admin') {
+  if (String(userId) !== String(currentUserId) && role !== 'admin') {
       return res.status(403).json("You are not allowed to update this user!");
   }
   

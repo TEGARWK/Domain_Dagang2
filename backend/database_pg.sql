@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS transfer_requests (
     domain_name VARCHAR(255) NOT NULL,
     auth_code VARCHAR(255),
     status VARCHAR(50) DEFAULT 'PENDING_TRANSFER',
+    invoice_id VARCHAR(100) REFERENCES invoices(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -176,7 +177,34 @@ CREATE TABLE IF NOT EXISTS invoice_items (
 );
 
 -- ---------------------------------------------
--- 5. PAYMENT & REGISTRAR FINANCIALS
+-- 5. PAYMENT & ACTIVITY LOGS
+-- ---------------------------------------------
+CREATE TABLE IF NOT EXISTS payments (
+    id SERIAL PRIMARY KEY,
+    invoice_number VARCHAR(100) NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    transaction_id VARCHAR(100) UNIQUE NOT NULL, -- merchant_ref_no
+    amount DECIMAL(15, 2) NOT NULL,
+    payment_method VARCHAR(50),
+    status VARCHAR(50) DEFAULT 'PENDING',
+    raw_response JSONB,
+    va_number VARCHAR(50),
+    expired_at TIMESTAMP WITH TIME ZONE,
+    plink_ref_no VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id SERIAL PRIMARY KEY,
+    invoice_id VARCHAR(100) NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    action VARCHAR(255) NOT NULL,
+    description TEXT,
+    user_type VARCHAR(50) DEFAULT 'system',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ---------------------------------------------
+-- 6. DISBURSEMENT & REGISTRAR FINANCIALS
 -- ---------------------------------------------
 CREATE TABLE IF NOT EXISTS payment_gateways (
     id SERIAL PRIMARY KEY,
