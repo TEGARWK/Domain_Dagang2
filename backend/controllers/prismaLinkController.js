@@ -61,6 +61,7 @@ exports.createTransaction = async (req, res) => {
         const result = await PrismaLinkService.createPayment(paymentData);
 
         if (!result.success) {
+            // [FORCE-SYNC-V2] Ensuring this diagnostic fix is applied
             console.error("❌ PrismaLink API Rejected Request:", result.raw);
             return res.status(400).json({
                 success: false,
