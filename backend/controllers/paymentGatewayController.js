@@ -82,13 +82,13 @@ exports.getAllAdmin = (req, res) => {
     // If not exists, insert default (safety net)
     if (data.length === 0) {
         const defaultInsert = `
-            INSERT INTO payment_gateways (provider, is_active, mode, enabled_methods, enabled_banks, instructions)
-            VALUES ($1, true, 'sandbox', $2, $3, 'Pembayaran Otomatis')
+            INSERT INTO payment_gateways (name, bank_name, account_number, account_holder, provider, is_active, mode, enabled_methods, enabled_banks, instructions)
+            VALUES ($1, $1, '0', 'SYSTEM', 'prismalink', true, 'sandbox', $2, $3, 'Pembayaran Otomatis')
         `;
         const methodsDefault = JSON.stringify(["VA", "QRIS"]);
-        const banksDefault = JSON.stringify({"VA": ["BCA", "BNI"], "QRIS": ["QRIS"]});
+        const banksDefault = JSON.stringify({"VA": ["BCA", "BNI", "MANDIRI", "BRI"], "QRIS": ["QRIS"]});
         
-        db.query(defaultInsert, ['prismalink', methodsDefault, banksDefault], (err2) => {
+        db.query(defaultInsert, ['PrismaLink', methodsDefault, banksDefault], (err2) => {
             if (err2) return res.status(500).json(err2);
             return exports.getAllAdmin(req, res); // Recurse once
         });

@@ -4,14 +4,14 @@ require('dotenv').config();
 
 function getFormattedDate() {
     const now = new Date();
+    // PrismaLink expects YYYY-MM-DD HH:mm:ss
     const yyyy = now.getFullYear();
     const MM = String(now.getMonth() + 1).padStart(2, '0');
     const dd = String(now.getDate()).padStart(2, '0');
     const HH = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     const ss = String(now.getSeconds()).padStart(2, '0');
-    const SSS = String(now.getMilliseconds()).padStart(3, '0');
-    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}.${SSS} +0700`;
+    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
 }
 
 function formatPhoneNumber(phone) {
