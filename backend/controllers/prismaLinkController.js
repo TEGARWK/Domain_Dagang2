@@ -60,6 +60,16 @@ exports.createTransaction = async (req, res) => {
         // 4. Call Service
         const result = await PrismaLinkService.createPayment(paymentData);
 
+        if (!result.success) {
+            console.error("❌ PrismaLink API Rejected Request:", result.raw);
+            return res.status(400).json({
+                success: false,
+                message: result.raw?.response_message || "Ditolak oleh PrismaLink",
+                details: result.raw?.response_message || "Silakan periksa log server untuk detail teknis.",
+                raw: result.raw
+            });
+        }
+
         // 5. Save Initial 'PENDING' state to DB
         const refNo = result.data.transaction_id || `TRX-${Date.now()}`;
         
