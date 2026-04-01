@@ -42,6 +42,10 @@ const createPayment = async (data) => {
         const timestamp = getFormattedDate();
         const refNo = data.merchant_ref_no || `TRX-${Date.now()}`; 
         
+        console.log(`[PrismaLink] Creating transaction for invoice: ${data.invoice_number}`);
+        console.log(`[PrismaLink] Using Merchant ID: ${CONFIG.merchant_id}`);
+        console.log(`[PrismaLink] Using Key ID (start...end): ${CONFIG.key_id.substring(0, 4)}...${CONFIG.key_id.substring(CONFIG.key_id.length - 4)}`);
+        
         const items = (data.items || []).map(i => ({
             item_code: parseInt(i.id) || 0,
             item_title: (i.name || "Item").substring(0, 50),
@@ -64,8 +68,10 @@ const createPayment = async (data) => {
         }
 
         const backendBase = CONFIG.backend_url; 
+        const frontendBase = process.env.CLIENT_URL || 'http://localhost:5173';
+
         const registeredBackend = `${backendBase}/api/prismalink/webhook`;
-        const registeredFrontend = `${backendBase}/api/payments/callback`;
+        const registeredFrontend = `${frontendBase}/dashboard/billing`;
 
         const bankCodeInput = (data.bank_code || "").toUpperCase();
         let bankId = "BCA"; 
@@ -147,6 +153,7 @@ const createPayment = async (data) => {
                 }
             });
             const respData = response.data;
+            console.log("[PrismaLink] Response Body:", JSON.stringify(respData, null, 2));
             const isSuccess = respData.response_code === 'PL000' || respData.response_code === '00';
 
             let resultData = {

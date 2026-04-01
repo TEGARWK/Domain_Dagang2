@@ -5,7 +5,7 @@ class InvoiceService {
      * Create Invoice and its items
      * Now accepts a comprehensive financial results object for production-grade tracking.
      */
-    async create(userId, items, promoCode, client = null, calculationResults = {}, config = {}) {
+    async create(userId, items, promoCode, client = null, calculationResults = {}, config = {}, customInvoiceId = null) {
         let shouldRelease = false;
         if (!client) {
             client = await db.pool.connect();
@@ -27,21 +27,29 @@ class InvoiceService {
             } = calculationResults;
 
             // 1. Create Invoice Record with granular financial metrics
-            const invoiceNumber = `INV-${Date.now()}`;
+            const invoiceNumber = customInvoiceId || `INV-${Date.now()}`;
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 1);
 
             const insertInvoice = `
                 INSERT INTO invoices (
+                    id, user_id, due_date, status, date, coupon_code,
+                    subtotal, total_discount, net_amount, tax_amount, 
                     final_amount, total_cost, profit_amount, 
-                    profit_margin_percent, tax_subsidy_amount, total, checkout_config
-                ) VALUES ($1, $2, 'pending', $3, NOW(), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                    profit_margin_percent, tax_subsidy_amount, total, checkout_config,
+                    payment_method, payment_reference, plink_ref_no
+                ) VALUES (
+                    $1, $2, $3, 'pending', NOW(), $4, 
+                    $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+                    $16, $17, $18
+                )
             `;
             await client.query(insertInvoice, [
                 invoiceNumber, userId, dueDate, promoCode,
                 subtotal || 0, totalDiscount || 0, netAmount || 0, taxAmount || 0, 
                 finalAmount || 0, totalCost || 0, profitAmount || 0, 
-                profitMarginPercent || 0, taxSubsidyAmount || 0, finalAmount || 0, JSON.stringify(config || {})
+                profitMarginPercent || 0, taxSubsidyAmount || 0, finalAmount || 0, JSON.stringify(config || {}),
+                null, null, null // Initial payment fields are null
             ]);
 
             // 2. Insert Items with Cost Tracking

@@ -210,10 +210,10 @@ exports.processCheckout = async (req, res) => {
           await CouponService.reserveCoupon(appliedCoupon.code, userId, invoiceNumber, client);
       }
 
-      // 3. Create Invoice
+      // 3. Create Invoice using Service
       const calculationResults = {
-          subtotal: subtotal,
-          totalDiscount: totalDiscount,
+          subtotal,
+          totalDiscount,
           netAmount,
           taxAmount,
           finalAmount: invoiceTotal,
@@ -223,44 +223,15 @@ exports.processCheckout = async (req, res) => {
           taxSubsidyAmount: 0
       };
 
-      // We use InvoiceService, passing manual client to keep transaction open
-      // InvoiceService.create generates ID internally usually? 
-      // Wait, InvoiceService.create generates generic ID `INV-${Date.now()}`.
-      // We need to match the ID used for reservation.
-      // Refactor InvoiceService to accept custom ID or move reservation after? 
-      // Better: Let InvoiceService create it, but we need ID for reservation *before* commit?
-      // Actually CouponService.reserveCoupon takes invoiceId.
-      // InvoiceService returns invoiceId.
-      // So:
-      // a. Reserve Coupon with pending ID? Or use InvoiceService first?
-      // If we use InvoiceService first, and Reserve fails, we Rollback. Safe.
-      
-      const invoiceCmd = `
-          INSERT INTO invoices (
-              id, user_id, status, due_date, date, coupon_code,
-              subtotal, total_discount, net_amount, tax_amount, 
-              final_amount, total_cost, profit_amount, 
-              profit_margin_percent, tax_subsidy_amount, total, checkout_config
-          ) VALUES ($1, $2, 'pending', NOW() + INTERVAL '1 day', NOW(), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-      `;
-      await client.query(invoiceCmd, [
-          invoiceNumber, userId, appliedCoupon ? appliedCoupon.code : null,
-          subtotal, totalDiscount, netAmount, taxAmount,
-          invoiceTotal, totalCost, profitAmount,
-          profitMarginPercent, 0, invoiceTotal, JSON.stringify(config || {})
-      ]);
-
-      // Add Items
-      for (const item of processedItems) {
-           await client.query(`
-              INSERT INTO invoice_items (
-                  invoice_id, name, description, price, unit_price, years, pricing_source, action_type, cost_price
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-           `, [
-               invoiceNumber, item.name, `Domain ${item.action}`, item.total_line_price,
-               item.unit_price, item.duration, 'v2_secure', item.action, item.cost_price
-           ]);
-      }
+      const invoiceResult = await InvoiceService.create(
+          userId, 
+          processedItems, 
+          appliedCoupon ? appliedCoupon.code : null, 
+          client, 
+          calculationResults,
+          config || {},
+          invoiceNumber
+      );
 
       await client.query('COMMIT');
 
