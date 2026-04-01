@@ -4,6 +4,7 @@ const cors = require("cors");
 require("dotenv").config({ override: true });
 
 const app = express();
+app.set('trust proxy', 1); // Enable trusting proxy headers (Nginx/Localtunnel)
 
 // --- MIDDLEWARES ---
 app.use((req, res, next) => {

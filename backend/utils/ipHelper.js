@@ -21,17 +21,20 @@ const getIPv4 = (req) => {
             ip = ip.substring(7);
         }
 
-        // 4. Handle localhost IPv6
-        if (ip === '::1') {
-            return '127.0.0.1';
+        // 4. Handle localhost/private ranges for Staging/Dev
+        // PrismaLink often rejects 127.0.0.1 or ::1
+        if (ip === '::1' || ip === '127.0.0.1' || ip === 'localhost') {
+            const fallbackIP = '103.11.132.1'; // Indonesian Public IP for testing
+            console.log(`[IP_HELPER] Local/Loopback detected. Using fallback: ${fallbackIP}`);
+            return fallbackIP;
         }
 
         // 5. Final fallback/validation: Ensure it looks like an IP
-        // If it's not a string or looks empty, return localhost
-        if (!ip || typeof ip !== 'string') {
-            return '127.0.0.1';
+        if (!ip || typeof ip !== 'string' || ip.length < 7) {
+            return '103.11.132.1';
         }
 
+        console.log(`[IP_HELPER] Detected Client IP: ${ip}`);
         return ip;
     } catch (e) {
         return '127.0.0.1';
