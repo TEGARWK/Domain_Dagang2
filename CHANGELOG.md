@@ -54,3 +54,8 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Frontend (API):** Mengatasi Error 404 dengan menghapus prefix `/api` ganda pada file `Payment.jsx` dan `Checkout.jsx`.
 - **Backend (PrismaLink):** Update `PrismaLinkService.js` untuk mengarahkan callback ke path yang benar (`/dashboard/billing`) dan menambahkan logging response API untuk debugging yang lebih presisi.
 - **Environment:** Membersihkan karakter *hidden newline* pada kredensial PrismaLink di file `.env` untuk mencegah kegagalan autentikasi.
+
+### [2026-04-01] - PrismaLink Bad Request & Admin 500 Fix (Agent Anti-Gravity)
+- **Backend (PrismaLink):** Memperbaiki Error 400 (Bad Request) dengan menyinkronkan format `transmission_date_time` menjadi `YYYY-MM-DD HH:mm:ss` sesuai standar API PrismaLink.
+- **Backend (Admin):** Memperbaiki Error 500 pada Dashboard Metode Pembayaran dengan menambahkan kolom wajib `bank_name`, `account_number`, dan `account_holder` pada logika pembuatan data otomatis (default insert).
+- **Database (Payment Gateways):** Sinkronisasi skema tabel `payment_gateways` untuk mendukung integrasi PrismaLink di lingkungan produksi.
