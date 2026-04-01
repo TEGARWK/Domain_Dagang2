@@ -823,3 +823,21 @@ exports.resyncUserDomains = async (req, res) => {
         });
     }
 };
+
+// --- SYNC MANUAL DOMAINS DARI REGISTRAR (ADMIN ONLY) ---
+exports.syncManualRegistrarDomains = async (req, res) => {
+    try {
+        const { domains } = req.body;
+        if (!domains || !Array.isArray(domains)) {
+            return res.status(400).json({ success: false, message: "Parameter 'domains' harus berupa array string" });
+        }
+
+        const SyncService = require('../services/SyncService');
+        const result = await SyncService.syncManualList(domains);
+        
+        return res.status(200).json({ success: true, ...result });
+    } catch (err) {
+        console.error("[DomainController] syncManualRegistrarDomains Error:", err.message);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};

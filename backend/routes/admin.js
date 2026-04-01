@@ -25,4 +25,8 @@ router.post("/withdrawals/:id/complete", verifyAdmin, withdrawalController.compl
 // --- AUDIT LOGS ---
 router.get("/logs", verifyAdmin, auditController.getLogs);
 
+// --- DOMAINS ---
+const domainController = require("../controllers/domainController");
+router.post("/domains/sync-manual", verifyAdmin, domainController.syncManualRegistrarDomains);
+
 module.exports = router;
