@@ -122,7 +122,7 @@ const createPayment = async (data) => {
             user_phone_number: formatPhoneNumber(data.user_phone),
             remarks: (data.remarks || "Sewa Domain").substring(0, 100),
             user_device_id: (data.user_device_id || "WEB-BROWSER").substring(0, 50),
-            user_ip_address: data.user_ip_address || "127.0.0.1",
+            user_ip_address: data.user_ip_address, // Use passed IP directly, no more 127.0.0.1 fallback
             shipping_details: JSON.stringify({
                 address: (data.user_address || "Alamat belum diatur").substring(0, 200),
                 telephoneNumber: formatPhoneNumber(data.user_phone),
@@ -136,17 +136,14 @@ const createPayment = async (data) => {
             action_id: "01"
         };
 
-        // Only add bank_id if it's not null
-        if (bankId) {
-            payloadObj.bank_id = bankId;
-        }
-
-        // Use standard compact JSON for HMAC calculation
+        // Important Debug: Log the final payload and signature before sending
         const rawBody = JSON.stringify(payloadObj);
-        
         const signature = crypto.createHmac('sha256', CONFIG.secret_key)
             .update(rawBody)
-            .digest('hex'); // Back to lowercase hex as per user's Postman CryptoJS script
+            .digest('hex');
+
+        console.log("[PrismaLink] Final Payload to be sent:", rawBody);
+        console.log("[PrismaLink] Generated Signature (mac):", signature);
 
 
 
