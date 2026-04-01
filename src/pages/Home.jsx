@@ -68,19 +68,19 @@ function Home() {
                 api.get("/faqs")
             ]);
 
-            const pData = pRes.data;
-            const vData = vRes.data;
-            const fData = fRes.data;
+            const pData = Array.isArray(pRes.data) ? pRes.data : [];
+            const vData = Array.isArray(vRes.data) ? vRes.data : [];
+            const fData = Array.isArray(fRes.data) ? fRes.data : [];
 
-            const vouchers = Array.isArray(vData) ? vData : [];
-            setFaqs(Array.isArray(fData) ? fData : []);
+            const vouchers = vData;
+            setFaqs(fData);
 
             // 3. Prioritize popular TLDs first, then the rest
             const prioritized = [".com", ".net", ".id", ".org", ".info", ".biz"];
             
             const formatted = pData
               .map(p => {
-                const regPrice = parseFloat(p.price_register);
+                const regPrice = parseFloat(p.price_register || 0);
                 const dbDiscount = parseFloat(p.discount_price_reg || 0);
 
                 // Find eligible vouchers for this TLD

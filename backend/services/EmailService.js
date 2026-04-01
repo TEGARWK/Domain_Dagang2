@@ -91,13 +91,7 @@ class EmailService {
                 from: process.env.SMTP_FROM || '"DagangDomain System" <no-reply@dagangdomain.com>',
                 to: recipient,
                 subject: config.subject,
-                html: htmlContent,
-                attachments: [{
-                    filename: 'ADTLogo.png',
-                    path: path.join(__dirname, '../public/ADTLogo.png'),
-                    cid: 'adtlogo',
-                    contentType: 'image/png'
-                }]
+                html: htmlContent
             });
 
 

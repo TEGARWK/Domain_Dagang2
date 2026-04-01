@@ -561,7 +561,7 @@ const Checkout = () => {
       // 2. Initiate Payment
       if (selectedGateway.type === 'WALLET') {
           // WALLET PAYMENT
-          const payRes = await api.post(`/api/billing/invoice/${invoiceId}/pay-wallet`);
+          const payRes = await api.post(`/billing/invoice/${invoiceId}/pay-wallet`);
           if (payRes.data.success) {
               // Success! Clear cart & redirect
               // Success! Clear only purchased items

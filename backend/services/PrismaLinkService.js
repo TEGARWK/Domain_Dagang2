@@ -10,8 +10,17 @@ function getFormattedDate() {
     const HH = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     const ss = String(now.getSeconds()).padStart(2, '0');
-    const SSS = String(now.getMilliseconds()).padStart(3, '0');
-    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}.${SSS} +0700`;
+    const sss = String(now.getMilliseconds()).padStart(3, '0');
+    
+    // Timezone offset in format +HHmm
+    const offsetMinutes = -now.getTimezoneOffset();
+    const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+    const offsetMins = Math.abs(offsetMinutes) % 60;
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const Z = `${sign}${String(offsetHours).padStart(2, '0')}${String(offsetMins).padStart(2, '0')}`;
+    
+    // Format: yyyy-MM-dd HH:mm:ss.SSS Z
+    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}.${sss} ${Z}`;
 }
 
 function formatPhoneNumber(phone) {
@@ -42,6 +51,10 @@ const createPayment = async (data) => {
         const timestamp = getFormattedDate();
         const refNo = data.merchant_ref_no || `TRX-${Date.now()}`; 
         
+        console.log(`[PrismaLink] Creating transaction for invoice: ${data.invoice_number}`);
+        console.log(`[PrismaLink] Using Merchant ID: ${CONFIG.merchant_id}`);
+        console.log(`[PrismaLink] Using Key ID (start...end): ${CONFIG.key_id.substring(0, 4)}...${CONFIG.key_id.substring(CONFIG.key_id.length - 4)}`);
+        
         const items = (data.items || []).map(i => ({
             item_code: parseInt(i.id) || 0,
             item_title: (i.name || "Item").substring(0, 50),
@@ -64,8 +77,10 @@ const createPayment = async (data) => {
         }
 
         const backendBase = CONFIG.backend_url; 
+        const frontendBase = process.env.CLIENT_URL || 'http://localhost:5173';
+
         const registeredBackend = `${backendBase}/api/prismalink/webhook`;
-        const registeredFrontend = `${backendBase}/api/payments/callback`;
+        const registeredFrontend = `${frontendBase}/dashboard/billing`;
 
         const bankCodeInput = (data.bank_code || "").toUpperCase();
         let bankId = "BCA"; 
@@ -94,44 +109,41 @@ const createPayment = async (data) => {
             merchant_key_id: CONFIG.key_id,
             merchant_id: CONFIG.merchant_id,
             merchant_ref_no: refNo,
-            backend_callback_url: registeredBackend, 
+            backend_callback_url: registeredBackend,
             frontend_callback_url: registeredFrontend,
             transaction_date_time: timestamp,
             transmission_date_time: timestamp,
             transaction_currency: "IDR",
-            transaction_amount: transactionAmount,
+            transaction_amount: Number(transactionAmount),
             product_details: JSON.stringify(items),
             user_id: (data.user_id || "7").toString(),
-            user_name: (data.user_name || "Guest").substring(0, 50),
-            user_email: (data.user_email || "guest@example.com").substring(0, 50),
+            user_name: (data.user_name || "Customer").substring(0, 50),
+            user_email: (data.user_email || "customer@example.com").substring(0, 50),
             user_phone_number: formatPhoneNumber(data.user_phone),
-            remarks: "Sewa Domain", 
-            user_device_id: "DEVICE-001", 
-            user_ip_address: "127.0.0.1", 
+            remarks: (data.remarks || "Sewa Domain").substring(0, 100),
+            user_device_id: (data.user_device_id || "WEB-BROWSER").substring(0, 50),
+            user_ip_address: data.user_ip_address, // Use passed IP directly, no more 127.0.0.1 fallback
             shipping_details: JSON.stringify({
-                address: data.user_address || "Alamat belum diatur",
+                address: (data.user_address || "Alamat belum diatur").substring(0, 200),
                 telephoneNumber: formatPhoneNumber(data.user_phone),
                 handphoneNumber: formatPhoneNumber(data.user_phone)
             }),
-            payment_method: paymentMethod, 
+            payment_method: paymentMethod,
             other_bills: "[]",
             invoice_number: data.invoice_number,
             integration_type: "02",
-            external_id: `EXT-${Date.now()}`, 
+            external_id: `EXT-${Date.now()}`,
             action_id: "01"
         };
 
-        // Only add bank_id if it's not null
-        if (bankId) {
-            payloadObj.bank_id = bankId;
-        }
-
-        // Use standard compact JSON for HMAC calculation
+        // Important Debug: Log the final payload and signature before sending
         const rawBody = JSON.stringify(payloadObj);
-        
         const signature = crypto.createHmac('sha256', CONFIG.secret_key)
             .update(rawBody)
-            .digest('hex'); // Back to lowercase hex as per user's Postman CryptoJS script
+            .digest('hex');
+
+        console.log("[PrismaLink] Final Payload to be sent:", rawBody);
+        console.log("[PrismaLink] Generated Signature (mac):", signature);
 
 
 
@@ -147,6 +159,7 @@ const createPayment = async (data) => {
                 }
             });
             const respData = response.data;
+            console.log("[PrismaLink] Response Body:", JSON.stringify(respData, null, 2));
             const isSuccess = respData.response_code === 'PL000' || respData.response_code === '00';
 
             let resultData = {
