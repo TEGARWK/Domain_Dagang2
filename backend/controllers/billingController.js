@@ -37,97 +37,90 @@ exports.getInvoices = (req, res) => {
 // 2. Get Single Invoice Detail (With Items - SECURE)
 // 2. Get Single Invoice Detail (With Items - SECURE)
 // 2. Get Single Invoice Detail (With Items - SECURE)
-exports.getInvoiceById = (req, res) => {
+exports.getInvoiceById = async (req, res) => {
   const invoiceId = req.params.id;
-  const userId = req.user.id; // From JWT
-  const userRole = req.user.role; // From JWT
+  const userId = req.user.id;
+  const userRole = req.user.role;
 
-  // Query 1: Invoice Data + Customer Info (Join Users) + Payment Info
-  let invoiceQuery = `
-    SELECT i.*, 
-           u.name as customer_name, u.email as customer_email, u.phone as customer_phone,
-           p.transaction_id as plink_ref_no, p.payment_method as payment_channel, p.status as payment_status_detail, p.raw_response,
-           p.va_number, p.expired_at
-    FROM invoices i
-    JOIN users u ON i.user_id = u.id
-    LEFT JOIN payments p ON i.id = p.invoice_number
-    WHERE i.id = ?
-  `;
-  const params = [invoiceId];
+  try {
+    // 1. Fetch Invoice + User + Payment Data
+    let invoiceQuery = `
+      SELECT i.*, 
+             u.name as customer_name, u.email as customer_email, u.phone as customer_phone,
+             p.transaction_id as plink_ref_no, p.payment_method as payment_channel, p.status as payment_status_detail, p.raw_response,
+             p.va_number, p.expired_at
+      FROM invoices i
+      JOIN users u ON i.user_id = u.id
+      LEFT JOIN payments p ON i.id = p.invoice_number
+      WHERE i.id = $1
+    `;
+    const params = [invoiceId];
 
-  // IF USER IS NOT ADMIN, ENFORCE OWNERSHIP
-  if (userRole !== 'admin') {
-      invoiceQuery += " AND i.user_id = ?";
-      params.push(userId);
-  }
+    if (userRole !== 'admin') {
+        invoiceQuery += " AND i.user_id = $2";
+        params.push(userId);
+    }
 
-  // Query 2: Invoice Items
-  const itemsQuery = `SELECT * FROM invoice_items WHERE invoice_id = ?`;
-
-  db.query(invoiceQuery, params, (err, invoiceRes) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (invoiceRes.length === 0) return res.status(404).json({ error: "Invoice not found or unauthorized" });
+    const invoiceRes = await db.query(invoiceQuery, params);
+    if (invoiceRes.length === 0) {
+        return res.status(404).json({ error: "Invoice not found or unauthorized" });
+    }
 
     const invoice = invoiceRes[0];
 
-    // Parse raw_response if needed to get real plink_ref_no if different
-    let realPlinkRef = invoice.plink_ref_no;
-    if (invoice.raw_response) {
-        try {
-            const raw = JSON.parse(invoice.raw_response);
-            if (raw.plink_ref_no) realPlinkRef = raw.plink_ref_no;
-        } catch (e) {}
+    // 2. Fetch Invoice Items
+    const itemsRes = await db.query(`SELECT * FROM invoice_items WHERE invoice_id = $1`, [invoiceId]);
+    const items = itemsRes;
+
+    // 3. Fetch Activity Logs
+    const logsQuery = `SELECT action, description, created_at, user_type FROM activity_logs WHERE invoice_id = $1 ORDER BY created_at DESC`;
+    const logsRes = await db.query(logsQuery, [invoiceId]);
+    const formattedLogs = logsRes.map(log => ({
+        action: log.action,
+        description: log.description,
+        date: new Date(log.created_at).toLocaleString('id-ID'),
+        by: log.user_type
+    }));
+
+    // 4. Fetch Domain Statuses (if applicable)
+    const domainNames = items.map(i => i.name.toLowerCase());
+    const domainMap = {};
+
+    if (domainNames.length > 0) {
+        const domainQuery = `SELECT domain_name, status FROM domains WHERE domain_name = ANY($1)`;
+        const domainsRes = await db.query(domainQuery, [domainNames]);
+        domainsRes.forEach(d => {
+            domainMap[d.domain_name] = d.status;
+        });
     }
 
-    db.query(itemsQuery, [invoiceId], (err, itemsRes) => {
-      if (err) return res.status(500).json({ error: err.message });
+    const itemsWithStatus = items.map(item => ({
+        ...item,
+        domain_status: domainMap[item.name.toLowerCase()] || (invoice.status === 'paid' ? 'processing' : null)
+    }));
 
-      // Query 3: Activity Logs
-      getInvoiceLogs(invoiceId, (errLogs, logs) => {
-          
-          // Query 4: Domain Status
-          const domainNames = itemsRes.map(item => item.name);
-          // PostgreSQL syntax for array lookup is domain_name = ANY(?)
-          const domainQuery = `SELECT domain_name, status FROM domains WHERE domain_name = ANY(?)`;
-          
-          const finalize = (itemsWithStatus) => {
-             itemsWithStatus.logs = logs; 
-             sendResponse(invoice, itemsWithStatus, realPlinkRef, res);
-          };
- 
-          if (itemsRes.length > 0) {
-            db.query(domainQuery, [domainNames], (errDomain, domainsRes) => {
-                 const domainMap = {};
-                 if (!errDomain && domainsRes) {
-                     domainsRes.forEach(d => {
-                         domainMap[d.domain_name] = d.status;
-                     });
-                 }
-                 const itemsWithStatus = itemsRes.map(item => ({
-                     ...item,
-                     // If invoice is paid but no domain record yet, it's likely being provisioned
-                     domain_status: domainMap[item.name] || (invoice.status === 'paid' ? 'processing' : null)
-                 }));
-                 finalize(itemsWithStatus);
-            });
-          } else {
-              finalize(itemsRes);
-          }
-      });
-    });
-  });
+    // 5. Finalize and Send Response
+    sendResponse(invoice, itemsWithStatus, formattedLogs, res);
+
+  } catch (err) {
+    console.error("[billingController] getInvoiceById Error:", err);
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // Helper response sender
-function sendResponse(invoice, items, plinkRef, res) {
-    const isExpired = new Date(invoice.due_date) < new Date() && invoice.status === 'pending';
-
-    // Extract QR data if available
+function sendResponse(invoice, items, logs, res) {
+    const isExpired = invoice.status === 'pending' && new Date(invoice.due_date) < new Date();
+    
+    // Parse raw_response if needed to get real plink_ref_no if different
+    let realPlinkRef = invoice.plink_ref_no;
     let qrString = null;
     let qrImage = null;
+
     if (invoice.raw_response) {
         try {
             const raw = typeof invoice.raw_response === 'string' ? JSON.parse(invoice.raw_response) : invoice.raw_response;
+            if (raw.plink_ref_no) realPlinkRef = raw.plink_ref_no;
             qrString = raw.qris_data || raw.qr_string || raw.qr_code || raw.payment_url;
             qrImage = raw.qr_image;
         } catch (e) {}
@@ -136,15 +129,14 @@ function sendResponse(invoice, items, plinkRef, res) {
     const fullInvoice = {
         id: invoice.id,
         status: isExpired ? 'expired' : invoice.status,
-        date: new Date(invoice.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+        date: new Date(invoice.date || invoice.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
         due_date: new Date(invoice.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
         total: invoice.total,
-        subtotal: invoice.total, 
-        tax: 0,
-        // Prefer payment channel from payments table (e.g. VA_BCA), fallback to invoice
+        subtotal: invoice.subtotal || invoice.total, 
+        tax: invoice.tax_amount || 0,
+        discount: invoice.total_discount || 0,
         payment_method: invoice.payment_channel || invoice.payment_method, 
-        plink_ref_no: plinkRef,
-        // Persistence for Payment Instructions
+        plink_ref_no: realPlinkRef,
         payment_instructions: {
             va_number: invoice.va_number,
             expired_at: invoice.expired_at,
@@ -157,29 +149,14 @@ function sendResponse(invoice, items, plinkRef, res) {
           name: invoice.customer_name,
           email: invoice.customer_email,
           phone: invoice.customer_phone,
-          address: "Jl. Digital No. 1", 
+          address: invoice.customer_address || "Alamat belum diatur", 
         },
         items: items,
-        logs: items.logs || []
+        logs: logs || []
     };
     res.json(fullInvoice);
 }
 
-// Helper to fetch logs
-function getInvoiceLogs(invoiceId, callback) {
-    const query = `SELECT action, description, created_at, user_type FROM activity_logs WHERE invoice_id = ? ORDER BY created_at DESC`;
-    db.query(query, [invoiceId], (err, results) => {
-        if (err) return callback(err, []);
-        
-        const formattedLogs = results.map(log => ({
-            action: log.action,
-            description: log.description,
-            date: new Date(log.created_at).toLocaleString('id-ID'),
-            by: log.user_type
-        }));
-        callback(null, formattedLogs);
-    });
-}
 
 // 2b. Get Single Invoice Detail (ADMIN - Reuses logic but bypasses simple check if needed, 
 // strictly speaking getInvoiceById above handles admin logic via role check. 
@@ -192,39 +169,47 @@ exports.getInvoiceByIdAdmin = (req, res) => {
 };
 
 // 3. Process Payment and Activate Domains (Manual Admin Approval)
-exports.payInvoice = (req, res) => {
+exports.payInvoice = async (req, res) => {
   const invoiceId = req.params.id;
   const { payment_method } = req.body; // e.g., 'MANUAL_TF', 'CASH'
 
+  const client = await db.pool.connect();
+  try {
+      await client.query('BEGIN');
 
+      // 1. Update Invoice Status
+      const updateQuery = "UPDATE invoices SET status = 'paid', payment_method = $1, paid_at = NOW() WHERE id = $2";
+      const result = await client.query(updateQuery, [payment_method, invoiceId]);
 
-  // 1. Update Invoice Status
-  const updateQuery = "UPDATE invoices SET status = 'paid', payment_method = ? WHERE id = ?";
-  db.query(updateQuery, [payment_method, invoiceId], async (errUpdate, result) => {
-      if (errUpdate) {
-          console.error("Error updating invoice:", errUpdate);
-          return res.status(500).json({ error: errUpdate.message });
+      if (result.rowCount === 0) {
+          throw new Error("Invoice tidak ditemukan");
       }
 
       // 2. Trigger Domain Activation via OrderService
-      // This handles Daftarnama registration + Local DB insertion
       const activationResult = await OrderService.activateDomain(invoiceId);
+
+      await client.query('COMMIT');
 
       if (activationResult.success) {
           res.json({ message: "Payment Accepted & Domain Activated Successfully", status: "paid" });
       } else {
-          // Status paid, but activation failed (e.g. balance issue)
           res.json({ 
               message: "Payment Accepted but Domain Activation Failed: " + activationResult.message, 
               status: "paid",
               warning: true 
           });
       }
-  });
+  } catch (err) {
+      await client.query('ROLLBACK');
+      console.error("[payInvoice] Error:", err);
+      res.status(500).json({ error: err.message || "Gagal memperbarui status invoice" });
+  } finally {
+      client.release();
+  }
 };
 
 // 4. Get All Invoices (Admin Only)
-exports.getAllInvoices = (req, res) => {
+exports.getAllInvoices = async (req, res) => {
   const query = `
     SELECT i.*, u.name as customer_name, u.email as customer_email,
     (SELECT COUNT(*) FROM transfer_requests tr WHERE tr.invoice_id = i.id) > 0 as is_transfer
@@ -232,41 +217,48 @@ exports.getAllInvoices = (req, res) => {
     JOIN users u ON i.user_id = u.id
     ORDER BY i.created_at DESC
   `;
-  
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Error fetching all invoices:", err);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
-    res.json(results);
-  });
+
+  try {
+      const results = await db.query(query);
+      res.json(results);
+  } catch (err) {
+      console.error("[getAllInvoices] Error:", err);
+      res.status(500).json({ error: "Gagal mengambil data invoice" });
+  }
 };
 // 5. Delete Invoice (Admin Only)
-exports.deleteInvoice = (req, res) => {
+exports.deleteInvoice = async (req, res) => {
   const invoiceId = req.params.id;
+  const client = await db.pool.connect();
 
-  // Transaction-like deletion (DELETE FROM invoice_items first then invoices)
-  // Because of foreign key constraints (if any) or shared IDs
-  const deleteItems = "DELETE FROM invoice_items WHERE invoice_id = ?";
-  const deleteInvoice = "DELETE FROM invoices WHERE id = ?";
+  try {
+      await client.query('BEGIN');
 
-  db.query(deleteItems, [invoiceId], (err) => {
-    if (err) return res.status(500).json({ error: "Failed to delete items: " + err.message });
+      const deleteItems = "DELETE FROM invoice_items WHERE invoice_id = $1";
+      const deletePayments = "DELETE FROM payments WHERE invoice_number = $1"; // Cleanup linked payments
+      const deleteInvoice = "DELETE FROM invoices WHERE id = $1";
 
-    db.query(deleteInvoice, [invoiceId], (err2, result) => {
-      if (err2) return res.status(500).json({ error: "Failed to delete invoice: " + err2.message });
+      await client.query(deleteItems, [invoiceId]);
+      await client.query(deletePayments, [invoiceId]);
+      const result = await client.query(deleteInvoice, [invoiceId]);
 
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Invoice not found" });
+      if (result.rowCount === 0) {
+          throw new Error("Invoice tidak ditemukan");
       }
 
+      await client.query('COMMIT');
       res.json({ message: "Invoice deleted successfully" });
-    });
-  });
+  } catch (err) {
+      await client.query('ROLLBACK');
+      console.error("[deleteInvoice] Error:", err);
+      res.status(500).json({ error: "Failed to delete invoice: " + err.message });
+  } finally {
+      client.release();
+  }
 };
 
 // 6. Get User Invoices (Admin Only)
-exports.getUserInvoicesAdmin = (req, res) => {
+exports.getUserInvoicesAdmin = async (req, res) => {
   const userId = req.params.userId;
   
   const query = `
@@ -279,13 +271,13 @@ exports.getUserInvoicesAdmin = (req, res) => {
     ORDER BY i.created_at DESC
   `;
   
-  db.query(query, [userId], (err, results) => {
-    if (err) {
-      console.error("Error fetching user invoices (admin):", err);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
-    res.json(results);
-  });
+  try {
+      const results = await db.query(query, [userId]);
+      res.json(results);
+  } catch (err) {
+      console.error("[getUserInvoicesAdmin] Error:", err);
+      res.status(500).json({ error: "Gagal mengambil data invoice user" });
+  }
 };
 
 const WalletService = require("../services/WalletService");
@@ -491,27 +483,24 @@ exports.payInvoiceWithWallet = async (req, res) => {
 };
 
 // 8. Cancel Invoice (User Action)
-exports.cancelInvoice = (req, res) => {
+exports.cancelInvoice = async (req, res) => {
     const invoiceId = req.params.id;
     const userId = req.user.id;
     const { reason } = req.body;
 
-
-
-    // Update only if pending and owned by the user
-    const query = "UPDATE invoices SET status = 'cancelled', cancel_reason = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 AND status = 'pending'";
+    const query = "UPDATE invoices SET status = 'cancelled', refund_reason = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 AND status = 'pending'";
     
-    db.query(query, [reason, invoiceId, userId], (err, result) => {
-        if (err) {
-            console.error("Error cancelling invoice:", err);
-            return res.status(500).json({ error: "Failed to cancel invoice" });
-        }
+    try {
+        const result = await db.query(query, [reason, invoiceId, userId]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Invoice not found, already paid, or unauthorized" });
         }
 
         res.json({ message: "Invoice cancelled successfully", status: "cancelled" });
-    });
+    } catch (err) {
+        console.error("[cancelInvoice] Error:", err);
+        res.status(500).json({ error: "Failed to cancel invoice" });
+    }
 };
 

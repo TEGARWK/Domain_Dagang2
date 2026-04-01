@@ -30,7 +30,7 @@ class DomainSyncWorker {
             // - FAILED: Retrying previous failures
             // - ACTIVE/PROVISIONED: Periodic sync
             const sql = `
-                SELECT d.*, u.email, u.name as user_name, u.phone, u.state, u.city, u.address
+                SELECT d.*, u.email, u.name as user_name, u.phone, u.state, u.city, u.address_line1 as address
                 FROM domains d
                 JOIN users u ON d.user_id = u.id
                 WHERE d.status IN ('paid', 'failed', 'provisioning', 'provisioned', 'active', 'registering')

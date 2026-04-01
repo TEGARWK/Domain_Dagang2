@@ -11,8 +11,17 @@ exports.getAll = (req, res) => {
     if (data.length === 0) return res.json([]);
 
     const config = data[0];
-    // Parsing yang aman (jika tersimpan sebagai string JSON di DB)
-    const enabledBanks = typeof config.enabled_banks === 'string' ? JSON.parse(config.enabled_banks) : (config.enabled_banks || {});
+    let enabledBanks = {};
+    try {
+        if (typeof config.enabled_banks === 'string') {
+            enabledBanks = JSON.parse(config.enabled_banks);
+        } else {
+            enabledBanks = config.enabled_banks || {};
+        }
+    } catch (e) {
+        console.error("[PaymentGateway] Failed to parse enabled_banks:", e);
+        enabledBanks = {};
+    }
     
     const channels = [];
 
@@ -74,9 +83,12 @@ exports.getAllAdmin = (req, res) => {
     if (data.length === 0) {
         const defaultInsert = `
             INSERT INTO payment_gateways (provider, is_active, mode, enabled_methods, enabled_banks, instructions)
-            VALUES ('prismalink', true, 'sandbox', '["VA", "QRIS"]', '{"VA": ["BCA", "BNI"], "QRIS": ["QRIS"]}', 'Pembayaran Otomatis')
+            VALUES ($1, true, 'sandbox', $2, $3, 'Pembayaran Otomatis')
         `;
-        db.query(defaultInsert, (err2) => {
+        const methodsDefault = JSON.stringify(["VA", "QRIS"]);
+        const banksDefault = JSON.stringify({"VA": ["BCA", "BNI"], "QRIS": ["QRIS"]});
+        
+        db.query(defaultInsert, ['prismalink', methodsDefault, banksDefault], (err2) => {
             if (err2) return res.status(500).json(err2);
             return exports.getAllAdmin(req, res); // Recurse once
         });
@@ -93,8 +105,8 @@ exports.update = (req, res) => {
 
   const sql = `
     UPDATE payment_gateways 
-    SET is_active = ?, mode = ?, enabled_methods = ?, enabled_banks = ?, instructions = ?
-    WHERE provider = ?
+    SET is_active = $1, mode = $2, enabled_methods = $3, enabled_banks = $4, instructions = $5
+    WHERE provider = $6
   `;
   
   // Ensure JSON is stringified if DB requires it, but PG driver often handles objects if column is JSONB.

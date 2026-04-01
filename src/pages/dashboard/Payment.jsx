@@ -31,7 +31,7 @@ const Payment = () => {
      if (paymentState === 'INSTRUCTIONS' || paymentState === 'PAID') {
          interval = setInterval(async () => {
              try {
-                 const res = await api.get(`/api/prismalink/status/${invoiceId}`);
+                 const res = await api.get(`/prismalink/status/${invoiceId}`);
                  if (res.data.status === 'PAID' || res.data.status === 'SETTLEMENT' || res.data.status === 'SUCCESS') {
                      if (paymentState !== 'PAID') { // Only trigger once
                         setPaymentState('PAID');
@@ -81,7 +81,7 @@ const Payment = () => {
   useEffect(() => {
     const fetchInvoice = async () => {
         try {
-            const invRes = await api.get(`/api/billing/invoice/${invoiceId}`);
+            const invRes = await api.get(`/billing/invoice/${invoiceId}`);
             setInvoice(invRes.data);
 
             // Recover payment details if lost on refresh
@@ -131,7 +131,7 @@ const Payment = () => {
       btn.disabled = true;
 
       try {
-          const res = await api.get(`/api/prismalink/status/${invoiceId}`);
+          const res = await api.get(`/prismalink/status/${invoiceId}`);
           
           if (res.data.status === 'PAID' || res.data.status === 'SETTLEMENT' || res.data.status === 'SUCCESS') {
                setPaymentState('PAID');

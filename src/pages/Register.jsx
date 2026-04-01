@@ -56,29 +56,20 @@ const Register = () => {
       // 1. REQUEST REGISTER
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       
-      const regResponse = await fetch(
-        "/api/auth/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: fullName,
-            email: formData.email,
-            password: formData.password,
-            phone: formData.phone,
-            bio: formData.bio,
-            address_line1: formData.address_line1,
-            city: formData.city,
-            state: formData.state,
-            zip_code: formData.zip_code,
-            country: formData.country,
-          }),
-        },
-      );
+      const response = await api.post("/auth/register", {
+        name: fullName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        bio: formData.bio,
+        address_line1: formData.address_line1,
+        city: formData.city,
+        state: formData.state,
+        zip_code: formData.zip_code,
+        country: formData.country,
+      });
 
-      const regResult = await regResponse.json();
-
-      if (regResponse.ok) {
+      if (response.status === 200 || response.status === 201) {
         success("✅ Registrasi Berhasil! Silakan cek email Anda untuk verifikasi akun.");
         
         // Redirect ke login setelah 3 detik
@@ -86,11 +77,11 @@ const Register = () => {
           navigate("/login");
         }, 3000);
       } else {
-        throw new Error(regResult.message || regResult || "Gagal mendaftar.");
+        throw new Error(response.data?.message || "Gagal mendaftar.");
       }
     } catch (err) {
       console.error(err);
-      setError(err.message || "Terjadi kesalahan koneksi ke server.");
+      setError(err.response?.data?.message || err.message || "Terjadi kesalahan koneksi ke server.");
     } finally {
       setIsLoading(false);
     }
@@ -456,7 +447,7 @@ const Register = () => {
                     useOneTap
                     shape="pill"
                     theme="outline"
-                    width="100%"
+                    width="400"
                     text="signup_with"
                 />
             </div>
