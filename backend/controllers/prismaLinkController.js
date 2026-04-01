@@ -1,5 +1,6 @@
 const PrismaLinkService = require('../services/PrismaLinkService');
 const db = require('../config/db');
+const { getIPv4 } = require('../utils/ipHelper');
 
 const OrderService = require('../services/OrderService');
 const TransferController = require('./transferController');
@@ -254,7 +255,7 @@ const createTransaction = async (req, res) => {
             user_email: user.email || "customer@example.com",
             user_phone: user.phone || "08123456789",
             user_address: user.address || "Alamat belum diatur",
-            user_ip_address: req.ip || req.headers['x-forwarded-for'] || "127.0.0.1",
+            user_ip_address: getIPv4(req),
             user_device_id: (req.headers['user-agent'] || "WEB-BROWSER").substring(0, 50),
             bank_code: req.body.bank_code || null, // Capture bank code (e.g. "BCA", "BNI")
             payment_channel: req.body.payment_channel || "VA", // "VA" or "QRIS"
