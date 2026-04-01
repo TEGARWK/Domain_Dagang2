@@ -48,3 +48,9 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (Security):** Menghapus perbandingan password teks biasa (plain-text) untuk meningkatkan keamanan akun.
 - **Database (Billing):** Memperbaiki Error 500 pada API Billing dengan menambahkan kolom `invoice_id` yang hilang pada tabel `transfer_requests`.
 - **Database (Schema):** Sinkronisasi file `database_pg.sql` dengan perubahan schema terbaru.
+
+### [2026-04-01] - PrismaLink Integration & Billing Fixes (Agent Anti-Gravity)
+- **Database (Audit Logs):** Memperbaiki Error 500 dengan menambahkan kolom `old_value` dan `new_value` yang hilang ke tabel `audit_logs` di PostgreSQL.
+- **Frontend (API):** Mengatasi Error 404 dengan menghapus prefix `/api` ganda pada file `Payment.jsx` dan `Checkout.jsx`.
+- **Backend (PrismaLink):** Update `PrismaLinkService.js` untuk mengarahkan callback ke path yang benar (`/dashboard/billing`) dan menambahkan logging response API untuk debugging yang lebih presisi.
+- **Environment:** Membersihkan karakter *hidden newline* pada kredensial PrismaLink di file `.env` untuk mencegah kegagalan autentikasi.
