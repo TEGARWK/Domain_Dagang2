@@ -56,6 +56,8 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Environment:** Membersihkan karakter *hidden newline* pada kredensial PrismaLink di file `.env` untuk mencegah kegagalan autentikasi.
 
 ### [2026-04-01] - PrismaLink Bad Request & Admin 500 Fix (Agent Anti-Gravity)
-- **Backend (PrismaLink):** Memperbaiki Error 400 (Bad Request) dengan menyinkronkan format `transmission_date_time` menjadi `YYYY-MM-DD HH:mm:ss` sesuai standar API PrismaLink.
+- **Backend (PrismaLink):** Memperbaiki Error 400 (FAILED_SYSTEM) dengan menyinkronkan format `transaction_date_time` menjadi `yyyy-MM-dd HH:mm:ss.SSS Z`.
+- **Backend (PrismaLink):** Mengubah tipe data `transaction_amount` menjadi **Number** dan `product_details` menjadi **JSON String** sesuai spesifikasi teknis terbaru.
+- **Backend (PrismaLink):** Menambahkan field wajib `user_ip_address` (IP Pengguna) dan `user_device_id` (User-Agent) pada payload transaksi.
 - **Backend (Admin):** Memperbaiki Error 500 pada Dashboard Metode Pembayaran dengan menambahkan kolom wajib `bank_name`, `account_number`, dan `account_holder` pada logika pembuatan data otomatis (default insert).
 - **Database (Payment Gateways):** Sinkronisasi skema tabel `payment_gateways` untuk mendukung integrasi PrismaLink di lingkungan produksi.
