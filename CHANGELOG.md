@@ -62,3 +62,9 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (PrismaLink):** Menambahkan utility `getIPv4` untuk memastikan alamat IP yang dikirim ke API selalu dalam format IPv4 yang valid (sanitasi dari IPv6/proxy headers).
 - **Backend (Admin):** Memperbaiki Error 500 pada Dashboard Metode Pembayaran dengan menambahkan kolom wajib `bank_name`, `account_number`, dan `account_holder` pada logika pembuatan data otomatis (default insert).
 - **Database (Payment Gateways):** Sinkronisasi skema tabel `payment_gateways` untuk mendukung integrasi PrismaLink di lingkungan produksi.
+
+### [2026-04-01] - PrismaLink Final Validation & Proxy Fix (Agent Anti-Gravity)
+- **Backend (Server):** Implementasi `app.set('trust proxy', 1)` pada `index.js` untuk mendukung deteksi IP klien yang akurat di balik Nginx/Localtunnel.
+- **Backend (PrismaLink):** Peningkatan utilitas `getIPv4` dengan **Indonesian Public IP Fallback** (`103.11.132.1`) untuk mengatasi penolakan API terhadap IP loopback/lokal (`127.0.0.1`).
+- **Backend (Diagnostics):** Penambahan log sistem terperinci (`[DEBUG]`) pada Controller dan Service untuk melacak payload JSON dan Signature HMAC secara real-time sebelum dikirim ke API.
+- **Backend (Refactor):** Penghapusan default fallback internal pada service layer untuk memastikan validasi IP dilakukan secara eksplisit di controller.
