@@ -38,3 +38,13 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **SyncService:** Membangun `SyncService.js` untuk menerima input array nama domain dari aplikasi (admin) dan secara otomatis melacak serta menambahkannya ke database, meng-assign ke Office User (`id: 3`).
 - **Endpoint Admin:** Penambahan `POST /api/admin/domains/sync-manual` khusus untuk admin meresync domain-domain dari registrar.
 - **Akun Admin Tetap:** Registrasi permanen untuk `admin@aplikasidagang.co.id` dan `tegar@aplikasidagang.com`.
+
+### [2026-04-01] - Bug Fixes & Security Optimization (Agent Anti-Gravity)
+- **Frontend (UI/UX):** Perombakan total (Overhaul) tampilan halaman Pengaturan menjadi desain Premium Dashboard.
+- **Frontend (UI/UX):** Implementasi grid alignment baru, modern typography, dan interactive elements (verified badge, hover states).
+- **Frontend (UI/UX):** Refinement tata letak form menjadi *Vertical Stack* (Label di atas input) dan pembatasan lebar form (`max-w-2xl`) untuk visual balance.
+- **Frontend (Settings):** Fix bug kursor loncat (focus loss) pada input nomor telepon dengan implementasi stabilisasi DOM dan mode Edit.
+- **Frontend (Settings):** Memperbaiki overlap teks input dengan ikon gembok melalui penambahan padding kanan (`pr-12`).
+- **Backend (Security):** Menghapus perbandingan password teks biasa (plain-text) untuk meningkatkan keamanan akun.
+- **Database (Billing):** Memperbaiki Error 500 pada API Billing dengan menambahkan kolom `invoice_id` yang hilang pada tabel `transfer_requests`.
+- **Database (Schema):** Sinkronisasi file `database_pg.sql` dengan perubahan schema terbaru.
