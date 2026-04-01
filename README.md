@@ -101,6 +101,22 @@ Jadi:
 - **Ikutin tutorial yang udah gue buat.**
 - **Update CHANGELOG itu harga mati.**
 
+---
+
+## ⛔ 🔴 ATURAN KERAS (HARAM EDIT DI SERVER!)
+
+Gue ingetin sekali lagi, terutama buat yang suka "nyolong start" atau males nunggu PR:
+
+1. **JANGAN PERNAH EDIT FILE LANGSUNG DI VPS!** (Lewat SSH, Nano, atau SFTP). 
+   - Kalo lo edit langsung di server, kodenya bakal beda sama di GitHub (Berantakan/Split-Brain).
+   - Ini yang bikin website tiba-tiba mati (Error 502) karena rutenya nggak nyambung.
+2. **SEMUA HARUS LEWAT PULL REQUEST (PR)!**
+   - Kalo mau rubah sesuatu, buat branch baru -> Push ke GitHub -> Minta approval Bos Agam.
+   - Gak ada alasan "cepet-cepetan". Keamanan dan stabilitas server nomor satu.
+3. **KONSEKUENSI:** 
+   - Kalo gue liat ada yang login SSH terus "ngobok-ngobok" kodingan di server tanpa izin, gue bakal **KUNCI/CABUT** akses SSH lo secara permanen. 
+   - Lo mau benerin bug? Benerin di laptop lo, bukan di VPS orang.
+
 Kerja yang bener, dapet cuan bareng, dan jaga server ini kayak jaga titipan nyawa. 
 
 ---
