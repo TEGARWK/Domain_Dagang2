@@ -26,3 +26,8 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 
 ---
 *Dokumen ini diperbarui secara berkala oleh System Administrator.*
+
+### [2026-04-01] - Migrasi Google OAuth
+- Migrasi sistem Login Google dari Akun Pengembang (Tegar) ke Akun Kantor Resmi (Bos Agam).
+- Perubahan Google Client ID di file .env Frontend & Backend.
+- Tim pengembang wajib update file .env lokal menggunakan Client ID Kantor yang baru.
