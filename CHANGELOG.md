@@ -59,5 +59,6 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (PrismaLink):** Memperbaiki Error 400 (FAILED_SYSTEM) dengan menyinkronkan format `transaction_date_time` menjadi `yyyy-MM-dd HH:mm:ss.SSS Z`.
 - **Backend (PrismaLink):** Mengubah tipe data `transaction_amount` menjadi **Number** dan `product_details` menjadi **JSON String** sesuai spesifikasi teknis terbaru.
 - **Backend (PrismaLink):** Menambahkan field wajib `user_ip_address` (IP Pengguna) dan `user_device_id` (User-Agent) pada payload transaksi.
+- **Backend (PrismaLink):** Menambahkan utility `getIPv4` untuk memastikan alamat IP yang dikirim ke API selalu dalam format IPv4 yang valid (sanitasi dari IPv6/proxy headers).
 - **Backend (Admin):** Memperbaiki Error 500 pada Dashboard Metode Pembayaran dengan menambahkan kolom wajib `bank_name`, `account_number`, dan `account_holder` pada logika pembuatan data otomatis (default insert).
 - **Database (Payment Gateways):** Sinkronisasi skema tabel `payment_gateways` untuk mendukung integrasi PrismaLink di lingkungan produksi.
