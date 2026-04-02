@@ -363,7 +363,7 @@ const AdminOverview = () => {
                           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Data Analytics Empty</p>
                       </div>
                   ) : (
-                      <ResponsiveContainer width="99%" height="100%" minWidth={1} minHeight={1}>
+                      <ResponsiveContainer width="99%" height="100%" minWidth={1} minHeight={300}>
                           <LineChart 
                               data={getActiveData().map(d => ({ label: d.label, revenue: d.realVal }))}
                               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}

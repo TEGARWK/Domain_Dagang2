@@ -12,15 +12,15 @@ class PromoEventService {
                 type, value, 
                 max_discount as max_discount_amount, 
                 start_date as start_at, 
-                COALESCE(end_date, valid_until) as end_at, 
+                end_date as end_at, 
                 priority,
                 min_purchase, eligible_tlds as applicable_tlds
-            FROM vouchers
+            FROM promo_events
             WHERE is_active = TRUE 
             AND is_automatic = TRUE
             AND (start_date IS NULL OR start_date <= NOW())
-            AND (COALESCE(end_date, valid_until) IS NULL OR COALESCE(end_date, valid_until) > NOW())
-            ORDER BY priority DESC, COALESCE(end_date, valid_until) ASC
+            AND (end_date IS NULL OR end_date > NOW())
+            ORDER BY priority DESC, end_date ASC
         `;
         
         try {

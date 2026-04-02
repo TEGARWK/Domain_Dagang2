@@ -230,7 +230,8 @@ exports.processCheckout = async (req, res) => {
           client, 
           calculationResults,
           config || {},
-          invoiceNumber
+          invoiceNumber,
+          'DOMAIN'
       );
 
       await client.query('COMMIT');
@@ -304,7 +305,7 @@ exports.processTopUp = async (req, res) => {
         }];
 
         // 4. Create Invoice
-        const invoiceResult = await InvoiceService.create(userId, items, null, client, calculationResults);
+        const invoiceResult = await InvoiceService.create(userId, items, null, client, calculationResults, {}, null, 'TOPUP');
         
         res.status(200).json({
             message: "Top Up Invoice Created",

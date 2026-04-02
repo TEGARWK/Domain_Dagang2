@@ -493,7 +493,7 @@ exports.cancelInvoice = async (req, res) => {
     try {
         const result = await db.query(query, [reason, invoiceId, userId]);
 
-        if (result.affectedRows === 0) {
+        if (result.rowCount === 0 || result.affectedRows === 0) {
             return res.status(404).json({ error: "Invoice not found, already paid, or unauthorized" });
         }
 

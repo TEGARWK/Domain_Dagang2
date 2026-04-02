@@ -30,6 +30,7 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [googleLoadError, setGoogleLoadError] = useState(false);
 
   // --- ADDRESS HOOK ---
   const addressHook = useAddress();
@@ -438,18 +439,30 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="w-full flex justify-center mt-2">
+            <div className="w-full flex flex-col items-center mt-2">
                 <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={() => {
-                        setError("Gagal mendaftar dengan Google.");
+                        console.error("Google Register Component Error");
+                        setError("Akses Google ditolak atau diblokir browser.");
+                        setGoogleLoadError(true);
                     }}
                     useOneTap
                     shape="pill"
                     theme="outline"
-                    width="400"
+                    width="350"
+                    use_fedcm_for_prompt={true}
                     text="signup_with"
                 />
+
+                {googleLoadError && (
+                    <div className="mt-4 p-4 bg-orange-50 border border-orange-100 rounded-xl animate-pulse">
+                        <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest mb-1">💡 Tips Masalah Daftar</p>
+                        <p className="text-[11px] text-orange-700 leading-relaxed text-center">
+                            Jika tombol Google bermasalah, pastikan <strong>http://localhost:5173</strong> sudah terdaftar di Google Cloud Console atau coba gunakan <strong>Incognito Mode</strong>.
+                        </p>
+                    </div>
+                )}
             </div>
 
             <p className="text-center text-slate-500 mt-6 text-xs">

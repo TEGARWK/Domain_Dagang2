@@ -5,7 +5,7 @@ class VoucherService {
     // 1. GET AVAILABLE CLAIMABLE VOUCHERS
     static async getAvailableClaimableVouchers(userId) {
         const query = `
-            SELECT * FROM vouchers 
+            SELECT * FROM coupons 
             WHERE is_active = TRUE 
             AND is_automatic = FALSE
             AND (usage_limit_total = 0 OR usage_limit_total > used_count)
@@ -27,7 +27,7 @@ class VoucherService {
         const query = `
             SELECT uv.*, v.title, v.code, v.type, v.value, v.description, v.banner_image, v.subtitle, v.max_discount
             FROM user_vouchers uv
-            JOIN vouchers v ON uv.coupon_id = v.id
+            JOIN coupons v ON uv.coupon_id = v.id
             WHERE uv.user_id = $1
             ORDER BY uv.claimed_at DESC
         `;
@@ -47,7 +47,7 @@ class VoucherService {
             await client.query('BEGIN');
             
             // Check voucher
-            const vRes = await client.query("SELECT * FROM vouchers WHERE id = $1 AND is_active = TRUE FOR UPDATE", [voucherId]);
+            const vRes = await client.query("SELECT * FROM coupons WHERE id = $1 AND is_active = TRUE FOR UPDATE", [voucherId]);
             if (vRes.rows.length === 0) throw new Error("Voucher tidak ditemukan atau tidak aktif.");
             const voucher = vRes.rows[0];
 
@@ -66,7 +66,7 @@ class VoucherService {
             `, [userId, voucherId]);
 
             // Update count
-            await client.query("UPDATE vouchers SET used_count = used_count + 1 WHERE id = $1", [voucherId]);
+            await client.query("UPDATE coupons SET used_count = used_count + 1 WHERE id = $1", [voucherId]);
 
             await client.query('COMMIT');
             return { success: true, message: "Voucher berhasil diklaim!" };
@@ -81,7 +81,7 @@ class VoucherService {
     // 4. ADMIN: GET ALL VOUCHERS
     static async getAllVouchers() {
         try {
-            const { rows } = await db.pool.query("SELECT * FROM vouchers ORDER BY created_at DESC");
+            const { rows } = await db.pool.query("SELECT * FROM coupons ORDER BY created_at DESC");
             return rows;
         } catch (error) {
             console.error("VoucherService.getAllVouchers Error:", error);
@@ -108,7 +108,7 @@ class VoucherService {
         const valueVal = data.value !== undefined ? data.value : (data.discount_value || 0);
 
         const query = `
-            INSERT INTO vouchers (
+            INSERT INTO coupons (
                 title, code, description, banner_image, subtitle, type, value, min_purchase, usage_limit_total, valid_until, 
                 eligible_tlds, eligible_actions, is_stackable, is_new_user_only, 
                 max_discount, is_active, is_automatic,
@@ -173,7 +173,7 @@ class VoucherService {
         const valueVal = value !== undefined ? value : (data.discount_value || 0);
 
         const updateQuery = `
-            UPDATE vouchers SET
+            UPDATE coupons SET
                 code = $1, title = $2, description = $3, banner_image = $4, subtitle = $5, type = $6, value = $7, max_discount = $8, 
                 min_purchase = $9, usage_limit_total = $10, valid_until = $11, 
                 is_active = $12, is_automatic = $13, is_stackable = $14, 
@@ -205,7 +205,7 @@ class VoucherService {
     // 7. GET PUBLIC VOUCHERS (Promo Page)
     static async getPublicVouchers() {
         const query = `
-            SELECT * FROM vouchers 
+            SELECT * FROM coupons 
             WHERE is_active = TRUE 
             AND (valid_until IS NULL OR valid_until > NOW())
             AND (start_date IS NULL OR start_date <= NOW())
@@ -225,7 +225,7 @@ class VoucherService {
     // 8. GET AVAILABLE AUTO VOUCHERS (With Eligibility Check)
     static async getAvailableAutoVouchers(subtotal = 0, items = []) {
         const query = `
-            SELECT * FROM vouchers 
+            SELECT * FROM promo_events 
             WHERE is_automatic = TRUE 
             AND is_active = TRUE
             AND (start_date IS NULL OR start_date <= NOW())
@@ -312,7 +312,7 @@ class VoucherService {
                 const uvRes = await db.pool.query(`
                     SELECT uv.*, v.* 
                     FROM user_vouchers uv 
-                    JOIN vouchers v ON uv.coupon_id = v.id 
+                    JOIN coupons v ON uv.coupon_id = v.id 
                     WHERE uv.id = $1 AND uv.user_id = $2 AND uv.status = 'claimed'
                 `, [userVoucherId, userId]);
 
@@ -323,7 +323,7 @@ class VoucherService {
                     const validMin = subtotal >= parseFloat(v.min_purchase);
 
                     if (validDate && validMin) {
-                        if (canStack || !bestAuto) {
+                        if (v.is_stackable || !bestAuto) {
                             // Check TLD and Action Eligibility at Item Level
                             const tlds = typeof v.eligible_tlds === 'string' ? JSON.parse(v.eligible_tlds) : v.eligible_tlds;
                             const actions = typeof v.eligible_actions === 'string' ? JSON.parse(v.eligible_actions) : v.eligible_actions;
@@ -372,7 +372,7 @@ class VoucherService {
     // 10. DELETE VOUCHER
     static async deleteVoucher(id) {
         try {
-            await db.pool.query("DELETE FROM vouchers WHERE id = $1", [id]);
+            await db.pool.query("DELETE FROM coupons WHERE id = $1", [id]);
             return true;
         } catch (error) {
             console.error("VoucherService.deleteVoucher Error:", error);
@@ -383,9 +383,9 @@ class VoucherService {
     // 11. GET ANALYTICS
     static async getAnalytics() {
         try {
-            const total = await db.pool.query("SELECT COUNT(*) as count FROM vouchers");
-            const active = await db.pool.query("SELECT COUNT(*) as count FROM vouchers WHERE is_active = TRUE");
-            const usage = await db.pool.query("SELECT SUM(used_count) as count FROM vouchers");
+            const total = await db.pool.query("SELECT COUNT(*) as count FROM coupons");
+            const active = await db.pool.query("SELECT COUNT(*) as count FROM coupons WHERE is_active = TRUE");
+            const usage = await db.pool.query("SELECT SUM(used_count) as count FROM coupons");
             const claims = await db.pool.query("SELECT COUNT(*) as count FROM user_vouchers");
 
             return {

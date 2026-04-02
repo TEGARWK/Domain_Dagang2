@@ -75,3 +75,9 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 ### [2026-04-01] - PrismaLink Diagnostic Force Sync (Agent Anti-Gravity)
 - **Backend (PrismaLink):** Menambahkan marker `[FORCE-SYNC-V2]` untuk memaksa sinkronisasi ulang kodingan diagnostik ke branch `main`.
 - **Backend (PrismaLink):** Memastikan logika pelaporan error PrismaLink tetap aktif setelah resolusi merge conflict.
+
+### [2026-04-02] - PrismaLink Status Sync & Wallet Integration (Agent Anti-Gravity)
+- **Database (Type Handling):** Memperbaiki Error 500 pada Inquiry Status dengan menyinkronkan tipe data pencarian (String vs Integer) pada tabel `payments`.
+- **Backend (PrismaLink):** Menambahkan penanganan status sukses `SETLD` (Settled) sesuai dokumentasi teknis PrismaLink (v2).
+- **Backend (Wallet Integration):** Mengalihkan proses pelunasan (top-up) ke **`WalletService.credit()`** untuk memastikan sinkronisasi saldo di tabel `wallets` dan pencatatan otomatis di `wallet_transactions`.
+- **Backend (Logging):** Penambahan log diagnostik visual (icon-based) pada terminal untuk melacak alur transaksi dari pemanggilan API hingga update database.

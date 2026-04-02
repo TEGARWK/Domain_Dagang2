@@ -42,7 +42,7 @@ class PromoEngine {
 
             const eventsRes = await client.query(`
                 SELECT *
-                FROM vouchers
+                FROM promo_events
                 WHERE is_active = TRUE 
                   AND is_automatic = TRUE
                   AND (eligible_tlds ?| $1::text[] OR eligible_tlds @> '["all"]')
@@ -56,7 +56,7 @@ class PromoEngine {
             let coupon = null;
             if (couponCode) {
                 const couponRes = await client.query(`
-                    SELECT * FROM vouchers 
+                    SELECT * FROM coupons 
                     WHERE code = $1 
                       AND is_active = TRUE
                       AND is_automatic = FALSE
@@ -240,7 +240,7 @@ class PromoEngine {
         // 1. Lock Coupon Row for Update
         const couponRes = await client.query(`
             SELECT id, usage_limit_total, used_count, locked_count 
-            FROM vouchers 
+            FROM coupons 
             WHERE id = $1 
             FOR UPDATE
         `, [couponId]);
@@ -265,7 +265,7 @@ class PromoEngine {
 
         // 4. Update Locked Count
         await client.query(`
-            UPDATE vouchers 
+            UPDATE coupons 
             SET locked_count = locked_count + 1, updated_at = NOW() 
             WHERE id = $1
         `, [couponId]);

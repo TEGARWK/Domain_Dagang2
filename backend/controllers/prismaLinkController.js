@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const PrismaLinkService = require('../services/PrismaLinkService');
+const WalletService = require('../services/WalletService');
 const { getIPv4 } = require('../utils/ipHelper');
 
 /**
@@ -17,8 +18,8 @@ exports.createTransaction = async (req, res) => {
         const invRes = await db.pool.query('SELECT * FROM invoices WHERE id = $1', [invoice_number]);
         const invoice = invRes.rows[0];
 
-        if (!invoice) {
-            return res.status(404).json({ success: false, message: "Invoice not found" });
+        if (invRes.rowCount === 0) {
+            return res.status(404).json({ error: "Invoice not found, already paid, or unauthorized" });
         }
 
         if (invoice.status === 'PAID') {
@@ -149,7 +150,7 @@ exports.handleWebhook = async (req, res) => {
 
         const { merchant_ref_no, transaction_status, plink_ref_no } = req.body;
 
-        if (transaction_status === 'SETTLED' || transaction_status === 'SUCCESS') {
+        if (transaction_status === 'SETTLED' || transaction_status === 'SUCCESS' || transaction_status === 'SETLD') {
             const payRes = await db.pool.query('SELECT * FROM payments WHERE transaction_id = $1', [merchant_ref_no]);
             const payment = payRes.rows[0];
 
@@ -170,15 +171,15 @@ exports.handleWebhook = async (req, res) => {
                 const invoice = invRes.rows[0];
 
                 if (invoice && invoice.type === 'TOPUP') {
-                    await db.pool.query(
-                        'UPDATE users SET balance = balance + $1 WHERE id = $2',
-                        [invoice.total, invoice.user_id]
-                    );
+                    console.log(`💰 [Webhook] Crediting ${invoice.total} to UserID: ${invoice.user_id}`);
                     
-                    await db.pool.query(`
-                        INSERT INTO audit_logs (user_id, action, details)
-                        VALUES ($1, $2, $3)
-                    `, [invoice.user_id, 'TOPUP_SUCCESS', `Wallet balance added via PrismaLink: ${invoice.total}`]);
+                    await WalletService.credit(
+                        invoice.user_id, 
+                        parseFloat(invoice.total), 
+                        'TOPUP', 
+                        invoice.id, 
+                        'Top Up Wallet via PrismaLink (Webhook Notification)'
+                    );
                 }
 
                 await db.pool.query('COMMIT');
@@ -207,36 +208,74 @@ exports.webhook = async (req, res) => {
  */
 exports.checkStatus = async (req, res) => {
     try {
-        const { id } = req.params; 
-        const payRes = await db.pool.query('SELECT * FROM payments WHERE id = $1', [id]);
+        const { id } = req.params; // String format: INV-177...
+        console.log(`🔍 [CheckStatus] Inquiry for Invoice: ${id}`);
+
+        // 1. Find the parent payment attempt - we must query by invoice_number (string)
+        // because its primary key id is an integer.
+        const payRes = await db.pool.query(
+            'SELECT * FROM payments WHERE invoice_number = $1 ORDER BY created_at DESC LIMIT 1',
+            [id]
+        );
         const payment = payRes.rows[0];
 
         if (!payment) {
-            return res.status(404).json({ success: false, message: "Payment record not found" });
+            console.error(`❌ [CheckStatus] No payment record found for: ${id}`);
+            return res.status(404).json({ success: false, message: "Record pembayaran tidak ditemukan." });
         }
 
+        // 2. Call PrismaLink API
+        console.log(`📡 [CheckStatus] Calling PrismaLink for PlinkRef: ${payment.plink_ref_no}`);
         const status = await PrismaLinkService.checkStatus(payment.transaction_id, payment.plink_ref_no);
-        console.log(`[CheckStatus] Status from API:`, status);
+        console.log(`📥 [CheckStatus] API Response:`, status);
 
-        if (status.transaction_status === 'SETTLED' || status.transaction_status === 'SUCCESS') {
-            if (payment.status !== 'PAID') {
-                await db.pool.query('BEGIN');
-                await db.pool.query('UPDATE payments SET status = $1 WHERE id = $2', ['PAID', id]);
-                await db.pool.query('UPDATE invoices SET status = $1 WHERE id = $2', ['PAID', payment.invoice_number]);
+        // 3. Update local DB if successful (SETTLED, SUCCESS, or SETLD)
+        const isActuallyPaid = ['SETTLED', 'SUCCESS', 'SETLD'].includes(status.transaction_status);
+
+        if (isActuallyPaid && payment.status !== 'PAID') {
+            console.log(`✅ [CheckStatus] Payment verified! syncing for invoice: ${id}`);
+            
+            await db.pool.query('BEGIN');
+            try {
+                // Update payment record
+                await db.pool.query('UPDATE payments SET status = $1, updated_at = NOW() WHERE invoice_number = $2', ['PAID', id]);
                 
-                const invRes = await db.pool.query('SELECT * FROM invoices WHERE id = $1', [payment.invoice_number]);
+                // Update invoice record
+                await db.pool.query('UPDATE invoices SET status = $1, updated_at = NOW() WHERE id = $2', ['PAID', id]);
+                
+                // Fetch invoice again check for TOPUP
+                const invRes = await db.pool.query('SELECT * FROM invoices WHERE id = $1', [id]);
                 const invoice = invRes.rows[0];
+
                 if (invoice && invoice.type === 'TOPUP') {
-                    await db.pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [invoice.total, invoice.user_id]);
+                    console.log(`💰 [CheckStatus] Crediting ${invoice.total} to UserID: ${invoice.user_id}`);
+                    
+                    // Use WalletService instead of manual user table update
+                    await WalletService.credit(
+                        invoice.user_id, 
+                        parseFloat(invoice.total), 
+                        'TOPUP', 
+                        id, 
+                        'Top Up Wallet via PrismaLink (Manual Status Check)'
+                    );
                 }
+                
                 await db.pool.query('COMMIT');
+                console.log(`💎 [CheckStatus] Database sync completed for: ${id}`);
+            } catch (innerErr) {
+                await db.pool.query('ROLLBACK');
+                throw innerErr;
             }
         }
 
         return res.status(200).json({ success: true, data: status });
 
     } catch (error) {
-        console.error("Check Status Error:", error.message);
-        return res.status(500).json({ success: false, message: error.message });
+        console.error("❌ Check Status Error (Fatal):", error.message);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Gagal mengecek status. Terjadi kesalahan pada server.",
+            details: error.message 
+        });
     }
 };

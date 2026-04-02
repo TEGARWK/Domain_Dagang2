@@ -103,6 +103,9 @@ CREATE TABLE IF NOT EXISTS domains (
     last_registration_error TEXT,
     last_document_sync_at TIMESTAMP WITH TIME ZONE,
     last_document_upload_attempt_at TIMESTAMP WITH TIME ZONE,
+    next_retry_at TIMESTAMP WITH TIME ZONE,
+    is_transfer_locked BOOLEAN DEFAULT FALSE,
+    last_sync_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -156,7 +159,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     plink_ref_no VARCHAR(100),
     paid_at TIMESTAMP WITH TIME ZONE,
     refunded_at TIMESTAMP WITH TIME ZONE,
-    refund_reason TEXT,
+    type VARCHAR(50) DEFAULT 'DOMAIN',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -276,9 +279,11 @@ CREATE TABLE IF NOT EXISTS withdraw_transactions (
 CREATE TABLE IF NOT EXISTS promo_events (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
+    subtitle VARCHAR(255),
     description TEXT,
-    discount_type VARCHAR(20) NOT NULL CHECK (discount_type IN ('fixed', 'percentage')),
-    discount_value DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    banner_image TEXT,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('fixed', 'percentage')),
+    value DECIMAL(15, 2) NOT NULL DEFAULT 0,
     max_discount DECIMAL(15, 2),
     min_purchase DECIMAL(15, 2) DEFAULT 0,
     start_date TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -292,19 +297,32 @@ CREATE TABLE IF NOT EXISTS promo_events (
 CREATE TABLE IF NOT EXISTS coupons (
     id SERIAL PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
+    title VARCHAR(255),
+    subtitle VARCHAR(255),
     description TEXT,
-    discount_type VARCHAR(20) NOT NULL CHECK (discount_type IN ('fixed', 'percentage')),
-    discount_value DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    banner_image TEXT,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('fixed', 'percentage')),
+    value DECIMAL(15, 2) NOT NULL DEFAULT 0,
     max_discount DECIMAL(15, 2),
     min_purchase DECIMAL(15, 2) DEFAULT 0,
     usage_limit INT DEFAULT 0,
-    usage_count INT DEFAULT 0,
-    locked_count INT DEFAULT 0,
-    is_stackable BOOLEAN DEFAULT FALSE,
+    usage_limit_total INT DEFAULT 0,
+    used_count INT DEFAULT 0,
+    is_automatic BOOLEAN DEFAULT FALSE,
     valid_until TIMESTAMP WITH TIME ZONE,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_vouchers (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    coupon_id INT NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
+    claimed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    used_at TIMESTAMP WITH TIME ZONE,
+    status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, USED, EXPIRED
+    UNIQUE(user_id, coupon_id)
 );
 
 CREATE TABLE IF NOT EXISTS promo_event_tlds (
@@ -372,6 +390,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     action VARCHAR(100) NOT NULL,
     entity_type VARCHAR(50),
     entity_id VARCHAR(100),
+    old_value JSONB,
+    new_value JSONB,
     ip_address VARCHAR(45),
     user_agent TEXT,
     details JSONB,

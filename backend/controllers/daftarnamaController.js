@@ -29,7 +29,7 @@ exports.getPricings = async (req, res) => {
         const pricings = await DaftarnamaService.getTLDPricings();
         res.json(pricings);
     } catch (error) {
-        res.status(500).json({ success: false, message: "Gagal mengambil data harga", error: error.measure });
+        res.status(500).json({ success: false, message: "Gagal mengambil data harga", error: error.message });
     }
 };
 

@@ -16,7 +16,7 @@ class CouponService {
                 usage_limit_total as usage_limit_global, usage_limit_per_user, used_count, locked_count,
                 valid_until as expires_at, is_stackable, is_automatic, is_active,
                 start_date, valid_until
-            FROM vouchers
+            FROM coupons
             WHERE code = $1 
             AND is_active = TRUE
             AND (start_date IS NULL OR start_date <= NOW())
@@ -92,7 +92,7 @@ class CouponService {
      */
     static async reserveCoupon(code, userId, invoiceId, client) {
         const updateQuery = `
-            UPDATE vouchers 
+            UPDATE coupons 
             SET locked_count = locked_count + 1 
             WHERE code = $1 
             AND is_active = TRUE
@@ -143,7 +143,7 @@ class CouponService {
 
             if (isSuccess) {
                 await client.query(`
-                    UPDATE vouchers 
+                    UPDATE coupons 
                     SET locked_count = locked_count - 1, used_count = used_count + 1 
                     WHERE id = $1
                 `, [reservation.coupon_id]);
@@ -151,7 +151,7 @@ class CouponService {
                 await client.query(`UPDATE coupon_reservations SET status = 'USED' WHERE invoice_id = $1`, [invoiceId]);
             } else {
                 await client.query(`
-                    UPDATE vouchers 
+                    UPDATE coupons 
                     SET locked_count = locked_count - 1 
                     WHERE id = $1
                 `, [reservation.coupon_id]);
@@ -179,7 +179,7 @@ class CouponService {
                 min_purchase as min_purchase_amount, 
                 usage_limit_total as usage_limit_global, usage_limit_per_user, used_count, locked_count,
                 valid_until as expires_at, is_stackable
-            FROM vouchers
+            FROM coupons
             WHERE is_active = TRUE
             AND is_automatic = FALSE
             AND (start_date IS NULL OR start_date <= NOW())

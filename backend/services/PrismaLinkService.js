@@ -3,24 +3,12 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 function getFormattedDate() {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const MM = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const HH = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const sss = String(now.getMilliseconds()).padStart(3, '0');
-    
-    // Timezone offset in format +HHmm
-    const offsetMinutes = -now.getTimezoneOffset();
-    const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
-    const offsetMins = Math.abs(offsetMinutes) % 60;
-    const sign = offsetMinutes >= 0 ? '+' : '-';
-    const Z = `${sign}${String(offsetHours).padStart(2, '0')}${String(offsetMins).padStart(2, '0')}`;
-    
-    // Format: yyyy-MM-dd HH:mm:ss.SSS Z
-    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}.${sss} ${Z}`;
+    const d = new Date();
+    const pad = (n, s = 2) => String(n).padStart(s, '0');
+    // Format required: yyyy-MM-dd HH:mm:ss.SSS ZZ
+    // Example: 2023-02-01 15:30:34.250 +0700
+    // We use +0700 (WIB) since it's common for Indonesia
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)} +0700`;
 }
 
 function formatPhoneNumber(phone) {
@@ -56,10 +44,10 @@ const createPayment = async (data) => {
         console.log(`[PrismaLink] Using Key ID (start...end): ${CONFIG.key_id.substring(0, 4)}...${CONFIG.key_id.substring(CONFIG.key_id.length - 4)}`);
         
         const items = (data.items || []).map(i => ({
-            item_code: parseInt(i.id) || 0,
+            item_code: (parseInt(i.id) || 0).toString(), // String is often safer
             item_title: (i.name || "Item").substring(0, 50),
             quantity: 1,
-            total: (parseInt(i.price) || 0).toString(),
+            total: Math.floor(parseInt(i.price) || 0).toString(),
             currency: "IDR"
         }));
 
@@ -77,8 +65,8 @@ const createPayment = async (data) => {
         }
 
         const backendBase = CONFIG.backend_url; 
-        const frontendBase = process.env.CLIENT_URL || 'http://localhost:5173';
-
+        const frontendBase = CONFIG.backend_url; // Use backend ngrok for frontend as well to match dashboard
+        
         const registeredBackend = `${backendBase}/api/prismalink/webhook`;
         const registeredFrontend = `${frontendBase}/dashboard/billing`;
 
@@ -114,7 +102,7 @@ const createPayment = async (data) => {
             transaction_date_time: timestamp,
             transmission_date_time: timestamp,
             transaction_currency: "IDR",
-            transaction_amount: Number(transactionAmount),
+            transaction_amount: Math.floor(transactionAmount),
             product_details: JSON.stringify(items),
             user_id: (data.user_id || "7").toString(),
             user_name: (data.user_name || "Customer").substring(0, 50),
@@ -122,13 +110,14 @@ const createPayment = async (data) => {
             user_phone_number: formatPhoneNumber(data.user_phone),
             remarks: (data.remarks || "Sewa Domain").substring(0, 100),
             user_device_id: (data.user_device_id || "WEB-BROWSER").substring(0, 50),
-            user_ip_address: data.user_ip_address, // Use passed IP directly, no more 127.0.0.1 fallback
+            user_ip_address: data.user_ip_address,
             shipping_details: JSON.stringify({
                 address: (data.user_address || "Alamat belum diatur").substring(0, 200),
                 telephoneNumber: formatPhoneNumber(data.user_phone),
                 handphoneNumber: formatPhoneNumber(data.user_phone)
             }),
             payment_method: paymentMethod,
+            bank_id: bankId,
             other_bills: "[]",
             invoice_number: data.invoice_number,
             integration_type: "02",
@@ -136,18 +125,13 @@ const createPayment = async (data) => {
             action_id: "01"
         };
 
-        // Important Debug: Log the final payload and signature before sending
         const rawBody = JSON.stringify(payloadObj);
         const signature = crypto.createHmac('sha256', CONFIG.secret_key)
             .update(rawBody)
             .digest('hex');
 
         console.log("[PrismaLink] Final Payload to be sent:", rawBody);
-        console.log("[PrismaLink] Generated Signature (mac):", signature);
-
-
-
-
+        console.log("[PrismaLink] Calculated MAC (Lowercase):", signature);
 
         const endpoint = `${CONFIG.base_url}/payment/integration/transaction/api/submit-trx`;
 
@@ -160,6 +144,12 @@ const createPayment = async (data) => {
             });
             const respData = response.data;
             console.log("[PrismaLink] Response Body:", JSON.stringify(respData, null, 2));
+            
+            // If response_code is not success, log it clearly for debugging
+            if (respData.response_code !== 'PL000' && respData.response_code !== '00') {
+                console.error("❌ PrismaLink API Error:", respData.response_message, respData);
+            }
+
             const isSuccess = respData.response_code === 'PL000' || respData.response_code === '00';
 
             let resultData = {
@@ -250,11 +240,15 @@ const checkStatus = async (transactionId, plinkRefNo = null) => {
 
 const validateSignature = (headers, body) => {
     try {
-        const incomingMac = headers.mac || headers.MAC;
+        const incomingMac = headers.mac || headers.MAC || headers['x-plink-signature'];
         if (!incomingMac) return false;
+        
+        // Ensure consistent JSON stringification during validation
+        const payload = typeof body === 'string' ? body : JSON.stringify(body);
         const expectedMac = crypto.createHmac('sha256', CONFIG.secret_key)
-            .update(JSON.stringify(body))
+            .update(payload)
             .digest('hex');
+            
         return incomingMac.toLowerCase() === expectedMac.toLowerCase();
     } catch (e) {
         return false;
