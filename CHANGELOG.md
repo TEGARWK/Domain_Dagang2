@@ -78,7 +78,7 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (PrismaLink):** Menambahkan marker `[FORCE-SYNC-V2]` untuk memaksa sinkronisasi ulang kodingan diagnostik ke branch `main`.
 - **Backend (PrismaLink):** Memastikan logika pelaporan error PrismaLink tetap aktif setelah resolusi merge conflict.
 
-### [2026-04-02] - Home Page Fix, Navbar & Chart Refinement (Tegar Wira Kesuma)
+### [2026-04-02] - PrismaLink Status Sync, Home Page & Navbar Fix (Tegar Wira Kesuma)
 - **Database (Fix):** Implementasi skrip otomatis `ensure_tables.js` untuk memperbaiki tabel yang hilang (`coupons`, `promo_events`, `faqs`, `user_vouchers`) guna menghentikan error 500 pada halaman utama.
 - **Frontend (Home Page):** Penambahan fallback dan validasi data pada `BannerSection.jsx` untuk mencegah crash saat data promo tidak tersedia atau tidak valid.
 - **Frontend (Navbar):** Penambahan menu dropdown **"Lainnya"** pada Navbar Guest yang terhubung ke layanan ekspor (Pengembangan Web, Aplikasi, Digital Marketing, VPS, Maintenance) di website Aplikasidagang.com.
