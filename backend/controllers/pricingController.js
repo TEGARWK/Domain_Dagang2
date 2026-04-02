@@ -125,7 +125,7 @@ exports.updatePricing = (req, res) => {
     id
   ], async (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (result.rowCount === 0) return res.status(404).json({ error: "Pricing ID not found" });
+    if (result.affectedRows === 0) return res.status(404).json({ error: "Pricing ID not found" });
 
     // Audit Log
     await createLog({
@@ -171,12 +171,12 @@ exports.addPricing = (req, res) => {
         user_id: req.user.id,
         action: 'ADD_PRICING',
         entity_type: 'pricing',
-        entity_id: result[0].id,
+        entity_id: result[0]?.id,
         new_value: req.body,
         req
     });
 
-    res.json({ message: "TLD added successfully (v2)", id: result[0].id });
+    res.json({ message: "TLD added successfully (v2)", id: result[0]?.id });
   });
 };
 

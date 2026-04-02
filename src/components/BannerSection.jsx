@@ -64,10 +64,10 @@ const BannerSection = () => {
         <div className="max-w-7xl mx-auto rounded-[2rem] relative overflow-hidden shadow-2xl group border border-slate-900/5">
             {/* Background Image Container with Aspect Ratio/Height */}
             <div className="absolute inset-0 bg-slate-900">
-                {banner.imageUrl ? (
+                {(banner.imageUrl || banner.banner_image) ? (
                     <>
                         <img 
-                            src={banner.imageUrl} 
+                            src={banner.imageUrl || banner.banner_image} 
                             alt="Promo Banner" 
                             className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-80 transition-all duration-700 ease-in-out" 
                         />
@@ -116,7 +116,13 @@ const BannerSection = () => {
                             <svg className="w-5 h-5 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                             </svg>
-                            <span>Berlaku untuk: <strong className="text-white">{typeof banner.eligible_tlds === 'string' ? JSON.parse(banner.eligible_tlds).join(', ') : banner.eligible_tlds.join(', ')}</strong></span>
+                            <span>Berlaku untuk: <strong className="text-white">
+                                {Array.isArray(banner.eligible_tlds) 
+                                    ? (banner.eligible_tlds.length > 0 ? banner.eligible_tlds.join(', ') : "Semua TLD")
+                                    : (typeof banner.eligible_tlds === 'string' 
+                                        ? JSON.parse(banner.eligible_tlds).join(', ') 
+                                        : "Promo Spesial")}
+                            </strong></span>
                         </div>
                     )}
                     

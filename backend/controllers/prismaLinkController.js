@@ -37,7 +37,9 @@ exports.createTransaction = async (req, res) => {
 
         // 3. Prepare Data for PrismaLink
         const userIP = getIPv4(req);
-        console.log(`[DEBUG] Determined IP for PrismaLink: ${userIP}`);
+        const paymentChannel = req.body.payment_channel || "VA";
+        const validityMinutes = paymentChannel === 'QRIS' ? 30 : 360; 
+        const validity = PrismaLinkService.getFormattedDate(validityMinutes);
 
         const paymentData = {
             invoice_number: invoice.id,
@@ -50,7 +52,8 @@ exports.createTransaction = async (req, res) => {
             user_ip_address: userIP,
             user_device_id: (req.headers['user-agent'] || "WEB-BROWSER").substring(0, 50),
             bank_code: req.body.bank_code || null,
-            payment_channel: req.body.payment_channel || "VA",
+            payment_channel: paymentChannel,
+            validity,
             items: items.map(i => ({
                 id: i.id,
                 name: i.name,

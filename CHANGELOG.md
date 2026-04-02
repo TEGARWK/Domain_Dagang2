@@ -39,7 +39,7 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Endpoint Admin:** Penambahan `POST /api/admin/domains/sync-manual` khusus untuk admin meresync domain-domain dari registrar.
 - **Akun Admin Tetap:** Registrasi permanen untuk `admin@aplikasidagang.co.id` dan `tegar@aplikasidagang.com`.
 
-### [2026-04-01] - Bug Fixes & Security Optimization (Agent Anti-Gravity)
+### [2026-04-01] - Bug Fixes & Security Optimization (Tegar Wira Kesuma)
 - **Frontend (UI/UX):** Perombakan total (Overhaul) tampilan halaman Pengaturan menjadi desain Premium Dashboard.
 - **Frontend (UI/UX):** Implementasi grid alignment baru, modern typography, dan interactive elements (verified badge, hover states).
 - **Frontend (UI/UX):** Refinement tata letak form menjadi *Vertical Stack* (Label di atas input) dan pembatasan lebar form (`max-w-2xl`) untuk visual balance.
@@ -49,13 +49,13 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Database (Billing):** Memperbaiki Error 500 pada API Billing dengan menambahkan kolom `invoice_id` yang hilang pada tabel `transfer_requests`.
 - **Database (Schema):** Sinkronisasi file `database_pg.sql` dengan perubahan schema terbaru.
 
-### [2026-04-01] - PrismaLink Integration & Billing Fixes (Agent Anti-Gravity)
+### [2026-04-01] - PrismaLink Integration & Billing Fixes (Tegar Wira Kesuma)
 - **Database (Audit Logs):** Memperbaiki Error 500 dengan menambahkan kolom `old_value` dan `new_value` yang hilang ke tabel `audit_logs` di PostgreSQL.
 - **Frontend (API):** Mengatasi Error 404 dengan menghapus prefix `/api` ganda pada file `Payment.jsx` dan `Checkout.jsx`.
 - **Backend (PrismaLink):** Update `PrismaLinkService.js` untuk mengarahkan callback ke path yang benar (`/dashboard/billing`) dan menambahkan logging response API untuk debugging yang lebih presisi.
 - **Environment:** Membersihkan karakter *hidden newline* pada kredensial PrismaLink di file `.env` untuk mencegah kegagalan autentikasi.
 
-### [2026-04-01] - PrismaLink Bad Request & Admin 500 Fix (Agent Anti-Gravity)
+### [2026-04-01] - PrismaLink Bad Request & Admin 500 Fix (Tegar Wira Kesuma)
 - **Backend (PrismaLink):** Memperbaiki Error 400 (FAILED_SYSTEM) dengan menyinkronkan format `transaction_date_time` menjadi `yyyy-MM-dd HH:mm:ss.SSS Z`.
 - **Backend (PrismaLink):** Mengubah tipe data `transaction_amount` menjadi **Number** dan `product_details` menjadi **JSON String** sesuai spesifikasi teknis terbaru.
 - **Backend (PrismaLink):** Menambahkan field wajib `user_ip_address` (IP Pengguna) dan `user_device_id` (User-Agent) pada payload transaksi.
@@ -63,21 +63,32 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (Admin):** Memperbaiki Error 500 pada Dashboard Metode Pembayaran dengan menambahkan kolom wajib `bank_name`, `account_number`, dan `account_holder` pada logika pembuatan data otomatis (default insert).
 - **Database (Payment Gateways):** Sinkronisasi skema tabel `payment_gateways` untuk mendukung integrasi PrismaLink di lingkungan produksi.
 
-### [2026-04-01] - PrismaLink Final Validation & Proxy Fix (Agent Anti-Gravity)
+### [2026-04-01] - PrismaLink Final Validation & Proxy Fix (Tegar Wira Kesuma)
 - **Backend (Server):** Implementasi `app.set('trust proxy', 1)` pada `index.js` untuk mendukung deteksi IP klien yang akurat di balik Nginx/Localtunnel.
 - **Backend (PrismaLink):** Peningkatan utilitas `getIPv4` dengan **Indonesian Public IP Fallback** (`103.11.132.1`) untuk mengatasi penolakan API terhadap IP loopback/lokal (`127.0.0.1`).
 - **Backend (Diagnostics):** Penambahan log sistem terperinci (`[DEBUG]`) pada Controller dan Service untuk melacak payload JSON dan Signature HMAC secara real-time sebelum dikirim ke API.
 - **Backend (Refactor):** Penghapusan default fallback internal pada service layer untuk memastikan validasi IP dilakukan secara eksplisit di controller.
-### [2026-04-01] - PrismaLink Payment Rejection Diagnostic (Agent Anti-Gravity)
+
+### [2026-04-01] - PrismaLink Payment Rejection Diagnostic (Tegar Wira Kesuma)
 - **Backend (PrismaLink):** Menambahkan sistem pelaporan error mendetail pada `createTransaction` yang meneruskan pesan asli dari API PrismaLink (`response_message`) ke pengguna.
 - **Backend (PrismaLink):** Menghapus ambiguitas error "Failed to create payment" dengan menyertakan detail teknis (seperti duplikasi Merchant ID atau kesalahan Signature) langsung pada respon API.
 - **Backend (Diagnostics):** Penambahan logging konsol (`console.error`) untuk respons gagal dari PrismaLink guna mempermudah troubleshooting di sisi server.
-### [2026-04-01] - PrismaLink Diagnostic Force Sync (Agent Anti-Gravity)
+
+### [2026-04-01] - PrismaLink Diagnostic Force Sync (Tegar Wira Kesuma)
 - **Backend (PrismaLink):** Menambahkan marker `[FORCE-SYNC-V2]` untuk memaksa sinkronisasi ulang kodingan diagnostik ke branch `main`.
 - **Backend (PrismaLink):** Memastikan logika pelaporan error PrismaLink tetap aktif setelah resolusi merge conflict.
 
-### [2026-04-02] - PrismaLink Status Sync & Wallet Integration (Agent Anti-Gravity)
+### [2026-04-02] - Home Page Fix, Navbar & Chart Refinement (Tegar Wira Kesuma)
+- **Database (Fix):** Implementasi skrip otomatis `ensure_tables.js` untuk memperbaiki tabel yang hilang (`coupons`, `promo_events`, `faqs`, `user_vouchers`) guna menghentikan error 500 pada halaman utama.
+- **Frontend (Home Page):** Penambahan fallback dan validasi data pada `BannerSection.jsx` untuk mencegah crash saat data promo tidak tersedia atau tidak valid.
+- **Frontend (Navbar):** Penambahan menu dropdown **"Lainnya"** pada Navbar Guest yang terhubung ke layanan ekspor (Pengembangan Web, Aplikasi, Digital Marketing, VPS, Maintenance) di website Aplikasidagang.com.
+- **Frontend (Admin Dashboard):** Memperbaiki Recharts layout warning (`width -1`) dengan implementasi **Delayed Mount** (300ms) dan tinggi kontainer tetap untuk stabilitas rendering grafik.
+- **Backend (API Stability):** Implementasi pola **Graceful Fail-safe** pada `VoucherService` dan `faqController` yang mengembalikan array kosong `[]` sebagai ganti Error 500 jika terjadi kegagalan database pada endpoint publik.
+- **Backend (PrismaLink):** Implementasi penanganan status sukses **`SETLD`** (Settled) dan validasi signature HMAC-SHA256 pada webhook callback.
+- **Backend (PrismaLink):** Menambahkan dukungan field **`validity`** pada pembuatan VA untuk mendukung skenario pengetesan VA Expired.
+- **Backend (Wallet Integration):** Integrasi penuh alur pelunasan otomatis ke **`WalletService.credit()`** untuk sinkronisasi saldo real-time setelah pembayaran sukses.
 - **Database (Type Handling):** Memperbaiki Error 500 pada Inquiry Status dengan menyinkronkan tipe data pencarian (String vs Integer) pada tabel `payments`.
-- **Backend (PrismaLink):** Menambahkan penanganan status sukses `SETLD` (Settled) sesuai dokumentasi teknis PrismaLink (v2).
-- **Backend (Wallet Integration):** Mengalihkan proses pelunasan (top-up) ke **`WalletService.credit()`** untuk memastikan sinkronisasi saldo di tabel `wallets` dan pencatatan otomatis di `wallet_transactions`.
-- **Backend (Logging):** Penambahan log diagnostik visual (icon-based) pada terminal untuk melacak alur transaksi dari pemanggilan API hingga update database.
+- **Backend (Pricing Fix):** Memperbaiki Error 500 pada Update Harga Admin dengan menambahkan kolom `discount_price_reg` yang hilang di database, sinkronisasi jumlah placeholder SQL, dan perbaikan logika update menggunakan `result.affectedRows` pada `pricingController.js`.
+- **Backend (Banner Sync):** Sinkronisasi data Banner Home Page dengan Admin Panel dengan mengubah sumber data dari `promo_events` ke tabel `coupons` (is_automatic = TRUE).
+- **Frontend (Payment Status Check):** Memperbaiki bug pada tombol "Cek Status" di halaman pembayaran dan implementasi **Auto-Polling status** agar status tagihan terupdate otomatis setiap 5 detik tanpa perlu klik tombol atau refresh.
+- **Backend (PrismaLink v1.121 Fix):** Memperbaiki Error 500/400 (FAILED_SYSTEM) pada pembuatan transaksi dengan menyinkronkan format `validity` ke Standar Dokumentasi v1.121 (Format String: `yyyy-MM-dd HH:mm:ss.SSS +0700`).

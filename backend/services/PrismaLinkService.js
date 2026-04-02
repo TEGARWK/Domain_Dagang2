@@ -2,8 +2,11 @@ const axios = require('axios');
 const crypto = require('crypto');
 require('dotenv').config();
 
-function getFormattedDate() {
+function getFormattedDate(offsetMinutes = 0) {
     const d = new Date();
+    if (offsetMinutes) {
+        d.setMinutes(d.getMinutes() + offsetMinutes);
+    }
     const pad = (n, s = 2) => String(n).padStart(s, '0');
     // Format required: yyyy-MM-dd HH:mm:ss.SSS ZZ
     // Example: 2023-02-01 15:30:34.250 +0700
@@ -122,7 +125,8 @@ const createPayment = async (data) => {
             invoice_number: data.invoice_number,
             integration_type: "02",
             external_id: `EXT-${Date.now()}`,
-            action_id: "01"
+            action_id: "01",
+            validity: data.validity || null
         };
 
         const rawBody = JSON.stringify(payloadObj);

@@ -28,11 +28,14 @@ const Payment = () => {
   // Polling Interval
   useEffect(() => {
      let interval;
-     if (paymentState === 'INSTRUCTIONS' || paymentState === 'PAID') {
+     if (paymentState !== 'PAID') { // Poll while not yet paid
          interval = setInterval(async () => {
              try {
                  const res = await api.get(`/prismalink/status/${invoiceId}`);
-                 if (res.data.status === 'PAID' || res.data.status === 'SETTLEMENT' || res.data.status === 'SUCCESS') {
+                 const status = res.data.data?.transaction_status;
+                 const isPaid = ['PAID', 'SETTLEMENT', 'SUCCESS', 'SETTLED', 'SETLD'].includes(status);
+
+                 if (isPaid) {
                      if (paymentState !== 'PAID') { // Only trigger once
                         setPaymentState('PAID');
                         setShowSuccessPopup(true);
@@ -132,14 +135,16 @@ const Payment = () => {
 
       try {
           const res = await api.get(`/prismalink/status/${invoiceId}`);
+          const status = res.data.data?.transaction_status;
+          const isPaid = ['PAID', 'SETTLEMENT', 'SUCCESS', 'SETTLED', 'SETLD'].includes(status);
           
-          if (res.data.status === 'PAID' || res.data.status === 'SETTLEMENT' || res.data.status === 'SUCCESS') {
+          if (isPaid) {
                setPaymentState('PAID');
                setShowSuccessPopup(true);
                success("Status Terupdate: LUNAS!");
           } else {
                // Masih pending
-               success("Status saat ini: MENUNGGU PEMBAYARAN");
+               success(`Status: ${status || 'MENUNGGU PEMBAYARAN'}`);
           }
       } catch (err) {
           console.error("Check status error", err);

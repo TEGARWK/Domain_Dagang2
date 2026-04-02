@@ -21,6 +21,7 @@ const AdminOverview = () => {
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [chartOffset, setChartOffset] = useState(0);
+  const [isChartReady, setIsChartReady] = useState(false);
 
   // PDF Report Handler
   const handleDownloadReport = () => {
@@ -77,6 +78,8 @@ const AdminOverview = () => {
         console.error("Dashboard error:", err);
       } finally {
         setLoading(false);
+        // Small delay to ensure DOM is ready for Recharts
+        setTimeout(() => setIsChartReady(true), 300);
       }
     };
 
@@ -354,16 +357,18 @@ const AdminOverview = () => {
                   </div>
               </div>
               
-              <div className="w-full h-[350px] mt-4 z-20">
-                  {getActiveData().length === 0 ? (
+              <div className="w-full h-[350px] mt-4 z-20 overflow-hidden">
+                  {!isChartReady || getActiveData().length === 0 ? (
                       <div className="w-full h-full flex flex-col items-center justify-center gap-5 opacity-40">
                           <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
                                <span className="material-symbols-outlined text-slate-500 text-3xl">analytics</span>
                           </div>
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Data Analytics Empty</p>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                               {!isChartReady ? "Initialising Charts..." : "Data Analytics Empty"}
+                          </p>
                       </div>
                   ) : (
-                      <ResponsiveContainer width="99%" height="100%" minWidth={1} minHeight={300}>
+                      <ResponsiveContainer width="100%" height={350}>
                           <LineChart 
                               data={getActiveData().map(d => ({ label: d.label, revenue: d.realVal }))}
                               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}

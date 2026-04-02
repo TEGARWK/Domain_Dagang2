@@ -215,17 +215,18 @@ class VoucherService {
         `;
         try {
             const { rows } = await db.pool.query(query);
-            return rows;
+            return rows || [];
         } catch (error) {
-            console.error("VoucherService.getPublicVouchers Error:", error);
-            throw error;
+            console.error("VoucherService.getPublicVouchers Error:", error.message);
+            // Return empty array instead of throwing to prevent Home Page 500
+            return [];
         }
     }
 
     // 8. GET AVAILABLE AUTO VOUCHERS (With Eligibility Check)
     static async getAvailableAutoVouchers(subtotal = 0, items = []) {
         const query = `
-            SELECT * FROM promo_events 
+            SELECT * FROM coupons 
             WHERE is_automatic = TRUE 
             AND is_active = TRUE
             AND (start_date IS NULL OR start_date <= NOW())
@@ -235,10 +236,11 @@ class VoucherService {
         `;
         try {
             const { rows } = await db.pool.query(query, [subtotal]);
+            const voucherList = rows || [];
             
             // Filter by TLD eligibility if items are provided
             if (items.length > 0) {
-                return rows.filter(v => {
+                return voucherList.filter(v => {
                     const tlds = typeof v.eligible_tlds === 'string' ? JSON.parse(v.eligible_tlds) : v.eligible_tlds;
                     const actions = typeof v.eligible_actions === 'string' ? JSON.parse(v.eligible_actions) : v.eligible_actions;
                     
@@ -247,7 +249,6 @@ class VoucherService {
 
                     if (tldMatchAll && actionMatchAll) return true;
                     
-                    // Check if any item matches the eligible TLDs AND Actions
                     return items.some(item => {
                         const tld = '.' + item.name.split('.').slice(1).join('.');
                         const tldMatch = tldMatchAll || tlds.includes(tld);
@@ -256,10 +257,11 @@ class VoucherService {
                     });
                 });
             }
-            return rows;
+            return voucherList;
         } catch (error) {
-            console.error("VoucherService.getAvailableAutoVouchers Error:", error);
-            throw error;
+            console.error("VoucherService.getAvailableAutoVouchers Error:", error.message);
+            // Non-critical endpoint, return empty to prevent crash
+            return [];
         }
     }
 

@@ -215,6 +215,7 @@ CREATE TABLE IF NOT EXISTS payment_gateways (
     account_number VARCHAR(100) NOT NULL,
     account_holder VARCHAR(100) NOT NULL,
     logo_url VARCHAR(255),
+    provider VARCHAR(50),
     is_active BOOLEAN DEFAULT TRUE,
     instructions TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -476,3 +477,17 @@ INSERT INTO domains (user_id, domain_name, status, registration_date, expiration
 SELECT id, 'tokoonline.com', 'active', NOW() - INTERVAL '1 month', NOW() + INTERVAL '11 months'
 FROM users WHERE email = 'admin@example.com'
 ON CONFLICT (domain_name) DO NOTHING;
+
+-- 7. Default Payment Gateways (Essential for Integration)
+INSERT INTO payment_gateways (bank_name, account_number, account_holder, provider, is_active) VALUES
+('BCA', '1501548465', 'PT Domain Dagang', 'manual', true),
+('Mandiri', '1234567890', 'PT Domain Dagang', 'manual', true),
+('PrismaLink', 'SYSTEM', 'SYSTEM', 'prismalink', true)
+ON CONFLICT DO NOTHING;
+
+-- 8. Site Settings (Basic)
+INSERT INTO site_settings (setting_key, setting_value) VALUES
+('site_name', '"Domain Dagang"'),
+('contact_email', '"support@domaindagang.com"'),
+('maintenance_mode', 'false')
+ON CONFLICT (setting_key) DO NOTHING;
