@@ -68,15 +68,15 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (PrismaLink):** Peningkatan utilitas `getIPv4` dengan **Indonesian Public IP Fallback** (`103.11.132.1`) untuk mengatasi penolakan API terhadap IP loopback/lokal (`127.0.0.1`).
 - **Backend (Diagnostics):** Penambahan log sistem terperinci (`[DEBUG]`) pada Controller dan Service untuk melacak payload JSON dan Signature HMAC secara real-time sebelum dikirim ke API.
 - **Backend (Refactor):** Penghapusan default fallback internal pada service layer untuk memastikan validasi IP dilakukan secara eksplisit di controller.
-### [2026-04-01] - PrismaLink Payment Rejection Diagnostic (Agent Anti-Gravity)
+### [2026-04-01] - PrismaLink Payment Rejection Diagnostic (Tegar)
 - **Backend (PrismaLink):** Menambahkan sistem pelaporan error mendetail pada `createTransaction` yang meneruskan pesan asli dari API PrismaLink (`response_message`) ke pengguna.
 - **Backend (PrismaLink):** Menghapus ambiguitas error "Failed to create payment" dengan menyertakan detail teknis (seperti duplikasi Merchant ID atau kesalahan Signature) langsung pada respon API.
 - **Backend (Diagnostics):** Penambahan logging konsol (`console.error`) untuk respons gagal dari PrismaLink guna mempermudah troubleshooting di sisi server.
-### [2026-04-01] - PrismaLink Diagnostic Force Sync (Agent Anti-Gravity)
+### [2026-04-01] - PrismaLink Diagnostic Force Sync (Tegar)
 - **Backend (PrismaLink):** Menambahkan marker `[FORCE-SYNC-V2]` untuk memaksa sinkronisasi ulang kodingan diagnostik ke branch `main`.
 - **Backend (PrismaLink):** Memastikan logika pelaporan error PrismaLink tetap aktif setelah resolusi merge conflict.
 
-### [2026-04-02] - PrismaLink Status Sync & Wallet Integration (Agent Anti-Gravity)
+### [2026-04-02] - PrismaLink Status Sync & Wallet Integration (Tegar)
 - **Database (Type Handling):** Memperbaiki Error 500 pada Inquiry Status dengan menyinkronkan tipe data pencarian (String vs Integer) pada tabel `payments`.
 - **Backend (PrismaLink):** Menambahkan penanganan status sukses `SETLD` (Settled) sesuai dokumentasi teknis PrismaLink (v2).
 - **Backend (Wallet Integration):** Mengalihkan proses pelunasan (top-up) ke **`WalletService.credit()`** untuk memastikan sinkronisasi saldo di tabel `wallets` dan pencatatan otomatis di `wallet_transactions`.
