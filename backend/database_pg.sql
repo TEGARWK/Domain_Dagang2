@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS pricing (
     cost_renew DECIMAL(15, 2) NOT NULL DEFAULT 0,
     cost_transfer DECIMAL(15, 2) NOT NULL DEFAULT 0,
     cost_restore DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    discount_price_reg DECIMAL(15, 2) NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -306,11 +307,20 @@ CREATE TABLE IF NOT EXISTS coupons (
     value DECIMAL(15, 2) NOT NULL DEFAULT 0,
     max_discount DECIMAL(15, 2),
     min_purchase DECIMAL(15, 2) DEFAULT 0,
-    usage_limit INT DEFAULT 0,
+    usage_limit INT DEFAULT 0, -- Deprecated (alias for usage_limit_total)
     usage_limit_total INT DEFAULT 0,
+    usage_limit_per_user INT DEFAULT 1,
     used_count INT DEFAULT 0,
     is_automatic BOOLEAN DEFAULT FALSE,
-    valid_until TIMESTAMP WITH TIME ZONE,
+    is_stackable BOOLEAN DEFAULT FALSE,
+    is_new_user_only BOOLEAN DEFAULT FALSE,
+    eligible_tlds JSONB,
+    eligible_actions JSONB,
+    start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    end_date TIMESTAMP WITH TIME ZONE,
+    valid_until TIMESTAMP WITH TIME ZONE, -- Alias for end_date for compatibility
+    priority INT DEFAULT 0,
+    segment VARCHAR(50),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
