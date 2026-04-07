@@ -316,7 +316,7 @@ exports.payInvoiceWithWallet = async (req, res) => {
         // 2. Fetch Coupon ID if applicable
         let couponId = null;
         if (invoice.coupon_code) {
-           const couponRes = await client.query("SELECT id FROM coupons WHERE code = $1", [invoice.coupon_code]);
+           const couponRes = await client.query("SELECT id FROM vouchers WHERE code = $1", [invoice.coupon_code]);
            if (couponRes.rows.length > 0) couponId = couponRes.rows[0].id;
         }
 

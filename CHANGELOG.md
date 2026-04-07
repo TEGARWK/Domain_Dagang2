@@ -2,6 +2,7 @@
 
 Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi tim pengembang.
 
+
 ## [2026-03-31] - Stabilisasi & Automasi Deployment
 
 ### 1. Keamanan & Autentikasi (Frontend)
@@ -92,3 +93,15 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (Banner Sync):** Sinkronisasi data Banner Home Page dengan Admin Panel dengan mengubah sumber data dari `promo_events` ke tabel `coupons` (is_automatic = TRUE).
 - **Frontend (Payment Status Check):** Memperbaiki bug pada tombol "Cek Status" di halaman pembayaran dan implementasi **Auto-Polling status** agar status tagihan terupdate otomatis setiap 5 detik tanpa perlu klik tombol atau refresh.
 - **Backend (PrismaLink v1.121 Fix):** Memperbaiki Error 500/400 (FAILED_SYSTEM) pada pembuatan transaksi dengan menyinkronkan format `validity` ke Standar Dokumentasi v1.121 (Format String: `yyyy-MM-dd HH:mm:ss.SSS +0700`).
+
+### [2026-04-04] - Perbaikan Skema Database & Proteksi Harga (Tegar Wira Kesuma)
+- **Backend (Pricing):** Implementasi "Pricing Guard" pada `pricingController.js` untuk menormalkan harga modal yang terdeteksi inflasi (meledak 100x) dari API Daftarnama.
+- **Backend (PostgreSQL):** Perbaikan kompatibilitas update harga dengan mengganti properti `affectedRows` menjadi `rowCount` untuk mencegah Error 404 saat data berhasil diperbarui.
+- **Backend (Voucher):** Sinkronisasi skema tabel `coupons` dengan menambahkan 9 kolom yang hilang (`eligible_tlds`, `is_automatic`, `priority`, dll) guna mengatasi Error 500 saat pembuatan voucher.
+- **Environment (API):** Update `.env` dengan IP publik terbaru (`182.10.129.80`) dan perbaikan URL pathing v2 untuk stabilitas koneksi registrar.
+
+### [2026-04-07] - Sinkronisasi Skema Voucher & Bug Fix 500 (Tegar Wira Kesuma)
+- **Database (Schema):** Melakukan eksekusi manual `ALTER TABLE vouchers ADD COLUMN subtitle VARCHAR(255)` untuk mengatasi Error 500 pada pembuatan Promo Event dimana kode mengekspektasi adanya kolom `subtitle` pada tabel `vouchers`.
+- **Backend (Hotfix):** Membuat skrip mandiri `backend/migrations/hotfix_add_subtitle.js` guna mempermudah aplikasi patch kolom di server *production* tanpa harus menjalankan terminal SQL manual.
+- **Backend (Voucher):** Mengganti referensi tabel dari `coupons` ke `vouchers` secara menyeluruh pada `VoucherService.js`, `PromoEngine.js`, `CouponService.js`, dan `billingController.js` untuk mengatasi Error 500 (Internal Server Error) saat load dan create voucher.
+- **Backend (Cleanup):** Menghapus file migrasi percobaan (`fix_vouchers_to_coupons.js`) karena kode aplikasi langsung disesuaikan dengan skema `vouchers` terbaru di environment production.

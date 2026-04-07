@@ -56,7 +56,7 @@ class PromoEngine {
             let coupon = null;
             if (couponCode) {
                 const couponRes = await client.query(`
-                    SELECT * FROM coupons 
+                    SELECT * FROM vouchers 
                     WHERE code = $1 
                       AND is_active = TRUE
                       AND is_automatic = FALSE
@@ -240,7 +240,7 @@ class PromoEngine {
         // 1. Lock Coupon Row for Update
         const couponRes = await client.query(`
             SELECT id, usage_limit_total, used_count, locked_count 
-            FROM coupons 
+            FROM vouchers 
             WHERE id = $1 
             FOR UPDATE
         `, [couponId]);
@@ -265,7 +265,7 @@ class PromoEngine {
 
         // 4. Update Locked Count
         await client.query(`
-            UPDATE coupons 
+            UPDATE vouchers 
             SET locked_count = locked_count + 1, updated_at = NOW() 
             WHERE id = $1
         `, [couponId]);
