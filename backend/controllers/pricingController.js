@@ -36,10 +36,26 @@ exports.syncPricing = async (req, res) => {
                 continue;
             }
 
-            const cReg = price1Year.register_price; 
-            const cRen = price1Year.renewal_price;
-            const cTra = price1Year.transfer_price;
-            const cRes = price1Year.restore_price || 0; // Backup if not provided
+            // SANITIZATION GUARD: Ensure prices are clean numbers 
+            // If price exceeds 10 million IDR for a single year registration, it's suspicious 
+            // (most standard domain prices are 100k - 500k)
+            const sanitizePrice = (val, tld) => {
+                let num = parseFloat(val) || 0;
+                // If price is suspiciously high (e.g. 15.6M instead of 156k), 
+                // it might be a cent-based scaling error or API format issue.
+                // NOTE: Changed threshold to 500,000 because promo prices like 25,050 
+                // returned as 2,505,000 were bypassing the 5,000,000 limit.
+                if (num > 500000 && !tld.includes('premium')) {
+                    console.warn(`[PRICING BUG DETECTED] Inflated price found for ${tld}: ${num}. Normalized by 100.`);
+                    return num / 100;
+                }
+                return num;
+            };
+
+            const cReg = sanitizePrice(price1Year.register_price, item.tld); 
+            const cRen = sanitizePrice(price1Year.renewal_price, item.tld);
+            const cTra = sanitizePrice(price1Year.transfer_price, item.tld);
+            const cRes = sanitizePrice(price1Year.restore_price || 0, item.tld);
 
             const updateQuery = `
                 INSERT INTO pricing (
@@ -59,10 +75,10 @@ exports.syncPricing = async (req, res) => {
 
             // Default selling price = cost + 20% margin for NEW inserts
             const margin = 1.20;
-            const pReg = cReg * margin;
-            const pRen = cRen * margin;
-            const pTra = cTra * margin;
-            const pRes = cRes * margin;
+            const pReg = Math.round(cReg * margin);
+            const pRen = Math.round(cRen * margin);
+            const pTra = Math.round(cTra * margin);
+            const pRes = Math.round(cRes * margin);
 
             await new Promise((resolve, reject) => {
                 db.query(updateQuery, [
@@ -125,7 +141,9 @@ exports.updatePricing = (req, res) => {
     id
   ], async (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (result.affectedRows === 0) return res.status(404).json({ error: "Pricing ID not found" });
+    
+    // In pg, it's result.rowCount, not result.affectedRows
+    if (result.rowCount === 0) return res.status(404).json({ error: "Pricing ID not found" });
 
     // Audit Log
     await createLog({
@@ -166,17 +184,19 @@ exports.addPricing = (req, res) => {
   ], async (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
 
+    const newId = result.rows ? result.rows[0]?.id : (result[0]?.id || null);
+
     // Audit Log
     await createLog({
         user_id: req.user.id,
         action: 'ADD_PRICING',
         entity_type: 'pricing',
-        entity_id: result[0]?.id,
+        entity_id: newId,
         new_value: req.body,
         req
     });
 
-    res.json({ message: "TLD added successfully (v2)", id: result[0]?.id });
+    res.json({ message: "TLD added successfully (v2)", id: newId });
   });
 };
 
