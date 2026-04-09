@@ -5,6 +5,7 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 ### [2026-04-09] - Perbaikan Bug Margin & Harga (Tegar Wira Kesuma)
 - **Backend (Pricing):** Menurunkan threshold `sanitizePrice` pada `pricingController.js` dari 5.000.000 menjadi 500.000 untuk menangani harga promo dari API Daftarnama yang terekspos dalam format Cents (misal: Harga asli Rp25.050 dikirim sebagai 2.505.000). Hal ini menghentikan bug "Modal Membeludak" dan margin menjadi minus.
 - **Backend (Hotfix):** Membuat skrip mandiri `backend/migrations/hotfix_vouchers_columns.js` untuk menambahkan kolom-kolom operasional voucher (`eligible_tlds`, `is_automatic`, `priority`, dll) yang tertinggal di tabel `vouchers` pada server production. Ini fix bug 500 saat membuat Kupon dan Promo Event.
+- **Backend (Database Sync):** Menambahkan `vouchers` dan `promo_events` table sync operations ke `backend/scripts/sync_production_db.js`. Hal ini memastikan server production benar-benar mendapatkan kolom *eligible_tlds*, *valid_until*, *is_automatic*, *min_purchase* yang sebelumnya menyebabkan Error 500 di halaman checkout.
 
 ## [2026-03-31] - Stabilisasi & Automasi Deployment
 
