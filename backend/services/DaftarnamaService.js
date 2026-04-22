@@ -72,7 +72,7 @@ class DaftarnamaService {
 
     async createCustomer(userData) {
         try {
-            const response = await this.client.post("/customers", userData);
+            const response = await this.client.post("customers", userData);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error creating customer:", error.response?.data || error.message);
@@ -84,7 +84,7 @@ class DaftarnamaService {
 
 
         try {
-            const response = await this.client.post("/domains", domainData);
+            const response = await this.client.post("domains", domainData);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error registering domain:", error.response?.data || error.message);

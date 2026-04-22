@@ -91,6 +91,30 @@ async function syncSchema() {
     await addColumn('users', 'zip_code', 'VARCHAR(20)');
     await addColumn('users', 'country', "VARCHAR(100) DEFAULT 'ID'");
 
+    // VOUCHERS Table (Coupons)
+    await addColumn('vouchers', 'eligible_tlds', "JSONB DEFAULT '[]'");
+    await addColumn('vouchers', 'eligible_actions', "JSONB DEFAULT '[\"register\"]'");
+    await addColumn('vouchers', 'is_stackable', 'BOOLEAN DEFAULT FALSE');
+    await addColumn('vouchers', 'is_new_user_only', 'BOOLEAN DEFAULT FALSE');
+    await addColumn('vouchers', 'max_discount', 'DECIMAL(15,2) DEFAULT 0');
+    await addColumn('vouchers', 'is_automatic', 'BOOLEAN DEFAULT FALSE');
+    await addColumn('vouchers', 'start_date', 'TIMESTAMP WITH TIME ZONE');
+    await addColumn('vouchers', 'end_date', 'TIMESTAMP WITH TIME ZONE');
+    await addColumn('vouchers', 'valid_until', 'TIMESTAMP WITH TIME ZONE');
+    await addColumn('vouchers', 'usage_limit_per_user', 'INT DEFAULT 1');
+    await addColumn('vouchers', 'priority', 'INT DEFAULT 0');
+    await addColumn('vouchers', 'segment', "VARCHAR(50) DEFAULT 'all'");
+    await addColumn('vouchers', 'subtitle', 'VARCHAR(255)');
+
+    // PROMO_EVENTS Table
+    await addColumn('promo_events', 'eligible_tlds', "JSONB DEFAULT '[]'");
+    await addColumn('promo_events', 'eligible_actions', "JSONB DEFAULT '[\"register\"]'");
+    await addColumn('promo_events', 'valid_until', 'TIMESTAMP WITH TIME ZONE');
+    await addColumn('promo_events', 'is_automatic', 'BOOLEAN DEFAULT TRUE');
+    await addColumn('promo_events', 'priority', 'INT DEFAULT 0');
+    await addColumn('promo_events', 'min_purchase', 'DECIMAL(15,2) DEFAULT 0');
+    await addColumn('promo_events', 'max_discount', 'DECIMAL(15,2) DEFAULT 0');
+
     console.log("\n✨ Database Sync Completed Successfully!");
     console.log("Try refreshing your dashboard now.");
 

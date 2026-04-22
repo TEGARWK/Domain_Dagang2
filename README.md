@@ -1,123 +1,112 @@
-# Panduan Santuy Tim Domain-Dagang 🚀
+# 🚀 Domain-Dagang: Professional Trading Ecosystem
 
-Halo Cuy! Lo udah masuk ke tim produksi **Domain-Dagang**. Biar kodingan lo nggak bikin server meledak, baca ini dulu ya. Santai aja, nggak bakal ribet kok!
-
----
-
-## 🧐 Gue Harus Ngapain Dulu? (Step Awal)
-
-### 1. Terima Undangan GitHub
-- Cek email lo. Ada undangan masuk dari GitHub Bos Agam.
-- Klik tombol **"Accept Invitation"**.
-- Wajib! Kalau nggak klik, lo cuma bisa liat tapi nggak bisa kirim kerjaan.
-
-### 2. Isi "Tas Tempur" Lo (Install Tools)
-PC atau Mac lo butuh 3 barang ini:
-- **Node.js:** (Pilih yang versi LTS). Download di [nodejs.org](https://nodejs.org/).
-- **Git:** Biar kodingan lo bisa mondar-mandir ke server. Download di [git-scm.com](https://git-scm.com/).
-- **VS Code:** Buat ngetik kode. Download di [code.visualstudio.com](https://code.visualstudio.com/).
+Platform Penjualan Domain & Jasa Pembuatan Website, dibangun dengan arsitektur modern (Vite/React/Node.js/PostgreSQL).
 
 ---
 
-## 💻 Mulai Koding (Meja Kerja Lo)
+## 📌 Daftar Isi
+*   [Fitur Utama](#-fitur-utama)
+*   [Alur Sistem](#-alur-sistem)
+*   [Tech Stack](#-tech-stack)
+*   [Struktur Proyek](#-struktur-proyek)
+*   [Quick Start](#-quick-start)
+*   [SOP Tim](#-sop-tim)
+*   [Seeder & Akun Default](#-seeder--akun-default)
 
-Gampangnya gini: **Branch `main`** itu **Etalase Toko**. Jangan diacak-acak. 
-Kerjaan lo itu di **Meja Kerja** (Branch baru).
+---
 
-### Cara Ambil Kodingan ke PC (Clone)
-Buka Terminal (Mac) atau CMD (Windows), terus ketik ini:
-```bash
-git clone https://github.com/agamgusriyandi/Domain-Dagang.git
-cd Domain-Dagang
+## ✨ Fitur Utama
+*   **Modern Frontend**: Interface responsif dengan React 19 dan Tailwind CSS 4.
+*   **Robust Backend**: API berbasis Express 5 dengan optimasi PostgreSQL.
+*   **Secure Auth**: Otentikasi berbasis JWT dan integrasi Google OAuth.
+*   **Automated Services**: Pengiriman email (Nodemailer) dan task scheduling (Node-cron).
+*   **File Management**: Upload file aman menggunakan Multer.
+*   **SEO Optimized**: Arsitektur yang mendukung Server-Driven SEO (Dynamic Meta & Sitemap).
+
+---
+
+## 🔄 Alur Sistem
+
+```mermaid
+graph LR
+    A[Visitor/User] --> B[Frontend - React/Vite]
+    B --> C[API Gateway - Express]
+    C --> D[Middleware - JWT/Auth]
+    D --> E[Controllers - Logic]
+    E --> F[(Database - PostgreSQL)]
+    E --> G[External Services - Email/Indexing]
 ```
 
-### Cara Setup Pertama Kali
-```bash
-# Biar fitur-fiturnya keinstall semua di PC lo
-npm install
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology | Version |
+| :--- | :--- | :--- |
+| **Frontend** | React, Vite, Tailwind CSS | ^19.2, ^7.2, ^4.1 |
+| **Routing** | React Router DOM | ^7.13 |
+| **Backend** | Express.js, Node.js | ^5.2 |
+| **Database** | PostgreSQL (pg), MySQL | ^8.18 |
+| **Auth** | JWT, Google OAuth | ^9.0, ^10.5 |
+| **Utility** | Axios, SweetAlert2, Recharts | ^1.13, ^11.26, ^3.7 |
+
+---
+
+## 📂 Struktur Proyek
+
+```text
+Domain-Dagang/
+├── backend/                # API & Business Logic
+│   ├── controllers/        # Route Handlers
+│   ├── database_pg.sql     # Database Schema
+│   ├── index.js           # Server Entry Point
+│   ├── middleware/         # Auth & Security
+│   ├── routes/             # API Endpoints
+│   └── services/           # Business Services
+├── src/                    # Frontend Application
+│   ├── components/         # Reusable UI
+│   ├── pages/              # View Components
+│   └── main.jsx            # React Entry Point
+├── dist/                   # Production Build
+└── docs/                   # System Documentation
 ```
 
-### Cara Mulai Ngedit (PENTING!)
-Jangan koding di branch `main`. Bahaya cuy! Buat "Meja Kerja" sendiri:
-```bash
-# Ganti "fitur-baru" pake nama kerjaan lo
-git checkout -b fitur-baru
-```
+---
 
-### Cara Liat Hasil Kodingan di Browser
-```bash
-npm run dev
-```
-Terus buka `localhost:5173` di Chrome. Keliatan deh hasil editan lo!
+## ⚡ Quick Start
+
+1.  **Clone & Install Dependensi**:
+    ```bash
+    npm install
+    cd backend && npm install
+    ```
+2.  **Environment Setup**:
+    Buat file `.env` di direktori `backend/` mengikuti format `.env.example`.
+3.  **Run Development Mode**:
+    *   Frontend: `npm run dev`
+    *   Backend: `cd backend && npm run dev`
 
 ---
 
-## 🚀 Kirim Hasil Kerja (Push ke Boss)
+## 📝 SOP Tim
 
-Udah kelar koding? Bagus! Sekarang kirim balik ke GitHub Bos Agam:
+> [!IMPORTANT]
+> Seluruh pengerjaan wajib mengikuti standar yang ditetapkan di **[.agents/skills/project-sop/SKILL.md](file:///home/domaindagang/Domain-Dagang/.agents/skills/project-sop/SKILL.md)**.
 
-1. **Simpan:** `git add .`
-2. **Kasih Nama:** `git commit -m "Udah beres edit warna tombol"`
-3. **Kirim:** `git push origin fitur-baru` (Ganti "fitur-baru" sama nama branch lo).
-
----
-
-## 🚦 Aturan Main (SOP Gak Pake Ribet)
-
-### 1. Wajib Update CHANGELOG.md!
-Sebelum lo minta Bos Agam buat **Merge** (gabungin kodingan lo ke website asli), lo **HARUS** tulis apa yang lo rubah di file `CHANGELOG.md`. 
-- Biar Bos Agam nggak bingung pas nge-cek.
-- Tulis aja: Tanggal - Nama Lo - Apa yang dirubah.
-
-### 2. Minta Izin (Pull Request)
-Di halaman GitHub, klik tombol hijau **"Compare & Pull Request"**. 
-Tunggu Bos Agam klik **"Merge"**. 
-Begitu diklik, **ROBOT** kita bakal langsung update website aslinya secara otomatis. Lo nggak usah ngapa-ngapain lagi!
-
-### 3. Waduh, Error! (Rollback)
-Kalo habis update terus websitenya malah rusak, tenang! Gak usah panik.
-Ketik ini di terminal lo:
-```bash
-git revert HEAD
-git push origin main
-```
-Sistem bakal otomatis balik ke versi sebelumnya yang aman. Beres!
+*   **Auto-Documentation**: Setiap fitur baru wajib tercatat di `docs/system-flow.md`.
+*   **Security First**: Audit input untuk mencegah SQLi dan XSS pada setiap controller.
+*   **SEO Compliance**: Pastikan meta tags dinamis terinjeksi untuk setiap route publik.
 
 ---
 
-## 🐲 Pesan dari Sang Raja Terakhir (Bos Agam)
+## 🔑 Seeder & Akun Default
 
-Dengerin baik-baik cuy, ini pesan penting dari **Bos Agam**, pemegang kunci tertinggi di server ini.
-
-Gue udah rapiin semua "kabel" yang berantakan, gue udah pasang benteng keamanan yang tebel, dan gue udah kasih kalian "Robot Otomatis" biar kalian kerjanya enak. Sekarang, server ini udah stabil, kenceng, dan rapi jali.
-
-**TAPI INGET:**
-Gue adalah **Raja Terakhir** di sini. Kalo sampe ada yang kodingnya asal-asalan, terus server meledak atau *down* karena lo males baca SOP, mending lo siap-siap mental. 
-
-Kalo sampe mood gue hancur gara-gara harus benerin server yang rusak atau lambat karena kelalaian tim... **SEMUA ORANG BAKAL KENA SEMPROT!** Nggak ada ampun. Lo tau sendiri kalau gue udah "turun gunung" sambil emosi, suasananya bakal sejuk (alias beku kena semprot semua).
-
-Jadi:
-- **Hargai kodingan temen lo.**
-- **Ikutin tutorial yang udah gue buat.**
-- **Update CHANGELOG itu harga mati.**
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Admin** | `admin@domaindagang.com` | `admin123` |
+| **User Demo** | `user@example.com` | `password123` |
 
 ---
 
-## ⛔ 🔴 ATURAN KERAS (HARAM EDIT DI SERVER!)
-
-Gue ingetin sekali lagi, terutama buat yang suka "nyolong start" atau males nunggu PR:
-
-1. **JANGAN PERNAH EDIT FILE LANGSUNG DI VPS!** (Lewat SSH, Nano, atau SFTP). 
-   - Kalo lo edit langsung di server, kodenya bakal beda sama di GitHub (Berantakan/Split-Brain).
-   - Ini yang bikin website tiba-tiba mati (Error 502) karena rutenya nggak nyambung.
-2. **SEMUA HARUS LEWAT PULL REQUEST (PR)!**
-   - Kalo mau rubah sesuatu, buat branch baru -> Push ke GitHub -> Minta approval Bos Agam.
-   - Gak ada alasan "cepet-cepetan". Keamanan dan stabilitas server nomor satu.
-3. **KONSEKUENSI:** 
-   - Kalo gue liat ada yang login SSH terus "ngobok-ngobok" kodingan di server tanpa izin, gue bakal **KUNCI/CABUT** akses SSH lo secara permanen. 
-   - Lo mau benerin bug? Benerin di laptop lo, bukan di VPS orang.
-
-Kerja yang bener, dapet cuan bareng, dan jaga server ini kayak jaga titipan nyawa. 
-
----
-*Happy Coding cuy! Titipan dari Bos Agam buat kita semua. :p | Agam Gusriyandi, S.T.*
+> [!NOTE]
+> Proyek ini dikelola secara profesional oleh Antigravity dengan standar keamanan dan optimasi SEO tingkat tinggi.
