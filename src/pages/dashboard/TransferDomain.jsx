@@ -94,7 +94,7 @@ const TransferDomain = () => {
       <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-500 rounded-full mix-blend-multiply filter blur-[120px] opacity-10 animate-blob animation-delay-2000 pointer-events-none"></div>
 
       {/* --- HERO HEADER --- */}
-      <div className="relative bg-slate-900 rounded-xl p-8 md:p-12 overflow-hidden shadow-2xl">
+      <div className="relative bg-slate-900 rounded-xl p-6 md:p-12 overflow-hidden shadow-2xl mt-4 md:mt-0">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#F97316] rounded-full blur-[120px] opacity-10"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -103,17 +103,17 @@ const TransferDomain = () => {
               <span className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
               Migration Service (Instant Transfer)
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">
-              Pindahkan Domain <br />
+            <h1 className="text-2xl md:text-5xl font-bold text-white mb-4 leading-tight">
+              Pindahkan Domain <br className="hidden md:block" />
               <span className="text-[#F97316]">Secara Mandiri.</span>
             </h1>
-            <p className="text-slate-400 text-sm md:text-base leading-relaxed">
+            <p className="text-slate-400 text-xs md:text-base leading-relaxed">
               Ajukan migrasi domain Anda dan sistem kami akan menanganinya secara otomatis. 
               Proses transfer cepat, aman, dan tanpa hambatan.
             </p>
           </div>
 
-          <div className="w-full md:w-auto min-w-[350px] bg-white/5 backdrop-blur-md border border-white/10 p-2 rounded-lg">
+          <div className="w-full md:w-auto md:min-w-[350px] bg-white/5 backdrop-blur-md border border-white/10 p-2 rounded-xl">
             <div className="p-4 space-y-4">
               <form onSubmit={handleCheck} className="space-y-4">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1 mb-2 block">
@@ -122,14 +122,14 @@ const TransferDomain = () => {
                     <input
                         type="text"
                         placeholder="startupkeren.com"
-                        className="w-full px-5 py-3 rounded-lg bg-slate-800/50 text-white placeholder:text-slate-500 font-bold outline-none border border-transparent focus:border-[#F97316]/50 focus:bg-slate-800 transition-all font-bold"
+                        className="w-full px-5 py-3 md:py-4 rounded-lg bg-slate-800/50 text-white placeholder:text-slate-500 font-bold outline-none border border-transparent focus:border-[#F97316]/50 focus:bg-slate-800 transition-all text-sm md:text-base"
                         value={domain}
                         onChange={(e) => setDomain(e.target.value)}
                     />
                 <button
                     type="submit"
                     disabled={isChecking}
-                    className="w-full bg-[#F97316] text-white py-3 px-6 rounded-lg font-bold hover:bg-white hover:text-slate-900 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95"
+                    className="w-full bg-[#F97316] text-white py-3 md:py-4 px-6 rounded-lg font-bold hover:bg-white hover:text-slate-900 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 text-xs md:text-sm uppercase tracking-widest"
                 >
                     {isChecking ? "Mengecek..." : "Ajukan Migrasi"}
                 </button>
@@ -143,7 +143,7 @@ const TransferDomain = () => {
       {/* --- CONTENT AREA --- */}
       <div className="max-w-4xl mx-auto relative z-10">
         {result === "eligible" ? (
-            <div className="bg-white rounded-2xl p-8 md:p-12 shadow-2xl border border-slate-100 animate-[fadeInUp_0.4s_ease-out]">
+            <div className="bg-white rounded-2xl p-6 md:p-12 shadow-2xl border border-slate-100 animate-[fadeInUp_0.4s_ease-out]">
                 <div className="flex flex-col md:flex-row gap-12">
                     {/* Left: Info */}
                     <div className="flex-1 space-y-8">
@@ -234,25 +234,35 @@ const TransferDomain = () => {
                 </div>
             </div>
         ) : (
-            /* --- STEPS PLACEHOLDER --- */
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-10 opacity-70">
-                {[
-                    { step: 1, title: "Unlock Domain", icon: "🔓" },
-                    { step: 2, title: "Dapatkan Kode EPP", icon: "🔑" },
-                    { step: 3, title: "Input di Sini", icon: "✨" }
-                ].map((s, i) => (
-                    <div key={i} className="flex flex-col items-center text-center group">
-                        <div className="w-20 h-20 bg-white rounded-lg shadow-xl border border-slate-100 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition duration-500 transform rotate-3 group-hover:-rotate-3">
-                            {s.icon}
-                        </div>
-                        <h4 className="font-bold text-slate-900 text-sm mb-2">{s.title}</h4>
-                        <p className="text-[11px] text-slate-500 font-medium max-w-[200px] leading-relaxed">
-                            {i === 0 ? "Pastikan kunci transfer domai di registrar lama sudah dibuka." : 
-                             i === 1 ? "Minta kode otorisasi dari registrar asal domain Anda." : 
-                             "Masukan domain & kode EPP lalu bayar untuk memproses pemindahan."}
-                        </p>
+            /* --- STEPS PLACEHOLDER (Mirroring Public Transfer Page Style) --- */
+            <div className="max-w-4xl mx-auto mt-16 text-center pb-10">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-3">
+                    Cukup <span className="text-[#F97316]">3 Langkah</span> Mudah
+                </h2>
+                <p className="text-slate-500 text-xs font-medium mb-12">Proses migrasi simpel dan transparan.</p>
+                
+                <div className="relative">
+                    {/* Line Connector */}
+                    <div className="hidden md:block absolute top-[28px] left-0 w-full h-[2px] bg-slate-100 -z-10"></div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {[
+                            { step: 1, title: "Unlock Domain", desc: "Buka kunci domain (Unlock) di panel provider lama kamu untuk memulai." },
+                            { step: 2, title: "EPP Code", desc: "Dapatkan kode otorisasi (Auth Code) dari provider lama kamu." },
+                            { step: 3, title: "Input di Sini", desc: "Masukkan nama domain dan kode EPP di atas, lalu lunasi invoice." }
+                        ].map((s, i) => (
+                            <div key={i} className="relative group">
+                                <div className={`w-14 h-14 ${s.step === 3 ? "bg-[#F97316]" : "bg-slate-900"} text-white rounded-lg flex items-center justify-center font-bold text-xl mx-auto mb-6 border-4 border-white shadow-xl group-hover:bg-[#F97316] transition-all duration-300 transform group-hover:-translate-y-1`}>
+                                    {s.step}
+                                </div>
+                                <h4 className="font-bold text-slate-900 text-sm mb-2 tracking-tight">{s.title}</h4>
+                                <p className="text-[11px] text-slate-500 leading-relaxed font-medium px-4">
+                                    {s.desc}
+                                </p>
+                            </div>
+                        ))}
                     </div>
-                ))}
+                </div>
             </div>
         )}
       </div>

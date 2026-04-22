@@ -151,7 +151,7 @@ const Login = () => {
         </div>
 
         {/* 2. RIGHT SIDE - FORM (Clean & Modern) */}
-        <div className="w-full md:w-7/12 p-8 md:p-12 bg-white flex flex-col justify-center relative overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-7/12 p-6 md:p-12 bg-white flex flex-col justify-center relative overflow-y-auto custom-scrollbar">
           {/* TOMBOL BACK TO HOME */}
           <Link
             to="/"
@@ -176,9 +176,9 @@ const Login = () => {
           </Link>
 
           <div className="max-w-sm w-full mx-auto mt-6">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-slate-900">Masuk Akun</h2>
-              <p className="text-slate-500 text-sm mt-1">
+            <div className="mb-6 md:mb-8 text-center md:text-left">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-900">Masuk Akun</h2>
+              <p className="text-slate-500 text-xs md:text-sm mt-1">
                 Masukkan email & sandi untuk akses.
               </p>
             </div>
@@ -287,7 +287,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#F97316] text-white font-bold py-3 rounded-lg hover:bg-slate-900 transition duration-300 shadow-lg shadow-orange-200 transform hover:-translate-y-0.5 active:translate-y-0 text-sm mt-2 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                className="w-full bg-[#F97316] text-white font-bold py-2.5 md:py-3 rounded-lg hover:bg-slate-900 transition duration-300 shadow-lg shadow-orange-200 transform hover:-translate-y-0.5 active:translate-y-0 text-xs md:text-sm mt-2 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -336,10 +336,10 @@ const Login = () => {
                         setError("Akses Google ditolak atau diblokir browser.");
                         setGoogleLoadError(true);
                     }}
-                    useOneTap
+                    useOneTap={false}
                     shape="pill"
                     theme="outline"
-                    width="350"
+                    width={window.innerWidth < 640 ? "280" : "340"}
                     use_fedcm_for_prompt={true}
                     text="continue_with"
                 />
@@ -348,7 +348,7 @@ const Login = () => {
                     <div className="mt-4 p-4 bg-orange-50 border border-orange-100 rounded-xl animate-pulse">
                         <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest mb-1">💡 Tips Masalah Login</p>
                         <p className="text-[11px] text-orange-700 leading-relaxed">
-                            Jika tombol Google bermasalah, pastikan <strong>http://localhost:5173</strong> sudah terdaftar di Google Cloud Console atau coba gunakan <strong>Incognito Mode</strong>.
+                            Jika tombol Google bermasalah, pastikan <strong>domain website ini</strong> sudah terdaftar di Google Cloud Console atau coba gunakan <strong>Incognito Mode</strong>.
                         </p>
                     </div>
                 )}

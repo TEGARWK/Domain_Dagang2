@@ -6,12 +6,7 @@ const DaftarnamaService = require("../services/DaftarnamaService");
 const InvoiceService = require("../services/InvoiceService");
 const pricingController = require("./pricingController"); // If needed, or just query DB directly
 const EmailService = require("../services/EmailService");
-
-const VoucherService = require("../services/VoucherService");
-const PromoEngine = require("../services/PromoEngine");
-
-const PromoEventService = require("../services/PromoEventService");
-const CouponService = require("../services/CouponService");
+const voucherService = require("../services/VoucherService");
 
 exports.processCheckout = async (req, res) => {
   let { userId, items, userVoucherCode, config } = req.body;
@@ -78,43 +73,68 @@ exports.processCheckout = async (req, res) => {
               base_price: unitPrice,
               cost_price: unitCost,
               duration,
-              action
+              action,
+              tld
           });
       }
 
-      // 2. Centralized Promo Calculation (PromoEngine)
-      const promoResult = await PromoEngine.calculateCartTotal(cartItems, userVoucherCode);
+      // 2. Pricing & Voucher Integration
+      const subtotal = cartItems.reduce((acc, i) => acc + (parseFloat(i.base_price) * (i.duration || 1)), 0);
+      const totalCost = cartItems.reduce((acc, i) => acc + (parseFloat(i.cost_price) * (i.duration || 1)), 0);
       
-      const processedItems = promoResult.items.map(i => ({
-          ...i,
-          unit_price: i.current_price / i.duration, // effective unit price
-          total_line_price: i.current_price,
-          original_line_price: i.item_subtotal,
-          applied_promo_event: i.event_applied ? i.event_applied.title : null
-      }));
+      let totalDiscount = 0;
+      let appliedVoucher = null;
+      let voucherWarning = null;
 
-      const totalCost = promoResult.items.reduce((acc, i) => acc + (parseFloat(i.cost_price) * i.duration), 0);
-      const subtotal = promoResult.subtotal;
-      const totalDiscount = promoResult.total_discount; // Combined effective discount
-      const netAmount = promoResult.final_total;
-
-      // Note: PromoEngine already handles Coupon validation and anti-boncos internally
-      let appliedCoupon = promoResult.applied_promos.find(p => p.type === 'coupon');
-
-      // --- PHASE 3: FINAL CALCULATIONS ---
-      // Apply Global Cap logic if needed, but we rely on PromoEngine Mostly.
-      let finalAmount = netAmount;
-
-      // Tax
-      let taxAmount, invoiceTotal;
-
-      if (pricingConfig.TAX_INCLUSIVE) {
-          invoiceTotal = netAmount;
-          taxAmount = Math.floor(invoiceTotal - (invoiceTotal / (1 + (pricingConfig.PPN_PERCENT || 0.11))));
-      } else {
-          taxAmount = Math.floor(netAmount * (pricingConfig.PPN_PERCENT || 0.11));
-          invoiceTotal = netAmount + taxAmount;
+      if (userVoucherCode) {
+          try {
+              const vResult = await voucherService.validateVoucherForCart(userId, userVoucherCode, cartItems);
+              if (vResult.eligible) {
+                  totalDiscount = vResult.discountAmount;
+                  appliedVoucher = vResult.voucher;
+                  appliedClaimId = vResult.claimId; // Store for linking later
+                  console.log(`[Checkout] Voucher applied: ${userVoucherCode}, Discount: ${totalDiscount}, ClaimID: ${appliedClaimId}`);
+              } else {
+                  console.warn(`[Checkout] Voucher ${userVoucherCode} rejected: ${vResult.message}`);
+                  voucherWarning = vResult.message;
+              }
+          } catch (vErr) {
+              console.error(`[Checkout] Voucher Service Error:`, vErr.message);
+              voucherWarning = "Gagal memverifikasi voucher.";
+          }
       }
+
+        // --- REFERRAL DISCOUNT INTEGRATION ---
+        let referralDiscount = 0;
+        const refResult = await require('../services/referralService').checkRefereeDiscountEligibility(userId);
+        if (refResult.eligible) {
+            referralDiscount = refResult.discountAmount;
+            console.log(`[Checkout] User ${userId} is eligible for Referral Discount: ${referralDiscount}`);
+        }
+
+        const netAmount = Math.max(0, subtotal - totalDiscount - referralDiscount);
+
+        const processedItems = cartItems.map(i => ({
+            ...i,
+            unit_price: parseFloat(i.base_price),
+            total_line_price: parseFloat(i.base_price) * (i.duration || 1),
+            original_line_price: parseFloat(i.base_price) * (i.duration || 1),
+            applied_promo_event: null
+        }));
+
+        // --- PHASE 3: FINAL CALCULATIONS ---
+        // Tax Standardized: (Subtotal - Discount) * 0.11
+        const PPN_PERCENT = pricingConfig.PPN_PERCENT || 0.11;
+        let taxAmount = 0;
+        let invoiceTotal = 0;
+
+        if (pricingConfig.TAX_INCLUSIVE) {
+            invoiceTotal = netAmount;
+            taxAmount = Math.floor(invoiceTotal - (invoiceTotal / (1 + PPN_PERCENT)));
+        } else {
+            taxAmount = Math.floor(netAmount * PPN_PERCENT);
+            invoiceTotal = netAmount + taxAmount;
+        }
 
       const profitAmount = netAmount - totalCost; // Profit before tax (Base Revenue - Cost)
       const profitMarginPercent = totalCost > 0 ? (profitAmount / totalCost) : 0;
@@ -154,9 +174,8 @@ exports.processCheckout = async (req, res) => {
            WHERE i.user_id = $1 
              AND i.status = 'pending' 
              AND i.total = $2
-             AND (i.coupon_code = $3 OR (i.coupon_code IS NULL AND $3 IS NULL))
            ORDER BY i.date DESC LIMIT 5`,
-          [userId, invoiceTotal, appliedCoupon ? appliedCoupon.code : null]
+          [userId, invoiceTotal]
       );
 
       for (const row of existingInvRes.rows) {
@@ -202,18 +221,12 @@ exports.processCheckout = async (req, res) => {
           }
       }
 
-      // 2. Reserve Coupon (Atomic Lock)
-      // Invoice ID needed for reservation. Generate it first?
       const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-      
-      if (appliedCoupon) {
-          await CouponService.reserveCoupon(appliedCoupon.code, userId, invoiceNumber, client);
-      }
 
       // 3. Create Invoice using Service
       const calculationResults = {
           subtotal,
-          totalDiscount,
+          totalDiscount: totalDiscount + referralDiscount, // Combined for backend record
           netAmount,
           taxAmount,
           finalAmount: invoiceTotal,
@@ -226,13 +239,22 @@ exports.processCheckout = async (req, res) => {
       const invoiceResult = await InvoiceService.create(
           userId, 
           processedItems, 
-          appliedCoupon ? appliedCoupon.code : null, 
+          userVoucherCode || null, // userVoucherCode as coupon_code
           client, 
           calculationResults,
           config || {},
           invoiceNumber,
           'DOMAIN'
       );
+
+      // 4. Link Voucher Claim if applicable
+      if (appliedVoucher && appliedClaimId) {
+          await client.query(
+              "UPDATE voucher_claims SET invoice_id = $1 WHERE id = $2",
+              [invoiceNumber, appliedClaimId]
+          );
+          console.log(`[Checkout] Claim ${appliedClaimId} linked to invoice ${invoiceNumber}`);
+      }
 
       await client.query('COMMIT');
 
@@ -245,9 +267,11 @@ exports.processCheckout = async (req, res) => {
       }).catch(e => console.error("Email Error:", e));
 
       res.json({
-          message: "Invoice berhasil dibuat",
+          message: voucherWarning ? `Invoice dibuat, namun: ${voucherWarning}` : "Invoice berhasil dibuat",
           invoiceId: invoiceNumber,
-          invoiceNumber: invoiceNumber
+          invoiceNumber: invoiceNumber,
+          voucherApplied: !!appliedVoucher,
+          voucherWarning: voucherWarning
       });
 
   } catch (err) {
@@ -327,7 +351,7 @@ exports.processTopUp = async (req, res) => {
  * DRY-RUN only, no DB mutations.
  */
 exports.calculateCartPreview = async (req, res) => {
-    const { items, userVoucherCode } = req.body;
+    const { items, userVoucherCode, userId } = req.body;
     
     if (!items || items.length === 0) {
         return res.status(400).json({ error: "Cart is empty" });
@@ -377,35 +401,70 @@ exports.calculateCartPreview = async (req, res) => {
                 base_price: unitPrice,
                 cost_price: unitCost,
                 duration: item.duration || 1,
-                action
+                action,
+                tld
             });
         }
 
-        try {
-            const PromoEngine = require("../services/PromoEngine");
-            const promoResult = await PromoEngine.calculateCartTotal(cartItems, userVoucherCode);
+        // --- VOUCHER PREVIEW INTEGRATION ---
+        const subtotal = cartItems.reduce((sum, item) => sum + (item.base_price * item.duration), 0);
+        
+        let totalDiscount = 0;
+        let voucherWarning = null;
+        let appliedVoucher = null;
 
-            // Calculate Tax
-            const netAmount = parseFloat(promoResult.final_total);
-            let taxAmount, finalTotal;
-            
-            if (pricingConfig.TAX_INCLUSIVE) {
-                finalTotal = netAmount;
-                taxAmount = Math.floor(finalTotal - (finalTotal / (1 + (pricingConfig.PPN_PERCENT || 0.11))));
+        // Support userId from body (preferred for preview) or req.user (if auth exists)
+        const activeUserId = userId || req.user?.id;
+
+        if (userVoucherCode && activeUserId) {
+            const vResult = await voucherService.validateVoucherForCart(activeUserId, userVoucherCode, cartItems);
+            if (vResult.eligible) {
+                totalDiscount = vResult.discountAmount;
+                appliedVoucher = vResult.voucher;
             } else {
-                taxAmount = Math.floor(netAmount * (pricingConfig.PPN_PERCENT || 0.11));
-                finalTotal = netAmount + taxAmount;
+                voucherWarning = vResult.message;
             }
-
-            res.json({
-                ...promoResult,
-                tax_amount: taxAmount,
-                total_payable: finalTotal
-            });
-        } catch (promoErr) {
-            console.error("[CheckoutController] PromoEngine Error:", promoErr);
-            res.status(500).json({ message: "Gagal menghitung promo.", details: promoErr.message });
         }
+
+        // --- REFERRAL DISCOUNT INTEGRATION ---
+        let referralDiscount = 0;
+        if (activeUserId) {
+            const refResult = await require('../services/referralService').checkRefereeDiscountEligibility(activeUserId);
+            if (refResult.eligible) {
+                referralDiscount = refResult.discountAmount;
+            }
+        }
+
+        const netAmount = Math.max(0, subtotal - totalDiscount - referralDiscount);
+
+        // Calculate Tax Standardized
+        const PPN_RATE = pricingConfig.PPN_PERCENT !== undefined ? pricingConfig.PPN_PERCENT : 0.11;
+        let taxAmount = 0;
+        let finalTotal = 0;
+        
+        if (pricingConfig.TAX_INCLUSIVE) {
+            finalTotal = netAmount;
+            taxAmount = Math.floor(finalTotal - (finalTotal / (1 + PPN_RATE)));
+        } else {
+            taxAmount = Math.floor(netAmount * PPN_RATE);
+            finalTotal = netAmount + taxAmount;
+        }
+
+        res.json({
+            items: cartItems.map(it => ({
+                ...it,
+                item_subtotal: it.base_price * it.duration,
+                effective_price: it.base_price * it.duration
+            })),
+            subtotal: subtotal,
+            total_discount: totalDiscount,
+            referral_discount: referralDiscount,
+            voucher_warning: voucherWarning,
+            voucher_details: appliedVoucher,
+            net_amount: netAmount,
+            tax_amount: taxAmount,
+            total_payable: finalTotal
+        });
 
     } catch (err) {
         console.error("[Preview] Failed:", err.message);

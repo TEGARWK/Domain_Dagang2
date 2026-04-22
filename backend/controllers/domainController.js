@@ -70,7 +70,12 @@ exports.checkDomainAvailability = async (req, res) => {
     const errorData = error.response?.data;
     const errorMessage = errorData?.message || error.message;
 
-    console.error("Domain check error:", errorData || error.message);
+    console.error("[DomainController] Check Availability Error:", {
+        message: errorMessage,
+        domain,
+        data: errorData,
+        status: error.response?.status
+    });
 
     // Specific handling for Unauthorized IP
     if (errorMessage.includes("IP address has not been listed")) {

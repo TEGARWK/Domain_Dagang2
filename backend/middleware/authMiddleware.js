@@ -15,7 +15,8 @@ const verifyToken = (req, res, next) => {
         console.error("[AuthMiddleware] Token being verified:", token.substring(0, 15) + "...");
         return res.status(403).json("Token is not valid!");
       }
-      console.log(`[AuthMiddleware] Token Decoded. Payload ID: ${user.id}, Role: ${user.role}`);
+      // Clean log for production/dev without mangling
+      console.log(`[AuthMiddleware] User Authenticated. ID: ${user.id}, Role: ${user.role}`);
       req.user = user;
       next();
     });
@@ -26,7 +27,7 @@ const verifyToken = (req, res, next) => {
 
 const verifyAdmin = (req, res, next) => {
   verifyToken(req, res, () => {
-    console.log("[AuthMiddleware] Checking Admin Role for User:", req.user);
+    // console.log("[AuthMiddleware] Checking Admin Role for User ID:", req.user.id);
     if (req.user.role === "admin") {
       next();
     } else {

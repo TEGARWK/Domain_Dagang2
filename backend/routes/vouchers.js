@@ -1,25 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/voucherController');
+const voucherController = require('../controllers/voucherController');
 const { verifyToken } = require('../middleware/authMiddleware');
-const { verifyAdmin } = require('../middleware/adminMiddleware');
+const rateLimiter = require('../middleware/rateLimiter');
 
-// Public & Auto - No Auth Check (or Optional Auth)
-router.get('/public', controller.getPublicVouchers);
-router.get('/auto', controller.getAutoVouchers); // New Auto Promo Endpoint
+// Public Route (Tanpa Login)
+router.get('/public', voucherController.getPublicVouchers);
 
-// User Routes (Protected)
-router.get('/available', verifyToken, controller.getAvailableVouchers);
-router.get('/my-vouchers', verifyToken, controller.getMyVouchers);
-router.get('/my', verifyToken, controller.getMyVouchers); 
-router.post('/claim/:couponId', verifyToken, controller.claimVoucher);
-router.post('/validate', verifyToken, controller.validateVoucher);
+// Semua route di bawah butuh login
+router.use(verifyToken);
 
-// Admin Routes
-router.get('/all', verifyAdmin, controller.getAllVouchers);
-router.post('/', verifyAdmin, controller.createVoucher);
-router.put('/:id', verifyAdmin, controller.updateVoucher);
-router.get('/analytics', verifyAdmin, controller.getAnalytics);
-router.delete('/:id', verifyAdmin, controller.deleteVoucher);
+// Available Vouchers untuk User tertentu
+router.get('/available', voucherController.getAvailableVouchers);
+
+// Claim Voucher (dengan Rate Limiting: 3 req / 10 sec)
+router.post('/claim/:id', rateLimiter({ maxRequests: 3, windowSeconds: 10, keyPrefix: 'ratelimit:claim' }), voucherController.claimVoucher);
+
+// Apply Voucher ke Invoice
+router.post('/apply', voucherController.applyVoucher);
+
+// List Voucher milik user
+router.get('/my-vouchers', voucherController.getMyVouchers);
+
+// Info detail voucher
+router.get('/info/:code', voucherController.getVoucherInfo);
 
 module.exports = router;

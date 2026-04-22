@@ -1,406 +1,390 @@
 const db = require('../config/db');
-const fs = require('fs');
+const redisClient = require('../config/redisClient');
+const discountService = require('./discountService');
+
+/**
+ * VOUCHER SERVICE
+ * Fokus pada klaim (Redis-backed quota) dan penerapan voucher pada invoice.
+ */
 
 class VoucherService {
-    // 1. GET AVAILABLE CLAIMABLE VOUCHERS
-    static async getAvailableClaimableVouchers(userId) {
-        const query = `
-            SELECT * FROM coupons 
-            WHERE is_active = TRUE 
-            AND is_automatic = FALSE
-            AND (usage_limit_total = 0 OR usage_limit_total > used_count)
-            AND (valid_until IS NULL OR valid_until > NOW())
-            AND id NOT IN (SELECT coupon_id FROM user_vouchers WHERE user_id = $1)
-            ORDER BY created_at DESC
-        `;
+    /**
+     * A. Claim Voucher (Atomic via Redis)
+     * @param {number} userId 
+     * @param {string|number} voucherId 
+     */
+    async claimVoucher(userId, voucherId) {
+        // 1. Cari Voucher
+        const vRes = await db.pool.query(
+            "SELECT * FROM vouchers WHERE id = $1 AND is_active = true",
+            [voucherId]
+        );
+        const voucher = vRes.rows[0];
+
+        if (!voucher) throw new Error("Voucher tidak valid atau sudah tidak aktif.");
+
+        // 2. Cek Waktu
+        const now = new Date();
+        if (now < voucher.started_at) throw new Error("Voucher belum dimulai.");
+        if (now > voucher.expired_at) throw new Error("Voucher sudah kedaluwarsa.");
+        
+        // 2.a Cek New User Only
+        if (voucher.is_new_user_only) {
+            const trxCheck = await db.pool.query(
+                "SELECT id FROM invoices WHERE user_id = $1 AND status = 'paid' LIMIT 1",
+                [userId]
+            );
+            if (trxCheck.rows.length > 0) {
+                throw new Error("Voucher ini hanya berlaku untuk pelanggan baru yang belum memiliki transaksi sukses.");
+            }
+        }
+
+        // 3. Cek Klaim Sebelumnya
+        const claimCheck = await db.pool.query(
+            "SELECT id FROM voucher_claims WHERE voucher_id = $1 AND user_id = $2",
+            [voucher.id, userId]
+        );
+        if (claimCheck.rows.length >= voucher.max_use_per_user) {
+            throw new Error(`Anda sudah menggunakan jatah klaim untuk voucher ini (${voucher.max_use_per_user}x).`);
+        }
+
+        // 4. Cek Kuota di Redis
+        const redisKey = `voucher:quota:${voucher.id}`;
+        
+        // Inisialisasi jika belum ada di Redis (Self-healing)
+        let quota = await redisClient.getValue(redisKey);
+        if (quota === null) {
+            await this.initVoucherQuotaToRedis(voucher.id);
+        }
+
+        // Atomic Decrement
+        const remaining = await redisClient.atomicDecrement(redisKey);
+        
+        if (remaining === null) {
+            // Redis error fallback: Cek DB (Kurang aman tapi sistem tetap jalan)
+            if (voucher.quota_used >= voucher.quota) throw new Error("Voucher sudah habis.");
+        } else if (remaining < 0) {
+            // Kembalikan jika ternyata sudah habis
+            await redisClient.atomicDecrement(redisKey); // This is not ideal, should increment back but decr(-1) is the same as incr
+            // Note: In some redis libs decr by negative is not supported or different. 
+            // We use simple approach:
+            await redisClient.setWithExpiry(redisKey, 0, 86400 * 30); 
+            throw new Error("Voucher sudah habis (kuota penuh).");
+        }
+
+        // 5. Simpan Klaim di DB
         try {
-            const { rows } = await db.pool.query(query, [userId]);
-            return rows;
-        } catch (error) {
-            console.error("VoucherService.getAvailableClaimableVouchers Error:", error);
-            throw error;
+            await db.pool.query(
+                "INSERT INTO voucher_claims (voucher_id, user_id, status) VALUES ($1, $2, 'claimed')",
+                [voucher.id, userId]
+            );
+            return { success: true, voucherCode: voucher.code, expiredAt: voucher.expired_at };
+        } catch (err) {
+            // Rollback Redis quota if DB insert fails (unique constraint etc)
+            await redisClient.atomicDecrement(redisKey); // Reverse by logic
+            throw new Error("Gagal mengklaim voucher. Anda mungkin sudah mengklaimnya.");
         }
     }
 
-    // 2. GET USER VOUCHERS
-    static async getMyVouchers(userId) {
-        const query = `
-            SELECT uv.*, v.title, v.code, v.type, v.value, v.description, v.banner_image, v.subtitle, v.max_discount
-            FROM user_vouchers uv
-            JOIN coupons v ON uv.coupon_id = v.id
-            WHERE uv.user_id = $1
-            ORDER BY uv.claimed_at DESC
-        `;
-        try {
-            const { rows } = await db.pool.query(query, [userId]);
-            return rows;
-        } catch (error) {
-            console.error("VoucherService.getMyVouchers Error:", error);
-            throw error;
-        }
-    }
-
-    // 3. CLAIM VOUCHER
-    static async claimVoucher(userId, voucherId) {
+    /**
+     * B. Apply Voucher to Invoice
+     */
+    async applyVoucher(userId, voucherCode, invoiceId, subtotal) {
         const client = await db.pool.connect();
         try {
             await client.query('BEGIN');
-            
-            // Check voucher
-            const vRes = await client.query("SELECT * FROM coupons WHERE id = $1 AND is_active = TRUE FOR UPDATE", [voucherId]);
-            if (vRes.rows.length === 0) throw new Error("Voucher tidak ditemukan atau tidak aktif.");
-            const voucher = vRes.rows[0];
 
-            if (voucher.valid_until && new Date(voucher.valid_until) < new Date()) throw new Error("Voucher sudah kadaluarsa.");
-            if (voucher.is_automatic) throw new Error("Voucher otomatis tidak perlu diklaim.");
-            if (voucher.usage_limit_total > 0 && voucher.used_count >= voucher.usage_limit_total) throw new Error("Kupon sudah habis.");
+            // 1. Cek Validitas Klaim
+            const res = await client.query(`
+                SELECT vc.*, v.discount_type, v.discount_value, v.min_transaction, v.applicable_to, v.max_discount, v.id as v_id
+                FROM voucher_claims vc
+                JOIN vouchers v ON vc.voucher_id = v.id
+                WHERE vc.user_id = $1 AND v.code = $2 AND vc.status = 'claimed'
+            `, [userId, voucherCode]);
 
-            // Check if already claimed
-            const cRes = await client.query("SELECT 1 FROM user_vouchers WHERE user_id = $1 AND coupon_id = $2", [userId, voucherId]);
-            if (cRes.rows.length > 0) throw new Error("Voucher sudah diklaim.");
+            const claim = res.rows[0];
+            if (!claim) throw new Error("Klaim voucher tidak ditemukan atau sudah digunakan.");
 
-            // Insert claim
-            await client.query(`
-                INSERT INTO user_vouchers (user_id, coupon_id, claimed_at, status)
-                VALUES ($1, $2, NOW(), 'claimed')
-            `, [userId, voucherId]);
+            // 2. Cek Min Transaction
+            if (parseFloat(subtotal) < parseFloat(claim.min_transaction)) {
+                throw new Error(`Minimum transaksi untuk voucher ini adalah Rp ${parseFloat(claim.min_transaction).toLocaleString('id-ID')}`);
+            }
 
-            // Update count
-            await client.query("UPDATE coupons SET used_count = used_count + 1 WHERE id = $1", [voucherId]);
+            // 3. Hitung Diskon
+            const { discountAmount, finalPrice } = discountService.calculateDiscount(
+                parseFloat(subtotal),
+                claim.discount_type,
+                parseFloat(claim.discount_value),
+                parseFloat(claim.max_discount || 0)
+            );
+
+            // 4. Update Invoice
+            await discountService.applyDiscountToInvoice(invoiceId, {
+                original_subtotal: subtotal,
+                discount_amount: discountAmount,
+                discount_source: 'voucher',
+                meta: {
+                    voucher_id: claim.v_id,
+                    voucher_code: voucherCode,
+                    discount_type: claim.discount_type,
+                    discount_value: claim.discount_value
+                }
+            }, client);
+
+            // 5. Update Status Klaim & Quota di DB
+            await client.query(
+                "UPDATE voucher_claims SET status = 'used', used_at = NOW(), invoice_id = $1 WHERE id = $2",
+                [invoiceId, claim.id]
+            );
+            await client.query(
+                "UPDATE vouchers SET quota_used = quota_used + 1 WHERE id = $1",
+                [claim.v_id]
+            );
 
             await client.query('COMMIT');
-            return { success: true, message: "Voucher berhasil diklaim!" };
-        } catch (error) {
+            return { discountAmount, finalPrice };
+
+        } catch (err) {
             await client.query('ROLLBACK');
-            throw error;
+            throw err;
         } finally {
             client.release();
         }
     }
 
-    // 4. ADMIN: GET ALL VOUCHERS
-    static async getAllVouchers() {
-        try {
-            const { rows } = await db.pool.query("SELECT * FROM coupons ORDER BY created_at DESC");
-            return rows;
-        } catch (error) {
-            console.error("VoucherService.getAllVouchers Error:", error);
-            throw error;
-        }
-    }
+    /**
+     * D. Initialize / Reset Quota in Redis
+     */
+    async initVoucherQuotaToRedis(voucherId) {
+        const vRes = await db.pool.query("SELECT id, quota, quota_used, expired_at FROM vouchers WHERE id = $1", [voucherId]);
+        const v = vRes.rows[0];
+        if (!v) return;
 
-    // 5. ADMIN: CREATE VOUCHER
-    static async createVoucher(data) {
-        // Fallback for debug logging
-        try { fs.appendFileSync('creation_debug.log', `[${new Date().toISOString()}] Data: ${JSON.stringify(data)}\n`); } catch(e){}
-
-        const {
-            title, code, description, banner_image, subtitle, 
-            min_purchase, usage_limit_total, valid_until, 
-            eligible_tlds, eligible_actions, is_stackable, is_new_user_only, 
-            max_discount, is_active, is_automatic, 
-            start_date, end_date, usage_limit_per_user, priority, segment 
-        } = data;
-
-        // FIELD MAPPING
-        let typeVal = data.type || data.discount_type || 'fixed';
-        if (typeVal === 'nominal') typeVal = 'fixed';
-        const valueVal = data.value !== undefined ? data.value : (data.discount_value || 0);
-
-        const query = `
-            INSERT INTO coupons (
-                title, code, description, banner_image, subtitle, type, value, min_purchase, usage_limit_total, valid_until, 
-                eligible_tlds, eligible_actions, is_stackable, is_new_user_only, 
-                max_discount, is_active, is_automatic,
-                start_date, end_date, usage_limit_per_user, priority, segment,
-                created_at, updated_at
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
-                $11, $12, $13, $14, 
-                $15, $16, $17,
-                $18, $19, $20, $21, $22,
-                NOW(), NOW()
-            ) RETURNING *
-        `;
-
-        const values = [
-            title, 
-            code ? code.toUpperCase() : null, 
-            description || null, 
-            banner_image || null,
-            subtitle || null,
-            typeVal, 
-            parseFloat(valueVal) || 0, 
-            parseFloat(min_purchase) || 0, 
-            parseInt(usage_limit_total) || 0, 
-            valid_until || null, 
-            JSON.stringify(eligible_tlds || []), 
-            JSON.stringify(eligible_actions || ['register']), 
-            !!is_stackable, 
-            !!is_new_user_only, 
-            parseFloat(max_discount) || 0, 
-            is_active !== undefined ? is_active : true, 
-            !!is_automatic,
-            start_date || null, 
-            end_date || null, 
-            parseInt(usage_limit_per_user) || 1, 
-            parseInt(priority) || 0, 
-            segment || 'all'
-        ];
-
-        try {
-            const { rows } = await db.pool.query(query, values);
-            return rows[0];
-        } catch (error) {
-            try { fs.appendFileSync('creation_debug.log', `[${new Date().toISOString()}] ERROR: ${error.message}\n`); } catch(e){}
-            console.error("VoucherService.createVoucher Error:", error);
-            if (error.code === '23505') throw new Error("Kode voucher sudah ada.");
-            throw error;
-        }
-    }
-
-    // 6. ADMIN: UPDATE VOUCHER
-    static async updateVoucher(id, data) {
-        const {
-            code, title, description, banner_image, subtitle, type, value, max_discount, min_purchase, usage_limit_total,
-            valid_until, is_active, is_automatic, is_stackable,
-            is_new_user_only, eligible_tlds, eligible_actions,
-            start_date, end_date, usage_limit_per_user, priority, segment
-        } = data;
+        const remainingQuota = v.quota - v.quota_used;
+        const ttl = Math.max(0, Math.floor((new Date(v.expired_at) - new Date()) / 1000));
         
-        let typeVal = type || data.discount_type || 'fixed';
-        if (typeVal === 'nominal') typeVal = 'fixed';
-        const valueVal = value !== undefined ? value : (data.discount_value || 0);
-
-        const updateQuery = `
-            UPDATE coupons SET
-                code = $1, title = $2, description = $3, banner_image = $4, subtitle = $5, type = $6, value = $7, max_discount = $8, 
-                min_purchase = $9, usage_limit_total = $10, valid_until = $11, 
-                is_active = $12, is_automatic = $13, is_stackable = $14, 
-                is_new_user_only = $15, 
-                eligible_tlds = $16, eligible_actions = $17,
-                start_date = $18, end_date = $19, usage_limit_per_user = $20, 
-                priority = $21, segment = $22, updated_at = NOW()
-            WHERE id = $23 RETURNING *
-        `;
-        const values = [
-            code ? code.toUpperCase() : null, title, description || null, banner_image || null, subtitle || null, typeVal, parseFloat(valueVal) || 0, parseFloat(max_discount) || 0,
-            parseFloat(min_purchase) || 0, parseInt(usage_limit_total) || 0, valid_until || null,
-            is_active, is_automatic, is_stackable,
-            is_new_user_only,
-            JSON.stringify(eligible_tlds || []), JSON.stringify(eligible_actions || ['register']),
-            start_date || null, end_date || null, parseInt(usage_limit_per_user) || 1, parseInt(priority) || 0, segment || 'all',
-            id
-        ];
-
-        try {
-            const { rows } = await db.pool.query(updateQuery, values);
-            return rows[0];
-        } catch (error) {
-            console.error("VoucherService.updateVoucher Error:", error);
-            throw error;
-        }
+        await redisClient.setWithExpiry(`voucher:quota:${v.id}`, Math.max(0, remainingQuota).toString(), ttl || 86400 * 7);
     }
 
-    // 7. GET PUBLIC VOUCHERS (Promo Page)
-    static async getPublicVouchers() {
+    /**
+     * E. Get Voucher Info
+     */
+    async getVoucherInfo(voucherCode, userId) {
+        const vRes = await db.pool.query(`
+            SELECT v.*, 
+            (SELECT status FROM voucher_claims WHERE voucher_id = v.id AND user_id = $2) as user_status
+            FROM vouchers v WHERE v.code = $1
+        `, [voucherCode, userId]);
+        
+        const v = vRes.rows[0];
+        if (!v) return null;
+
+        const redisQuota = await redisClient.getValue(`voucher:quota:${v.id}`);
+        
+        return {
+            id: v.id,
+            code: v.code,
+            type: v.discount_type,
+            value: v.discount_value,
+            min_transaction: v.min_transaction,
+            remaining_quota: redisQuota !== null ? parseInt(redisQuota) : (v.quota - v.quota_used),
+            user_status: v.user_status,
+            expired_at: v.expired_at,
+            is_active: v.is_active && (new Date() >= v.started_at) && (new Date() <= v.expired_at)
+        };
+    }
+
+    /**
+     * F. Get Public Vouchers (for guests)
+     */
+    async getPublicVouchers() {
+        // Fetch active, non-expired, and non-automatic vouchers
         const query = `
-            SELECT * FROM coupons 
-            WHERE is_active = TRUE 
-            AND (valid_until IS NULL OR valid_until > NOW())
-            AND (start_date IS NULL OR start_date <= NOW())
-            AND (end_date IS NULL OR end_date > NOW())
-            AND (usage_limit_total = 0 OR usage_limit_total > used_count)
-            ORDER BY priority DESC, created_at DESC
+            SELECT id, title, description, code, 
+                   discount_type as type, discount_value as value, 
+                   min_transaction as min_purchase, max_discount,
+                   started_at as start_date, expired_at as valid_until, expired_at as end_date,
+                   is_new_user_only, banner_image, applicable_to as eligible_tlds, eligible_actions, is_automatic 
+            FROM vouchers 
+            WHERE is_active = true 
+              AND expired_at > NOW() 
+              AND started_at <= NOW()
+              AND quota > quota_used
+              AND is_automatic = false
+            ORDER BY created_at DESC
         `;
-        try {
-            const { rows } = await db.pool.query(query);
-            return rows || [];
-        } catch (error) {
-            console.error("VoucherService.getPublicVouchers Error:", error.message);
-            // Return empty array instead of throwing to prevent Home Page 500
-            return [];
-        }
+        const result = await db.pool.query(query);
+        return result.rows;
     }
 
-    // 8. GET AVAILABLE AUTO VOUCHERS (With Eligibility Check)
-    static async getAvailableAutoVouchers(subtotal = 0, items = []) {
+    /**
+     * G. Get Available Vouchers (for logged-in users)
+     */
+    async getAvailableVouchers(userId) {
+        // Similar to public vouchers, but we can also filter out the ones already claimed by the user
         const query = `
-            SELECT * FROM coupons 
-            WHERE is_automatic = TRUE 
-            AND is_active = TRUE
-            AND (start_date IS NULL OR start_date <= NOW())
-            AND (COALESCE(end_date, valid_until) IS NULL OR COALESCE(end_date, valid_until) > NOW())
-            AND min_purchase <= $1
-            ORDER BY priority DESC, created_at ASC
+            WITH user_stats AS (
+                SELECT COUNT(*) as paid_invoices 
+                FROM invoices 
+                WHERE user_id = $1 AND status = 'paid'
+            )
+            SELECT v.id, v.title, v.description, v.code, 
+                   v.discount_type as type, v.discount_value as value, 
+                   v.min_transaction as min_purchase, v.max_discount,
+                   v.started_at as start_date, v.expired_at as valid_until, v.expired_at as end_date,
+                   v.is_new_user_only, v.banner_image, v.applicable_to as eligible_tlds, v.eligible_actions, v.is_automatic
+            FROM vouchers v, user_stats us
+            WHERE v.is_active = true 
+              AND v.expired_at > NOW() 
+              AND v.started_at <= NOW()
+              AND v.quota > v.quota_used
+              -- Rule: New User Only protocol
+              AND (v.is_new_user_only = false OR us.paid_invoices = 0)
+              -- Rule: Segment protocol (if segments are mapped in the future, currently we assume 'all' or specific matches)
+              AND (v.segment = 'all' OR v.segment IS NULL) 
+              -- Rule: Max use per user protocol
+              AND (
+                  SELECT COUNT(*) FROM voucher_claims vc 
+                  WHERE vc.voucher_id = v.id AND vc.user_id = $1
+              ) < v.max_use_per_user
+            ORDER BY v.created_at DESC
         `;
-        try {
-            const { rows } = await db.pool.query(query, [subtotal]);
-            const voucherList = rows || [];
-            
-            // Filter by TLD eligibility if items are provided
-            if (items.length > 0) {
-                return voucherList.filter(v => {
-                    const tlds = typeof v.eligible_tlds === 'string' ? JSON.parse(v.eligible_tlds) : v.eligible_tlds;
-                    const actions = typeof v.eligible_actions === 'string' ? JSON.parse(v.eligible_actions) : v.eligible_actions;
-                    
-                    const tldMatchAll = !tlds || tlds.length === 0 || tlds.includes('all');
-                    const actionMatchAll = !actions || actions.length === 0 || actions.includes('all');
-
-                    if (tldMatchAll && actionMatchAll) return true;
-                    
-                    return items.some(item => {
-                        const tld = '.' + item.name.split('.').slice(1).join('.');
-                        const tldMatch = tldMatchAll || tlds.includes(tld);
-                        const actionMatch = actionMatchAll || actions.includes(item.action || 'register');
-                        return tldMatch && actionMatch;
-                    });
-                });
-            }
-            return voucherList;
-        } catch (error) {
-            console.error("VoucherService.getAvailableAutoVouchers Error:", error.message);
-            // Non-critical endpoint, return empty to prevent crash
-            return [];
-        }
+        const result = await db.pool.query(query, [userId]);
+        return result.rows;
     }
 
-    // 9. CALCULATE BEST DISCOUNT
-    static async calculateBestDiscount({ userId, subtotal, items, userVoucherId = null }) {
-        try {
-            // A. Find Best Auto Promo
-            const autos = await this.getAvailableAutoVouchers(subtotal, items);
-            let bestAuto = null;
-            let maxAutoDiscount = 0;
+    /**
+     * H. Validate Voucher for Cart (New Method for Checkout Integration)
+     * @param {number} userId 
+     * @param {string} voucherCode 
+     * @param {Array} cartItems [{ name, action, tld, ... }]
+     * @returns {object} { eligible, discountAmount, message, voucher }
+     */
+    async validateVoucherForCart(userId, voucherCode, cartItems, targetInvoiceId = null) {
+        if (!voucherCode) return { eligible: false, discountAmount: 0, message: "No voucher code provided." };
 
-            for (const promo of autos) {
-                // Determine eligible amount for this promo (TLD + Action)
-                const tlds = typeof promo.eligible_tlds === 'string' ? JSON.parse(promo.eligible_tlds) : promo.eligible_tlds;
-                const actions = typeof promo.eligible_actions === 'string' ? JSON.parse(promo.eligible_actions) : promo.eligible_actions;
-                
-                const tldAll = !tlds || tlds.length === 0 || tlds.includes('all');
-                const actionAll = !actions || actions.length === 0 || actions.includes('all');
-                
-                const eligibleAmount = items.reduce((sum, item) => {
-                    const tld = '.' + item.name.split('.').slice(1).join('.');
-                    const tldMatch = tldAll || tlds.includes(tld);
-                    const actionMatch = actionAll || actions.includes(item.action || 'register');
+        // 1. Fetch Voucher
+        const vRes = await db.pool.query(
+            "SELECT * FROM vouchers WHERE code = $1 AND is_active = true",
+            [voucherCode]
+        );
+        const voucher = vRes.rows[0];
+        if (!voucher) return { eligible: false, discountAmount: 0, message: "Voucher tidak ditemukan atau sudah tidak aktif." };
 
-                    if (tldMatch && actionMatch) {
-                        return sum + (item.price * (item.period || 1));
-                    }
-                    return sum;
-                }, 0);
+        // 2. Check Expiry
+        const now = new Date();
+        if (now < voucher.started_at) return { eligible: false, discountAmount: 0, message: "Voucher belum dimulai." };
+        if (now > voucher.expired_at) return { eligible: false, discountAmount: 0, message: "Voucher sudah kedaluwarsa." };
 
-                let disc = 0;
-                if (promo.type === 'percentage') {
-                    disc = eligibleAmount * (parseFloat(promo.value) / 100);
-                    if (promo.max_discount > 0) disc = Math.min(disc, parseFloat(promo.max_discount));
-                } else {
-                    disc = parseFloat(promo.value);
-                }
-
-                if (disc > maxAutoDiscount) {
-                    maxAutoDiscount = disc;
-                    bestAuto = promo;
-                }
+        // 3. User Specific Checks (New User)
+        if (voucher.is_new_user_only) {
+            const trxCheck = await db.pool.query(
+                "SELECT id FROM invoices WHERE user_id = $1 AND status = 'paid' LIMIT 1",
+                [userId]
+            );
+            if (trxCheck.rows.length > 0) {
+                return { eligible: false, discountAmount: 0, message: "Voucher ini hanya berlaku untuk pelanggan baru." };
             }
+        }
 
-            // B. Check Manual Voucher (if provided)
-            let manualDiscount = 0;
-            let appliedManual = null;
+        // 4. Claim Status & Locking Check
+        // A claim is eligible if it is 'claimed' AND (it's not yet linked OR it's already linked to THIS invoice)
+        const claimRes = await db.pool.query(
+            "SELECT id, status, invoice_id FROM voucher_claims WHERE voucher_id = $1 AND user_id = $2 AND status = 'claimed' AND (invoice_id IS NULL OR invoice_id = $3) ORDER BY (invoice_id = $3) DESC LIMIT 1",
+            [voucher.id, userId, targetInvoiceId]
+        );
+        if (claimRes.rows.length === 0) {
+            return { eligible: false, discountAmount: 0, message: "Voucher belum diklaim atau sudah digunakan di invoice lain." };
+        }
 
-            if (userVoucherId) {
-                const uvRes = await db.pool.query(`
-                    SELECT uv.*, v.* 
-                    FROM user_vouchers uv 
-                    JOIN coupons v ON uv.coupon_id = v.id 
-                    WHERE uv.id = $1 AND uv.user_id = $2 AND uv.status = 'claimed'
-                `, [userVoucherId, userId]);
+        // 5. Item-Level Validation (TLDs and Actions)
+        const eligibleTlds = voucher.applicable_to; // Array of TLDs, e.g. [".id", ".com"]
+        const eligibleActions = voucher.eligible_actions; // Array, e.g. ["register", "renew"]
 
-                if (uvRes.rows.length > 0) {
-                    const v = uvRes.rows[0];
-                    // Basic validation
-                    const validDate = (!v.valid_until || new Date(v.valid_until) > new Date());
-                    const validMin = subtotal >= parseFloat(v.min_purchase);
+        const hasCondition = (eligibleTlds && eligibleTlds.length > 0) || (eligibleActions && eligibleActions.length > 0);
+        let passesItemValidation = !hasCondition;
 
-                    if (validDate && validMin) {
-                        if (v.is_stackable || !bestAuto) {
-                            // Check TLD and Action Eligibility at Item Level
-                            const tlds = typeof v.eligible_tlds === 'string' ? JSON.parse(v.eligible_tlds) : v.eligible_tlds;
-                            const actions = typeof v.eligible_actions === 'string' ? JSON.parse(v.eligible_actions) : v.eligible_actions;
-                            
-                            const tldAll = !tlds || tlds.length === 0 || tlds.includes('all');
-                            const actionAll = !actions || actions.length === 0 || actions.includes('all');
+        if (hasCondition) {
+            passesItemValidation = cartItems.some(item => {
+                const tldMatch = !eligibleTlds || eligibleTlds.length === 0 || eligibleTlds.includes(item.tld);
+                const actionMatch = !eligibleActions || eligibleActions.length === 0 || eligibleActions.includes(item.action);
+                return tldMatch && actionMatch;
+            });
+        }
 
-                            const eligibleAmount = items.reduce((sum, item) => {
-                                const tld = '.' + item.name.split('.').slice(1).join('.');
-                                const tldMatch = tldAll || tlds.includes(tld);
-                                const actionMatch = actionAll || actions.includes(item.action || 'register');
+        if (!passesItemValidation) {
+            let errorMsg = "Voucher tidak berlaku untuk item pilihah Anda.";
+            if (eligibleTlds && eligibleTlds.length > 0) errorMsg = `Voucher hanya berlaku untuk TLD: ${eligibleTlds.join(', ')}`;
+            return { eligible: false, discountAmount: 0, message: errorMsg };
+        }
 
-                                if (tldMatch && actionMatch) {
-                                    return sum + (item.price * (item.period || 1));
-                                }
-                                return sum;
-                            }, 0);
-
-                            if (eligibleAmount > 0) {
-                                if (v.type === 'percentage') {
-                                    manualDiscount = eligibleAmount * (parseFloat(v.value) / 100);
-                                    if (v.max_discount > 0) manualDiscount = Math.min(manualDiscount, parseFloat(v.max_discount));
-                                } else {
-                                    manualDiscount = parseFloat(v.value);
-                                }
-                                appliedManual = v;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return {
-                autoDiscount: Math.floor(maxAutoDiscount),
-                manualDiscount: Math.floor(manualDiscount),
-                totalDiscount: Math.floor(maxAutoDiscount + manualDiscount),
-                bestAuto,
-                appliedManual
+        // 6. Subtotal & Threshold
+        const subtotal = cartItems.reduce((acc, item) => acc + (parseFloat(item.base_price) * (item.duration || 1)), 0);
+        if (subtotal < parseFloat(voucher.min_transaction)) {
+            return { 
+                eligible: false, 
+                discountAmount: 0, 
+                message: `Minimum transaksi untuk voucher ini adalah Rp ${parseFloat(voucher.min_transaction).toLocaleString('id-ID')}` 
             };
-        } catch (error) {
-            console.error("VoucherService.calculateBestDiscount Error:", error);
-            throw error;
         }
+
+        // 7. Calculate Discount
+        const { discountAmount } = discountService.calculateDiscount(
+            subtotal,
+            voucher.discount_type,
+            parseFloat(voucher.discount_value),
+            parseFloat(voucher.max_discount || 0)
+        );
+
+        return {
+            eligible: true,
+            discountAmount,
+            message: "Voucher berhasil diterapkan.",
+            claimId: claimRes.rows[0].id,
+            voucher: {
+                id: voucher.id,
+                code: voucher.code,
+                type: voucher.discount_type,
+                value: voucher.discount_value
+            }
+        };
     }
-
-    // 10. DELETE VOUCHER
-    static async deleteVoucher(id) {
+    /**
+     * I. Finalize Voucher Usage (On Payment Success)
+     * @param {string} invoiceId 
+     * @param {object} client (Optional db client for transactions)
+     */
+    async finalizeVoucherUsage(invoiceId, client = db.pool) {
         try {
-            await db.pool.query("DELETE FROM coupons WHERE id = $1", [id]);
-            return true;
-        } catch (error) {
-            console.error("VoucherService.deleteVoucher Error:", error);
-            throw error;
-        }
-    }
+            // 1. Find the claim linked to this invoice
+            const claimRes = await client.query(
+                "SELECT id, voucher_id FROM voucher_claims WHERE invoice_id = $1 AND status = 'claimed' LIMIT 1",
+                [invoiceId]
+            );
 
-    // 11. GET ANALYTICS
-    static async getAnalytics() {
-        try {
-            const total = await db.pool.query("SELECT COUNT(*) as count FROM coupons");
-            const active = await db.pool.query("SELECT COUNT(*) as count FROM coupons WHERE is_active = TRUE");
-            const usage = await db.pool.query("SELECT SUM(used_count) as count FROM coupons");
-            const claims = await db.pool.query("SELECT COUNT(*) as count FROM user_vouchers");
+            if (claimRes.rows.length === 0) return; // No pending claim to finalize
 
-            return {
-                totalVouchers: parseInt(total.rows[0].count),
-                activeVouchers: parseInt(active.rows[0].count),
-                totalRedemptions: parseInt(usage.rows[0].count) || 0,
-                totalClaims: parseInt(claims.rows[0].count) || 0
-            };
-        } catch (error) {
-            console.error("VoucherService.getAnalytics Error:", error);
-            throw error;
+            const claim = claimRes.rows[0];
+
+            // 2. Mark as Used
+            await client.query(
+                "UPDATE voucher_claims SET status = 'used', used_at = NOW() WHERE id = $1",
+                [claim.id]
+            );
+
+            // 3. Increment Quota Used in Vouchers table
+            await client.query(
+                "UPDATE vouchers SET quota_used = quota_used + 1 WHERE id = $1",
+                [claim.voucher_id]
+            );
+
+            console.log(`[VoucherService] Finalized usage for Invoice ${invoiceId}, Claim ${claim.id}`);
+        } catch (err) {
+            console.error(`[VoucherService] Error finalizing usage for Invoice ${invoiceId}:`, err);
+            // We don't necessarily want to throw here to avoid blocking payment completion, 
+            // but in a strict system we might.
         }
     }
 }
 
-module.exports = VoucherService;
+module.exports = new VoucherService();

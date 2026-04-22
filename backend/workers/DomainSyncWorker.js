@@ -14,8 +14,15 @@ class DomainSyncWorker {
      */
     start(intervalMs = 300000) {
         console.log(`[DomainSyncWorker] Started (Interval: ${intervalMs}ms)`);
-        this.process(); // Run immediately on start
-        setInterval(() => this.process(), intervalMs);
+        
+        // Initial run
+        setTimeout(() => {
+            this.process().catch(err => console.error("[DomainSyncWorker] Fatal Start Error:", err));
+        }, 5000); // Give DB/Redis a moment to settle
+
+        setInterval(() => {
+            this.process().catch(err => console.error("[DomainSyncWorker] Fatal Interval Error:", err));
+        }, intervalMs);
     }
 
     async process() {
@@ -100,12 +107,12 @@ class DomainSyncWorker {
 
             const response = await DaftarnamaService.registerDomain(payload);
 
-            if (response.code === 201 || response.data?.status === 'ACTIVE') {
+            if (response?.code === 201 || response?.data?.status === 'ACTIVE') {
                  await this.markSuccess(domain, response);
-            } else if (response.data?.status === 'PENDING' || response.data?.status === 'PROVISIONING') {
+            } else if (response?.data?.status === 'PENDING' || response?.data?.status === 'PROVISIONING') {
                  await this.markProvisioning(domain, response);
             } else {
-                 throw new Error(response.message || "Unknown registrar response");
+                 throw new Error(response?.message || "Unknown registrar response");
             }
 
         } catch (error) {

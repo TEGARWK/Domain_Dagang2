@@ -1,8 +1,8 @@
 const db = require("../config/db");
 const OrderService = require("../services/OrderService");
-const PromoEngine = require("../services/PromoEngine");
 const EmailService = require("../services/EmailService");
 const NotificationService = require("../services/NotificationService");
+const VoucherService = require("../services/VoucherService");
 const TransferController = require("./transferController");
 
 // 1. Get All Invoices (By User ID - SECURE)
@@ -51,7 +51,11 @@ exports.getInvoiceById = async (req, res) => {
              p.va_number, p.expired_at
       FROM invoices i
       JOIN users u ON i.user_id = u.id
-      LEFT JOIN payments p ON i.id = p.invoice_number
+      LEFT JOIN (
+        SELECT DISTINCT ON (invoice_number) *
+        FROM payments
+        ORDER BY invoice_number, id DESC
+      ) p ON i.id = p.invoice_number
       WHERE i.id = $1
     `;
     const params = [invoiceId];
@@ -112,18 +116,23 @@ exports.getInvoiceById = async (req, res) => {
 function sendResponse(invoice, items, logs, res) {
     const isExpired = invoice.status === 'pending' && new Date(invoice.due_date) < new Date();
     
-    // Parse raw_response if needed to get real plink_ref_no if different
-    let realPlinkRef = invoice.plink_ref_no;
+    // Inisialisasi variabel di awal untuk mencegah ReferenceError
+    let raw = null;
+    let realPlinkRef = invoice.plink_ref_no || null;
     let qrString = null;
     let qrImage = null;
 
     if (invoice.raw_response) {
         try {
-            const raw = typeof invoice.raw_response === 'string' ? JSON.parse(invoice.raw_response) : invoice.raw_response;
-            if (raw.plink_ref_no) realPlinkRef = raw.plink_ref_no;
-            qrString = raw.qris_data || raw.qr_string || raw.qr_code || raw.payment_url;
-            qrImage = raw.qr_image;
-        } catch (e) {}
+            raw = typeof invoice.raw_response === 'string' ? JSON.parse(invoice.raw_response) : invoice.raw_response;
+            // Jika ada data QR dari raw_response, ambil di sini
+            if (raw) {
+                qrString = raw.qr_string || raw.payment_url || null;
+                qrImage = raw.qr_image || null;
+            }
+        } catch (e) {
+            console.error("Failed to parse raw_response", e);
+        }
     }
 
     const fullInvoice = {
@@ -132,9 +141,12 @@ function sendResponse(invoice, items, logs, res) {
         date: new Date(invoice.date || invoice.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
         due_date: new Date(invoice.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
         total: invoice.total,
-        subtotal: invoice.subtotal || invoice.total, 
-        tax: invoice.tax_amount || 0,
-        discount: invoice.total_discount || 0,
+        is_topup: items.some(it => it.action_type === 'topup' || it.name?.toLowerCase().includes('top up')),
+        subtotal: parseFloat(invoice.subtotal || (parseFloat(invoice.total) - parseFloat(invoice.tax_amount || 0))), 
+        tax: parseFloat(invoice.tax_amount || 0),
+        service_fee: 0, 
+        discount: parseFloat(invoice.total_discount || 0),
+        discount_meta: typeof invoice.discount_meta === 'string' ? JSON.parse(invoice.discount_meta) : (invoice.discount_meta || {}),
         payment_method: invoice.payment_channel || invoice.payment_method, 
         plink_ref_no: realPlinkRef,
         payment_instructions: {
@@ -143,7 +155,8 @@ function sendResponse(invoice, items, logs, res) {
             qr_string: qrString,
             qr_image: qrImage,
             bank_code: (invoice.payment_channel || "").replace("VA_", ""),
-            amount: invoice.total
+            amount: invoice.total,
+            total_fee: parseFloat(invoice.service_fee || (raw?.fee_customer ?? raw?.total_fee ?? 0))
         },
         customer: {
           name: invoice.customer_name,
@@ -154,6 +167,27 @@ function sendResponse(invoice, items, logs, res) {
         items: items,
         logs: logs || []
     };
+
+    if (raw) {
+        if (raw.plink_ref_no) {
+            fullInvoice.plink_ref_no = raw.plink_ref_no;
+            fullInvoice.payment_instructions.plink_ref_no = raw.plink_ref_no;
+        }
+        const qStr = raw.qris_data || raw.qr_string || raw.qr_code || raw.payment_url;
+        if (qStr) {
+            fullInvoice.payment_instructions.qr_string = qStr;
+        }
+        if (raw.qr_image) {
+            fullInvoice.payment_instructions.qr_image = raw.qr_image;
+        }
+        
+        // Final Service Fee Mapping
+        fullInvoice.service_fee = parseFloat(raw.total_fee || raw.fee_customer || 0);
+    }
+
+    // Final Grand Total Calculation
+    fullInvoice.grand_total = fullInvoice.subtotal + fullInvoice.tax + fullInvoice.service_fee - fullInvoice.discount;
+
     res.json(fullInvoice);
 }
 
@@ -180,6 +214,9 @@ exports.payInvoice = async (req, res) => {
       // 1. Update Invoice Status
       const updateQuery = "UPDATE invoices SET status = 'paid', payment_method = $1, paid_at = NOW() WHERE id = $2";
       const result = await client.query(updateQuery, [payment_method, invoiceId]);
+
+      // Finalize Voucher
+      await VoucherService.finalizeVoucherUsage(invoiceId, client);
 
       if (result.rowCount === 0) {
           throw new Error("Invoice tidak ditemukan");
@@ -320,12 +357,7 @@ exports.payInvoiceWithWallet = async (req, res) => {
            if (couponRes.rows.length > 0) couponId = couponRes.rows[0].id;
         }
 
-        // 3. Reserve Coupon (IF NOT ALREADY RESERVED OR TO RE-VALIDATE QUOTA)
-        // Note: Even if already reserved at checkout, re-validating here during lock is safer.
-        if (couponId) {
-
-            await PromoEngine.reserveCoupon(userId, couponId, invoiceId, client);
-        }
+        // 3. (REMOVED: Coupon Reservation - System reset)
 
         // 4. Check Wallet Balance & Debit (Transactional)
 
@@ -336,6 +368,9 @@ exports.payInvoiceWithWallet = async (req, res) => {
             `UPDATE invoices SET status = 'paid', payment_method = 'WALLET', updated_at = NOW() WHERE id = $1`, 
             [invoiceId]
         );
+
+        // Finalize Voucher
+        await VoucherService.finalizeVoucherUsage(invoiceId, client);
 
         // CRITICAL: COMMIT TRANSACTION BEFORE API CALL (V-02 FIX)
         // This secures the funds. If the next steps fail, we have the money to refund.
@@ -504,3 +539,106 @@ exports.cancelInvoice = async (req, res) => {
     }
 };
 
+// 9. Recalculate Invoice (Apply/Remove Voucher to existing Invoice)
+exports.recalculateInvoice = async (req, res) => {
+    const invoiceId = req.params.id;
+    const userId = req.user.id;
+    const { voucherCode } = req.body; // Can be null to remove
+
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Fetch Invoice & Verify
+        const invRes = await client.query(
+            "SELECT * FROM invoices WHERE id = $1 AND user_id = $2 AND status = 'pending'",
+            [invoiceId, userId]
+        );
+        if (invRes.rows.length === 0) throw new Error("Invoice tidak ditemukan atau sudah dibayar.");
+        const invoice = invRes.rows[0];
+
+        // 2. Fetch Items
+        const itemsRes = await client.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [invoiceId]);
+        const items = itemsRes.rows;
+
+        // 3. Calculate New Pricing
+        let subtotal = 0;
+        items.forEach(it => {
+            subtotal += parseFloat(it.price || 0);
+        });
+
+        let totalDiscount = 0;
+        let appliedVoucher = null;
+
+        if (voucherCode) {
+            // Validate Voucher
+            // Map items format for VoucherService
+            const cartItemsForVoucher = items.map(it => {
+                const name = it.name.toLowerCase();
+                const tldMatch = name.match(/\.[a-z]{2,}(\.[a-z]{2})?$/);
+                return {
+                    name: it.name,
+                    action: it.action_type || 'register',
+                    base_price: parseFloat(it.unit_price || it.price),
+                    duration: parseInt(it.years || 1),
+                    tld: tldMatch ? tldMatch[0] : ""
+                };
+            });
+
+            const voucherResult = await VoucherService.validateVoucherForCart(userId, voucherCode, cartItemsForVoucher, invoiceId);
+            if (!voucherResult.eligible) {
+                throw new Error(voucherResult.message || "Voucher tidak valid.");
+            }
+            totalDiscount = voucherResult.discountAmount;
+            appliedVoucher = voucherResult.voucher;
+
+            // LINK CLAIM TO INVOICE (Locked)
+            // First clear any previous links for this invoice to handle switching vouchers
+            await client.query("UPDATE voucher_claims SET invoice_id = NULL WHERE invoice_id = $1 AND status = 'claimed'", [invoiceId]);
+            // Then link the new one
+            await client.query("UPDATE voucher_claims SET invoice_id = $1 WHERE id = $2", [invoiceId, voucherResult.claimId]);
+        } else {
+            // REMOVE VOUCHER CASE: Unlink any claimed voucher from this invoice
+            await client.query("UPDATE voucher_claims SET invoice_id = NULL WHERE invoice_id = $1 AND status = 'claimed'", [invoiceId]);
+        }
+
+        const netAmount = Math.max(0, subtotal - totalDiscount);
+        
+        // PPN check (logic from checkoutController)
+        const hasDomain = items.some(it => 
+            it.name.includes('.') || 
+            (it.description || "").toLowerCase().includes('reg') ||
+            (it.action_type || "").toLowerCase().includes('register')
+        );
+        
+        const PPN_PERCENT = 0.11;
+        const taxAmount = hasDomain ? Math.floor(netAmount * PPN_PERCENT) : 0;
+        const finalAmount = netAmount + taxAmount;
+
+        // 4. Update Database
+        await client.query(`
+            UPDATE invoices 
+            SET subtotal = $1, 
+                total_discount = $2, 
+                net_amount = $3, 
+                tax_amount = $4, 
+                total = $5,
+                coupon_code = $6,
+                updated_at = NOW()
+            WHERE id = $7
+        `, [subtotal, totalDiscount, netAmount, taxAmount, finalAmount, voucherCode || null, invoiceId]);
+
+        await client.query('COMMIT');
+
+        // Reuse the response formatter
+        const updatedInvRes = await client.query("SELECT i.*, u.name as customer_name, u.email as customer_email FROM invoices i JOIN users u ON i.user_id = u.id WHERE i.id = $1", [invoiceId]);
+        sendResponse(updatedInvRes.rows[0], items, [], res);
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("[RecalculateInvoice] Error:", err);
+        res.status(400).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+};

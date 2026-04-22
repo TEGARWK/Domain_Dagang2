@@ -5,7 +5,7 @@ const Error403 = () => {
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 text-center font-sans overflow-hidden relative">
       {/* Background Blobs */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-[url('/assets/carbon-fibre.png')] opacity-10"></div>
       <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-red-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20 animate-pulse"></div>
 
       <div className="relative z-10 max-w-lg w-full">

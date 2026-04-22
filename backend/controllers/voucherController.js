@@ -1,200 +1,123 @@
-const VoucherService = require('../services/VoucherService');
-const { createLog } = require("./auditController");
+const voucherService = require('../services/VoucherService');
+const db = require('../config/db');
 
-// 1. GET AVAILABLE CLAIMABLE VOUCHERS (Protected)
+/**
+ * VOUCHER CONTROLLER
+ * Menangani request klaim, apply, dan list voucher milik user.
+ */
+
+exports.getPublicVouchers = async (req, res) => {
+    try {
+        const vouchers = await voucherService.getPublicVouchers();
+        return res.status(200).json(vouchers); // API calls from frontend expect raw array as response data usually
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 exports.getAvailableVouchers = async (req, res) => {
     try {
         const userId = req.user.id;
-        const vouchers = await VoucherService.getAvailableClaimableVouchers(userId);
-        res.json(vouchers);
+        const vouchers = await voucherService.getAvailableVouchers(userId);
+        return res.status(200).json(vouchers);
     } catch (err) {
-        console.error("Fetch Available Error:", err);
-        res.status(500).json({ error: "Gagal mengambil daftar voucher.", details: err.message });
+        return res.status(500).json({ success: false, message: err.message });
     }
 };
 
-// 1b. GET PUBLIC VOUCHERS (For Discovery/All - Public)
-exports.getPublicVouchers = async (req, res) => {
+exports.claimVoucher = async (req, res) => {
     try {
-        const vouchers = await VoucherService.getPublicVouchers();
-        res.json(vouchers);
+        const voucherId = req.params.id; // Using id from RESTful route
+        const userId = req.user.id;
+
+        if (!voucherId) return res.status(400).json({ message: "Voucher ID is required." });
+
+        const result = await voucherService.claimVoucher(userId, voucherId);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Voucher berhasil diklaim.",
+            data: result
+        });
     } catch (err) {
-        console.error("Fetch Public Error:", err);
-        res.status(500).json("Gagal mengambil daftar voucher publik.");
+        return res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// 2. GET MY VOUCHERS (Claimed - Protected)
+exports.applyVoucher = async (req, res) => {
+    try {
+        const { voucherCode, invoiceId } = req.body;
+        const userId = req.user.id;
+
+        if (!voucherCode || !invoiceId) {
+            return res.status(400).json({ message: "Voucher code and Invoice ID are required." });
+        }
+
+        // Ambil info invoice untuk dapetin subtotal
+        const invRes = await db.pool.query("SELECT total FROM invoices WHERE id = $1 AND user_id = $2", [invoiceId, userId]);
+        if (invRes.rows.length === 0) return res.status(404).json({ message: "Invoice tidak ditemukan." });
+        
+        const subtotal = invRes.rows[0].total;
+
+        const result = await voucherService.applyVoucher(userId, voucherCode, invoiceId, subtotal);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Voucher berhasil digunakan.",
+            data: result
+        });
+    } catch (err) {
+        return res.status(400).json({ success: false, message: err.message });
+    }
+};
+
 exports.getMyVouchers = async (req, res) => {
     try {
         const userId = req.user.id;
-        const vouchers = await VoucherService.getMyVouchers(userId);
-        res.json(vouchers);
+        const query = `
+            SELECT 
+                vc.id as claim_id,
+                vc.status as claim_status,
+                v.id,
+                v.title,
+                v.code, 
+                v.discount_type as type, 
+                v.discount_value as value,
+                v.max_discount,
+                v.expired_at as valid_until, 
+                v.min_transaction as min_purchase,
+                v.applicable_to as eligible_tlds,
+                v.is_new_user_only as first_purchase_only,
+                v.is_active,
+                (v.expired_at IS NULL OR v.expired_at > NOW()) as is_valid
+            FROM voucher_claims vc
+            JOIN vouchers v ON vc.voucher_id = v.id
+            WHERE vc.user_id = $1
+              AND v.is_active = true
+              AND (v.expired_at IS NULL OR v.expired_at > NOW())
+            ORDER BY vc.claimed_at DESC
+        `;
+        const result = await db.pool.query(query, [userId]);
+        
+        return res.status(200).json(result.rows);
     } catch (err) {
-        console.error("Fetch My Vouchers Error:", err);
-        res.status(500).json({ error: "Gagal mengambil koleksi voucher Anda.", details: err.message });
+        return res.status(500).json({ success: false, message: err.message });
     }
 };
 
-// 3. CLAIM VOUCHER (Protected)
-exports.claimVoucher = async (req, res) => {
+exports.getVoucherInfo = async (req, res) => {
     try {
+        const { code } = req.params;
         const userId = req.user.id;
-        const { couponId } = req.params; // or req.body depending on route, route says /claim/:couponId
-        
-        const result = await VoucherService.claimVoucher(userId, couponId);
-        res.json(result);
-    } catch (err) {
-        console.error("Claim Controller Error:", err.message);
-        res.status(400).json(err.message || "Gagal mengklaim voucher.");
-    }
-};
 
-// 4. VALIDATE VOUCHER / CALCULATE BEST DISOCUNT (Protected)
-exports.validateVoucher = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { userVoucherId, amount, items } = req.body;
-        // Map frontend expected format to service format
-        // Service expects { userId, subtotal, items, userVoucherId }
-        
-        const result = await VoucherService.calculateBestDiscount({
-            userId, 
-            subtotal: amount || 0, // Frontend usually sends 'amount' or 'subtotal'
-            items: items || [], 
-            userVoucherId
-        });
+        const info = await voucherService.getVoucherInfo(code, userId);
+        if (!info) return res.status(404).json({ message: "Voucher tidak ditemukan." });
 
-        // Map service result back to frontend expected format if needed
-        // Service returns { autoDiscount, manualDiscount, totalDiscount, ... }
-        // Frontend likely expects { valid: true, discount_amount: ... } for legacy compatibility
-        // But if Frontend is updated to use new format, better.
-        // Task 4 says "backend return best discount".
-        // Let's return the full object.
-        res.json({
-            valid: true,
-            discount_amount: result.totalDiscount,
-            final_amount: (amount || 0) - result.totalDiscount,
-            details: result
+        return res.status(200).json({
+            success: true,
+            data: info
         });
     } catch (err) {
-        console.error("Validation Controller Error:", err.message);
-        res.status(400).json(err.message || "Voucher tidak valid.");
-    }
-};
-
-// 5. GET AUTO VOUCHERS (New Endpoint for Task 5)
-exports.getAutoVouchers = async (req, res) => {
-    try {
-        const { subtotal } = req.query; // Or POST body
-        // If GET, items might be hard to pass. Maybe simplified check?
-        // Or assume items=[] and check basic eligibility?
-        // Task 5: GET /api/vouchers/auto -> ambil auto event
-        // "Auto Apply: Saat load halaman -> call API -> backend return best discount"
-        // If it's just getting list of auto events:
-        
-        const vouchers = await VoucherService.getAvailableAutoVouchers(subtotal || 9999999999, []);
-        res.json(vouchers);
-    } catch (err) {
-        console.error("Fetch Auto Vouchers Error:", err);
-        res.status(500).json("Gagal.");
-    }
-};
-
-// 6. ADMIN: GET ALL VOUCHERS
-exports.getAllVouchers = async (req, res) => {
-    try {
-        const vouchers = await VoucherService.getAllVouchers();
-        res.json(vouchers);
-    } catch (err) {
-        console.error("Admin Fetch All Error:", err);
-        res.status(500).json("Gagal mengambil data.");
-    }
-};
-
-// 7. ADMIN: CREATE VOUCHER
-exports.createVoucher = async (req, res) => {
-    try {
-        const data = req.body;
-        // Basic validation
-        if (!data.title) return res.status(400).json("Judul wajib diisi.");
-        
-        // Auto-generate code if missing (Task 3 requirement)
-        if (!data.code) {
-            data.code = `PRM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-        }
-
-        const voucher = await VoucherService.createVoucher(data);
-
-        // Audit Log
-        await createLog({
-            user_id: req.user.id,
-            action: 'CREATE_VOUCHER',
-            entity_type: 'voucher',
-            entity_id: voucher.id,
-            new_value: voucher,
-            req
-        });
-
-        res.json(voucher);
-    } catch (err) {
-         console.error("Admin Create Error:", err);
-        res.status(500).json(err.message || "Gagal membuat voucher.");
-    }
-};
-
-// 8. ADMIN: UPDATE VOUCHER
-exports.updateVoucher = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const data = req.body;
-        const voucher = await VoucherService.updateVoucher(id, data);
-
-        // Audit Log
-        await createLog({
-            user_id: req.user.id,
-            action: 'UPDATE_VOUCHER',
-            entity_type: 'voucher',
-            entity_id: id,
-            new_value: voucher,
-            req
-        });
-
-        res.json(voucher);
-    } catch (err) {
-        console.error("Admin Update Error:", err);
-        res.status(500).json(err.message || "Gagal memperbarui voucher.");
-    }
-};
-
-// 9. ADMIN: DELETE VOUCHER
-exports.deleteVoucher = async (req, res) => {
-    try {
-        const { id } = req.params;
-        await VoucherService.deleteVoucher(id);
-
-        // Audit Log
-        await createLog({
-            user_id: req.user.id,
-            action: 'DELETE_VOUCHER',
-            entity_type: 'voucher',
-            entity_id: id,
-            req
-        });
-
-        res.json({ success: true });
-    } catch (err) {
-         console.error("Admin Delete Error:", err);
-        res.status(500).json("Gagal menghapus voucher.");
-    }
-};
-// 10. ADMIN: GET ANALYTICS
-exports.getAnalytics = async (req, res) => {
-    try {
-        const data = await VoucherService.getAnalytics();
-        res.json(data);
-    } catch (err) {
-        console.error("Analytics Error:", err);
-        res.status(500).json("Gagal memuat analitik.");
+        return res.status(500).json({ success: false, message: err.message });
     }
 };

@@ -14,6 +14,7 @@ router.get("/admin/user/:userId/invoices", verifyAdmin, controller.getUserInvoic
 router.post("/invoice/:id/pay", verifyAdmin, controller.payInvoice);
 router.post("/invoice/:id/pay-wallet", verifyToken, controller.payInvoiceWithWallet);
 router.put("/invoice/:id/cancel", verifyToken, controller.cancelInvoice);
+router.post("/invoice/:id/recalculate", verifyToken, controller.recalculateInvoice);
 router.delete("/invoice/:id", verifyAdmin, controller.deleteInvoice);
 
 module.exports = router;

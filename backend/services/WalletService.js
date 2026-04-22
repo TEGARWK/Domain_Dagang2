@@ -130,14 +130,13 @@ class WalletService {
             );
 
             if (shouldRelease) await client.query('COMMIT');
-            // Updated balance log removed
             return { success: true, newBalance };
 
         } catch (error) {
             if (shouldRelease) await client.query('ROLLBACK');
             console.error(`[Wallet] Debit Failed:`, error.message);
-            // Return clean error object instead of throwing if prefer
             throw error; 
+        } finally {
             if (shouldRelease) client.release();
         }
     }

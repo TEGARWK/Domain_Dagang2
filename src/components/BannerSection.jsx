@@ -15,41 +15,22 @@ const BannerSection = () => {
         imageUrl: "" // Empty string will show default gradient/placeholder if handled
     };
 
-    const [banner, setBanner] = useState(defaultBanner);
+    const [banner, setBanner] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [imgLoaded, setImgLoaded] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     // Initial Load & Event Listener
     useEffect(() => {
         const fetchBanner = async () => {
              try {
-                // Fetch the highest priority auto promo for the banner
-                const response = await api.get("/vouchers/auto?subtotal=999999999");
-                const data = response.data;
-                
-                if (data && data.length > 0) {
-                    // Take the first active auto promo (highest priority due to backend sorting)
-                    const promo = data[0];
-                    setBanner({
-                        title: promo.title,
-                        subtitle: promo.subtitle || promo.description || "Dapatkan promo spesial hari ini.",
-                        buttonText: "Lihat Promo",
-                        buttonLink: "/promo", // Or we could link to a specific promo detail if we had one
-                        color: "#F97316", // Default accent, potentially customize per promo in future
-                        imageUrl: promo.banner_image || "",
-                        // Detail Promo Baru
-                        type: promo.type, 
-                        value: promo.value,
-                        eligible_tlds: promo.eligible_tlds,
-                        end_date: promo.end_date
-                    });
-                } else {
-                    // If no active promos, use default or hide
-                    setBanner(defaultBanner);
-                }
+                // Since promo system is reset, we show default banner or nothing
+                setBanner(null); 
              } catch (error) {
-                console.error("Failed to fetch banner from promo events:", error);
-                
-                // Jika API/database gagal, langsung pakai default banner (polos/tanpa gambar yang diinput user)
-                setBanner(defaultBanner);
+                console.error("Failed to fetch banner:", error);
+                setBanner(null);
+             } finally {
+                setLoading(false);
              }
         };
 
@@ -60,16 +41,28 @@ const BannerSection = () => {
         return () => window.removeEventListener("banner_updated", fetchBanner);
     }, []);
 
+    if (loading) return null; // Or a subtle skeleton if preferred
+    if (!banner) return null;
+
     return (
         <div className="max-w-7xl mx-auto rounded-[2rem] relative overflow-hidden shadow-2xl group border border-slate-900/5">
             {/* Background Image Container with Aspect Ratio/Height */}
             <div className="absolute inset-0 bg-slate-900">
                 {(banner.imageUrl || banner.banner_image) ? (
                     <>
+                        {(!imgLoaded && !imgError) && (
+                            <div className="absolute inset-0 bg-slate-800 animate-pulse"></div>
+                        )}
                         <img 
-                            src={banner.imageUrl || banner.banner_image} 
+                            src={((banner.imageUrl || banner.banner_image) && ((banner.imageUrl || banner.banner_image).startsWith('http') || (banner.imageUrl || banner.banner_image).startsWith('blob:'))) ? (banner.imageUrl || banner.banner_image) : `${import.meta.env.VITE_BACKEND_URL || ''}${banner.imageUrl || banner.banner_image}`} 
+                            onLoad={() => setImgLoaded(true)}
+                            onError={(e) => { 
+                                setImgError(true);
+                                e.target.onerror = null; 
+                                e.target.src = "/fallback-banner.jpg"; 
+                            }}
                             alt="Promo Banner" 
-                            className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-80 transition-all duration-700 ease-in-out" 
+                            className={`w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-80 transition-all duration-700 ease-in-out ${!imgLoaded ? 'invisible' : 'visible'}`} 
                         />
                         {/* More subtle gradient when there is an image */}
                         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-transparent"></div>

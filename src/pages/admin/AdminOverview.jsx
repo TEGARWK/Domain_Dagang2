@@ -54,10 +54,10 @@ const AdminOverview = () => {
         
         let balance = 0;
         try {
-            const balanceRes = await api.get("/daftarnama/balance");
+            const balanceRes = await api.get("/admin/registrar-balance");
             balance = balanceRes.data?.data?.balance || 0;
         } catch (e) {
-            console.error("Failed to fetch balance", e);
+            console.error("Failed to fetch balance from admin endpoint", e);
         }
 
         setStats({ 
@@ -254,7 +254,7 @@ const AdminOverview = () => {
                     <h3 className={`text-2xl font-black tracking-tight ${card.color === 'rose' ? 'text-rose-600' : 'text-slate-900 group-hover:text-[#f97316]'} transition-colors duration-300`}>
                       {loading ? (
                           <div className="h-8 w-24 bg-slate-100 animate-pulse rounded-md"></div>
-                      ) : card.value}
+                      ) : (card.value || 0)}
                     </h3>
                     
                     <div className="mt-4 flex items-center justify-between">

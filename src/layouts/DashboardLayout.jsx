@@ -84,6 +84,7 @@ const DashboardLayout = () => {
     if (isConfirmed) {
       // Hapus User & Cart (Bersih-bersih)
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
       localStorage.removeItem("cart");
 
       // Redirect ke Login

@@ -1,0 +1,90 @@
+<div class="row section-title align-items-center">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="/admin/referral" class="text-decoration-none">Referral</a></li>
+                <li class="breadcrumb-item active">Pengaturan Tier</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">Manajemen Tier Reward</h2>
+    </div>
+</div>
+
+<div class="alert alert-warning border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex gap-3">
+        <div class="bg-warning p-3 rounded-circle text-white h-100">
+            <i class="fas fa-triangle-exclamation fs-4"></i>
+        </div>
+        <div>
+            <h6 class="fw-bold mb-1 text-dark">Informasi Penting!</h6>
+            <p class="mb-0 text-muted small">
+                Perubahan pada data tier (Reward Amount/Min Referrals) <b>hanya berlaku untuk referral baru</b> yang terjadi setelah perubahan disimpan. 
+                Reward yang saat ini berstatus <i>pending</i> atau <i>active</i> tidak akan terpengaruh.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <% tiers.forEach(t => { %>
+        <div class="col-md-4">
+            <div class="card p-4 h-100 border-0 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0 text-primary"><%= t.tier_name %> Tier</h5>
+                    <div class="bg-primary-subtle p-2 rounded-3 text-primary">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                </div>
+                
+                <form onsubmit="updateTier(event, '<%= t.id %>')">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Minimal Referral</label>
+                        <input type="number" name="min_referrals" class="form-control form-control-lg fw-bold" value="<%= t.min_referrals %>" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Reward per Referral</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text border-0 bg-light">Rp</span>
+                            <input type="number" name="reward_amount" class="form-control border-0 bg-light fw-bold" value="<%= parseInt(t.reward_amount) %>" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold">
+                        Simpan Perubahan
+                    </button>
+                </form>
+            </div>
+        </div>
+    <% }) %>
+</div>
+
+<script>
+    async function updateTier(e, id) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = {
+            min_referrals: formData.get('min_referrals'),
+            reward_amount: formData.get('reward_amount'),
+            tier_name: formData.get('tier_name') || e.target.parentElement.querySelector('h5').innerText.replace(' Tier', '')
+        };
+
+        if (!confirm('Simpan perubahan tier? Referral baru akan mengikuti aturan ini.')) return;
+
+        try {
+            const res = await fetch(`/api/admin/referral/tiers/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                alert('Tier reward berhasil diperbarui!');
+                location.reload();
+            } else {
+                alert('Gagal: ' + result.message);
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    }
+</script>

@@ -301,16 +301,10 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-amber-600 transition-colors">Billing</span>
                  </Link>
 
-                 {/* Item: Voucher */}
-                 <Link to="/dashboard/vouchers" className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50/50 hover:bg-rose-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-rose-200 hover:shadow-md hover:-translate-y-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2.5 text-rose-500 group-hover:scale-110 transition-transform">
-                       <span className="material-symbols-outlined text-xl">confirmation_number</span>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-rose-600 transition-colors text-center">Voucher</span>
-                 </Link>
+
 
                  {/* Item: Pengaturan */}
-                 <Link to="/dashboard/settings" className="col-span-2 flex items-center gap-4 p-4 rounded-xl bg-slate-50/50 hover:bg-slate-800 hover:text-white transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-slate-700 hover:shadow-lg">
+                 <Link to="/dashboard/settings" className="flex items-center gap-4 p-4 rounded-xl bg-slate-50/50 hover:bg-slate-800 hover:text-white transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-slate-700 hover:shadow-lg">
                     <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm text-slate-500 group-hover:text-slate-800 transition-all group-hover:rotate-[30deg]">
                        <span className="material-symbols-outlined text-xl">settings</span>
                     </div>

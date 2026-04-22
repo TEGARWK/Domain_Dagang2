@@ -1,13 +1,25 @@
 import { useState, useEffect } from 'react';
+import api from '../services/api';
 
-const useAddress = (initialStateName = "", initialCityName = "") => {
+const useAddress = (
+  initialStateName = "", 
+  initialCityName = "", 
+  initialDistrictName = "", 
+  initialVillageName = ""
+) => {
   const [provinces, setProvinces] = useState([]);
   const [cities, setCities] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [villages, setVillages] = useState([]);
+
   const [selectedProvinceId, setSelectedProvinceId] = useState("");
   const [selectedCityId, setSelectedCityId] = useState("");
-  
-  // Track if we are in "initial load" mode to handle pre-filling
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [selectedDistrictId, setSelectedDistrictId] = useState("");
+  const [selectedVillageId, setSelectedVillageId] = useState("");
+
+  const [isLoading, setIsLoading] = useState({
+    prov: false, city: false, dist: false, vill: false
+  });
 
   // Helper: Title Case
   const toTitleCase = (str) => {
@@ -17,17 +29,27 @@ const useAddress = (initialStateName = "", initialCityName = "") => {
     });
   };
 
+  const fetchRegions = async (endpoint, setter, loadingKey) => {
+    setIsLoading(prev => ({ ...prev, [loadingKey]: true }));
+    try {
+      const res = await api.get(endpoint);
+      setter(res.data || []);
+      return res.data;
+    } catch (err) {
+      console.error(`Gagal ambil data ${loadingKey}:`, err);
+      setter([]);
+      return [];
+    } finally {
+      setIsLoading(prev => ({ ...prev, [loadingKey]: false }));
+    }
+  };
+
   // 1. Fetch Provinces on Mount
   useEffect(() => {
-    fetch("https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json")
-      .then((res) => res.json())
-      .then((data) => {
-        setProvinces(data);
-      })
-      .catch((err) => console.error("Gagal ambil provinsi:", err));
+    fetchRegions('/regions/provinces', setProvinces, 'prov');
   }, []);
 
-  // 2. Sync Initial State (e.g. from async profile load)
+  // 2. Sync Initial State
   useEffect(() => {
     if (provinces.length > 0 && initialStateName && !selectedProvinceId) {
         const foundProv = provinces.find(p => 
@@ -44,67 +66,119 @@ const useAddress = (initialStateName = "", initialCityName = "") => {
   useEffect(() => {
     if (!selectedProvinceId) {
         setCities([]);
+        setDistricts([]);
+        setVillages([]);
         return;
     }
-
-    fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${selectedProvinceId}.json`)
-      .then((res) => res.json())
-      .then((data) => {
+    fetchRegions(`/regions/children/${selectedProvinceId}`, (data) => {
         setCities(data);
-        
-        // Handle Initial City Pre-fill (Only if we just set the province matching initial state)
         if (initialCityName && !selectedCityId) {
-             const foundCity = data.find(c => 
+             const found = data.find(c => 
                 c.name.toLowerCase() === initialCityName.toLowerCase() ||
                 toTitleCase(c.name) === initialCityName
             );
-            if (foundCity) {
-                setSelectedCityId(foundCity.id);
-            }
+            if (found) setSelectedCityId(found.id);
         }
-      })
-      .catch((err) => console.error("Gagal ambil kota:", err));
-  }, [selectedProvinceId]); // Removed initialCityName from dependency to avoid loop, but might need checking
+    }, 'city');
+  }, [selectedProvinceId]);
+
+  // 4. Fetch Districts when City Changes
+  useEffect(() => {
+    if (!selectedCityId) {
+        setDistricts([]);
+        setVillages([]);
+        return;
+    }
+    fetchRegions(`/regions/children/${selectedCityId}`, (data) => {
+        setDistricts(data);
+        if (initialDistrictName && !selectedDistrictId) {
+             const found = data.find(c => 
+                c.name.toLowerCase() === initialDistrictName.toLowerCase() ||
+                toTitleCase(c.name) === initialDistrictName
+            );
+            if (found) setSelectedDistrictId(found.id);
+        }
+    }, 'dist');
+  }, [selectedCityId]);
+
+  // 5. Fetch Villages when District Changes
+  useEffect(() => {
+    if (!selectedDistrictId) {
+        setVillages([]);
+        return;
+    }
+    fetchRegions(`/regions/children/${selectedDistrictId}`, (data) => {
+        setVillages(data);
+        if (initialVillageName && !selectedVillageId) {
+             const found = data.find(c => 
+                c.name.toLowerCase() === initialVillageName.toLowerCase() ||
+                toTitleCase(c.name) === initialVillageName
+            );
+            if (found) setSelectedVillageId(found.id);
+        }
+    }, 'vill');
+  }, [selectedDistrictId]);
 
 
+  // Handlers
   const handleProvinceChange = (e, setFormData, formData) => {
-    const provinceId = e.target.value;
-    const provinceObj = provinces.find(p => p.id === provinceId);
-    const provinceName = provinceObj ? provinceObj.name : "";
-
-    setSelectedProvinceId(provinceId);
-    setSelectedCityId(""); // Reset city selection
-    setCities([]); // Clear cities temporarily
-
-    // Update parent form data
+    const id = e.target.value;
+    setSelectedProvinceId(id);
+    setSelectedCityId("");
+    setSelectedDistrictId("");
+    setSelectedVillageId("");
+    
+    const obj = provinces.find(p => p.id === id);
     setFormData({ 
         ...formData, 
-        state: toTitleCase(provinceName), 
-        city: "" 
+        state: obj ? toTitleCase(obj.name) : "", 
+        city: "", district: "", village: "" 
     });
   };
 
   const handleCityChange = (e, setFormData, formData) => {
-    const cityId = e.target.value;
-    const cityObj = cities.find(c => c.id === cityId);
-    const cityName = cityObj ? cityObj.name : "";
+    const id = e.target.value;
+    setSelectedCityId(id);
+    setSelectedDistrictId("");
+    setSelectedVillageId("");
     
-    setSelectedCityId(cityId);
-    
-    // Update parent form data
+    const obj = cities.find(c => c.id === id);
     setFormData({ 
         ...formData, 
-        city: toTitleCase(cityName) 
+        city: obj ? toTitleCase(obj.name) : "",
+        district: "", village: ""
+    });
+  };
+
+  const handleDistrictChange = (e, setFormData, formData) => {
+    const id = e.target.value;
+    setSelectedDistrictId(id);
+    setSelectedVillageId("");
+    
+    const obj = districts.find(c => c.id === id);
+    setFormData({ 
+        ...formData, 
+        district: obj ? toTitleCase(obj.name) : "",
+        village: ""
+    });
+  };
+
+  const handleVillageChange = (e, setFormData, formData) => {
+    const id = e.target.value;
+    setSelectedVillageId(id);
+    
+    const obj = villages.find(c => c.id === id);
+    setFormData({ 
+        ...formData, 
+        village: obj ? toTitleCase(obj.name) : ""
     });
   };
 
   return {
-    provinces,
-    cities,
-    selectedProvinceId,
-    selectedCityId,
-    handleProvinceChange,
-    handleCityChange
+    provinces, cities, districts, villages,
+    selectedProvinceId, selectedCityId, selectedDistrictId, selectedVillageId,
+    isLoading,
+    handleProvinceChange, handleCityChange, handleDistrictChange, handleVillageChange
   };
 };
 

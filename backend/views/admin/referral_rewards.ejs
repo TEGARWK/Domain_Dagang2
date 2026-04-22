@@ -1,0 +1,98 @@
+<div class="row section-title align-items-center">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="/admin/referral" class="text-decoration-none">Referral</a></li>
+                <li class="breadcrumb-item active">Riwayat Reward</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">Riwayat Reward Referral</h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="px-4 py-3 border-0">Referrer (Pengajak)</th>
+                        <th class="py-3 border-0">Referee (Teman)</th>
+                        <th class="py-3 border-0">Invoice & Total</th>
+                        <th class="py-3 border-0">Nominal Reward</th>
+                        <th class="py-3 border-0">Holding Until</th>
+                        <th class="py-3 border-0">Status</th>
+                        <th class="px-4 py-3 border-0 text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (rewards.length === 0) { %>
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">Belum ada riwayat reward.</td>
+                        </tr>
+                    <% } %>
+                    <% rewards.forEach(r => { %>
+                        <tr>
+                            <td class="px-4 fw-bold text-primary"><%= r.referrer_name %></td>
+                            <td><%= r.referee_name %></td>
+                            <td>
+                                <div class="fw-medium small"><%= r.invoice_id %></div>
+                                <div class="text-muted small">Total: Rp <%= parseFloat(r.invoice_total).toLocaleString('id-ID') %></div>
+                            </td>
+                            <td class="fw-bold text-success">
+                                Rp <%= parseFloat(r.reward_amount).toLocaleString('id-ID') %>
+                            </td>
+                            <td class="small">
+                                <%= new Date(r.holding_until).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) %>
+                            </td>
+                            <td>
+                                <% if (r.status === 'pending') { %>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">Pending</span>
+                                <% } else if (r.status === 'active') { %>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">Active</span>
+                                <% } else { %>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">Cancelled</span>
+                                <% } %>
+                            </td>
+                            <td class="px-4 text-end">
+                                <% if (r.status === 'pending') { %>
+                                    <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="cancelReward('<%= r.id %>')">
+                                        Cancel
+                                    </button>
+                                <% } else { %>
+                                    <button class="btn btn-light btn-sm rounded-circle" disabled>
+                                        <i class="fas fa-ban text-muted"></i>
+                                    </button>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function cancelReward(id) {
+        const reason = prompt('Masukkan alasan pembatalan reward ini:');
+        if (!reason) return;
+
+        try {
+            const res = await fetch(`/api/admin/referral/rewards/${id}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Reward berhasil dibatalkan.');
+                location.reload();
+            } else {
+                alert('Gagal: ' + data.message);
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    }
+</script>

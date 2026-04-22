@@ -30,15 +30,18 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       // Token Invalid/Expired/Forbidden
-      console.warn("Session expired or unauthorized. Logging out...");
+      console.warn("Session expired or unauthorized. Clearing session...");
       
-      // Clear Storage
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-      localStorage.removeItem("cart");
 
-      // Redirect to Login (using window because we are outside React Router)
-      window.location.href = "/login";
+      // Redirect ke login jika bukan di halaman login/register/home
+      const publicPaths = ["/login", "/register", "/forgot-password", "/", "/domain", "/promo"];
+      const currentPath = window.location.pathname;
+      
+      if (!publicPaths.includes(currentPath) && !currentPath.startsWith("/verify") && !currentPath.startsWith("/reset-password")) {
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }

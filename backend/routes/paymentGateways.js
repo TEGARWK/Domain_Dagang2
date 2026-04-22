@@ -4,11 +4,13 @@ const controller = require("../controllers/paymentGatewayController");
 
 // Public (for Checkout page)
 router.get("/", controller.getAll);
+router.get("/calculate-fee", controller.calculateFee);
 
 // Admin (for Management page)
 router.get("/admin", controller.getAllAdmin);
-router.post("/", controller.create);
-router.put("/:provider", controller.update); // Changed from :id to :provider
+router.get("/admin/tripay-balance", controller.getTripayBalance);
+router.get("/admin/tripay-channels", controller.getTripayChannels);
+router.put("/:provider", controller.update);
 router.delete("/:id", controller.delete);
 
 module.exports = router;

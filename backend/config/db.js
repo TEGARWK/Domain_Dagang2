@@ -8,10 +8,29 @@ const pool = new Pool({
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT || 5432,
+  // --- POOL OPTIMIZATION ---
+  max: 40, // Increase max connections (Default is 10)
+  idleTimeoutMillis: 10000, // Close idle clients after 10 seconds
+  connectionTimeoutMillis: 5000, // Return an error if a connection cannot be established within 5 seconds
 });
 
-pool.on("connect", () => {
-    // pg connects on demand.
+// --- POOL MONITORING ---
+pool.on("connect", (client) => {
+    // Log only once per new connection to avoid noise
+});
+
+pool.on("acquire", (client) => {
+    // Current pool health metrics
+    const total = pool.totalCount;
+    const idle = pool.idleCount;
+    const waiting = pool.waitingCount;
+    if (waiting > 0) {
+        console.warn(`[DB Pool Warning] Connection Acquired. Total: ${total}, Idle: ${idle}, Waiting: ${waiting}`);
+    }
+});
+
+pool.on("error", (err, client) => {
+  console.error("❌ Unexpected error on idle client", err.message);
 });
 
 console.log(`✅ Configured for PostgreSQL: ${process.env.DB_HOST}`);
@@ -35,7 +54,7 @@ const query = (text, params, callback) => {
           console.error("❌ SQL Error:", err.message);
           return reject(err);
         }
-        const results = res.rows;
+        const results = res.rows || [];
         results.affectedRows = res.rowCount;
         resolve(results);
       });
@@ -51,7 +70,7 @@ const query = (text, params, callback) => {
       if (callback) callback(err, null);
       return;
     }
-    const results = res.rows;
+    const results = res.rows || [];
     results.affectedRows = res.rowCount;
     if (callback) callback(null, results);
   });

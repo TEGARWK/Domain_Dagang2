@@ -157,7 +157,7 @@ const Vouchers = () => {
                                                         )}
                                                     </div>
                                                     <h3 className="text-sm font-bold text-slate-800 uppercase leading-snug truncate mb-1">
-                                                        {v.title || `Voucher ${v.code}`}
+                                                        {v.title || "Voucher Promo"}
                                                     </h3>
                                                     <p className="text-[10px] font-bold text-slate-400 mb-2 flex items-center gap-1.5">
                                                         Min. {formatRupiah(v.min_purchase)}
@@ -173,12 +173,18 @@ const Vouchers = () => {
                                                     {isUsed ? (
                                                         <span className="text-[10px] font-bold text-slate-300 uppercase rotate-[-12deg] border-2 border-slate-200 px-3 py-1 rounded-lg">USED</span>
                                                     ) : (
-                                                        <button 
-                                                            onClick={() => navigate("/")}
-                                                            className="px-6 py-2.5 border-2 border-slate-900 text-slate-900 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all active:scale-95"
-                                                        >
-                                                            Pakai
-                                                        </button>
+                                                        <div className="flex flex-col items-end">
+                                                            <button 
+                                                                onClick={() => {
+                                                                    localStorage.setItem("pending_voucher", v.code);
+                                                                    success(`Voucher siap dipakai! Silakan pilih layanan.`);
+                                                                    navigate("/dashboard/buy");
+                                                                }}
+                                                                className="px-6 py-2.5 border-2 border-slate-900 text-slate-900 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all active:scale-95"
+                                                            >
+                                                                Pakai
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>

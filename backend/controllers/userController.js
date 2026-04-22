@@ -13,15 +13,15 @@ exports.updateUser = (req, res) => {
       return res.status(403).json("You are not allowed to update this user!");
   }
   
-  const { name, phone, bio, avatar, address_line1, city, state, zip_code, country, role: newRole } = req.body;
+  const { name, phone, bio, avatar, address_line1, city, state, district, village, zip_code, country, role: newRole } = req.body;
 
   // Ideally we should use dynamic query construction, but for now strict params
   let sql = `
       UPDATE users 
       SET name = $1, phone = $2, bio = $3, avatar = $4, 
-          address_line1 = $5, city = $6, state = $7, zip_code = $8, country = $9
+          address_line1 = $5, city = $6, state = $7, district = $8, village = $9, zip_code = $10, country = $11
   `;
-  const values = [name, phone, bio, avatar, address_line1, city, state, zip_code, country];
+  const values = [name, phone, bio, avatar, address_line1, city, state, district, village, zip_code, country];
 
   // Admin only: Can update role
   if (role === 'admin' && newRole) {
@@ -84,7 +84,7 @@ exports.changePassword = (req, res) => {
 };
 exports.getUser = (req, res) => {
   const userId = req.params.id;
-  const sql = "SELECT id, name, email, phone, bio, address_line1, city, state, zip_code, country, avatar, role, created_at FROM users WHERE id = $1";
+  const sql = "SELECT id, name, email, phone, bio, address_line1, city, state, district, village, zip_code, country, avatar, role, created_at FROM users WHERE id = $1";
 
   db.query(sql, [userId], (err, data) => {
     if (err) return res.status(500).json(err);
@@ -95,7 +95,7 @@ exports.getUser = (req, res) => {
 
 // --- GET ALL USERS (Admin Only) ---
 exports.getAllUsers = (req, res) => {
-  const sql = "SELECT id, name, email, phone, role, address_line1, city, state, zip_code, country, created_at FROM users ORDER BY created_at DESC";
+  const sql = "SELECT id, name, email, phone, role, address_line1, city, state, district, village, zip_code, country, created_at FROM users ORDER BY created_at DESC";
   db.query(sql, (err, data) => {
     if (err) return res.status(500).json(err);
     return res.status(200).json(data);

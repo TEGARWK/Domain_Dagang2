@@ -16,6 +16,7 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
     { name: "Katalog Bantuan", path: "/admin/faqs", icon: "live_help" },
     { name: "Tiket Bantuan", path: "/admin/support-tickets", icon: "support_agent" },
     { name: "Log Aktivitas", path: "/admin/logs", icon: "history" },
+    { name: "Atur Referral", path: "/admin/referral", icon: "share" },
     { name: "Metode Pembayaran", path: "/admin/payment-gateways", icon: "credit_card" },
   ];
 

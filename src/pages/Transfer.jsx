@@ -124,14 +124,14 @@ const Transfer = () => {
             <input
               type="text"
               placeholder="Masukan nama domain (contoh: mybiz.com)"
-              className="flex-1 pl-6 pr-4 h-[56px] rounded-lg outline-none text-base text-slate-800 placeholder:text-slate-400 bg-transparent"
+              className="flex-1 pl-6 pr-4 h-12 md:h-[56px] text-sm md:text-base rounded-lg outline-none text-slate-800 placeholder:text-slate-400 bg-transparent"
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
             />
             <button
               type="submit"
               disabled={isChecking}
-              className="bg-[#F97316] text-white px-10 h-[56px] rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-orange-600 transition-all duration-300 shadow-xl shadow-orange-500/20 disabled:opacity-70 flex items-center justify-center gap-2 active:scale-95"
+              className="bg-[#F97316] text-white px-6 md:px-10 h-12 md:h-[56px] rounded-lg font-bold text-xs md:text-sm uppercase tracking-widest hover:bg-orange-600 transition-all duration-300 shadow-xl shadow-orange-500/20 disabled:opacity-70 flex items-center justify-center gap-2 active:scale-95"
             >
               {isChecking ? "Mengecek..." : "Ajukan Migrasi"}
             </button>
@@ -233,11 +233,11 @@ const Transfer = () => {
                   </div>
                 </div>
 
-                <div className="p-5 bg-slate-50 rounded-lg border border-slate-100">
-                    <p className="text-[13px] text-slate-600 font-bold flex justify-between items-center">
+                <div className="p-4 md:p-5 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                         <span className="uppercase tracking-wider text-[10px] text-slate-400 font-bold">Biaya Transfer (+1 Thn)</span>
-                        <span className="text-[#F97316] text-lg font-bold">Rp {parseInt(transferPrice).toLocaleString("id-ID")}</span>
-                    </p>
+                        <span className="text-[#F97316] text-base md:text-lg font-bold">Rp {parseInt(transferPrice).toLocaleString("id-ID")}</span>
+                    </div>
                 </div>
 
                 <button

@@ -140,7 +140,7 @@ const Footer = () => {
         {/* COPYRIGHT */}
         <div className="border-t border-slate-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-400 text-xs">
-            &copy; 2026 Domain Dagang Indonesia. All rights reserved.
+            &copy; 2026 PT Aplikasi Dagang Teknologi Bandung. All rights reserved.
           </p>
           <div className="flex gap-6 text-xs text-slate-400 font-medium">
             <a href="#" className="hover:text-slate-600">

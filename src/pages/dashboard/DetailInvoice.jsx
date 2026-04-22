@@ -88,10 +88,10 @@ const DetailInvoice = () => {
   return (
     <div className="pb-20">
       {/* --- ACTION BAR (Tombol Balik & Print) --- */}
-      <div className="max-w-3xl mx-auto mb-6 flex justify-between items-center print:hidden">
+      <div className="max-w-3xl mx-auto mb-6 flex flex-col md:flex-row justify-between items-center gap-4 print:hidden px-4 sm:px-0">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-[#64748b] hover:text-[#F97316] font-bold text-sm transition"
+          className="flex items-center gap-2 text-[#64748b] hover:text-[#F97316] font-bold text-sm transition self-start md:self-auto"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -107,18 +107,18 @@ const DetailInvoice = () => {
           </svg>
           Kembali
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
           {invoice.status === "pending" && (
             <button
               onClick={() => navigate(`/payment/${invoice.id}`)}
-              className="bg-[#F97316] text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-[#ea580c] transition classic-shadow flex items-center gap-2"
+              className="flex-1 md:flex-none justify-center bg-[#F97316] text-white px-4 sm:px-5 py-2.5 rounded-lg font-bold text-xs sm:text-sm hover:bg-[#ea580c] transition classic-shadow flex items-center gap-2"
             >
               Bayar Sekarang
             </button>
           )}
           <button
             onClick={handleDownloadPdf}
-            className="bg-[#0f172a] text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-[#F97316] transition classic-shadow flex items-center gap-2"
+            className="flex-1 md:flex-none justify-center bg-[#0f172a] text-white px-4 sm:px-5 py-2.5 rounded-lg font-bold text-xs sm:text-sm hover:bg-[#F97316] transition classic-shadow flex items-center gap-2"
           >
             <svg
               className="w-4 h-4"
@@ -139,8 +139,8 @@ const DetailInvoice = () => {
       </div>
 
       {/* --- KERTAS INVOICE (Area yang akan di-print) --- */}
-      <div className="max-w-3xl mx-auto classic-shadow-lg rounded-lg bg-white print:shadow-none">
-        <div id="invoice-print-area" className="bg-white p-8 rounded-lg border border-[#f1f5f9] print:border-none print:p-0 relative overflow-hidden">
+      <div className="max-w-3xl mx-auto classic-shadow-lg rounded-lg bg-white print:shadow-none sm:mx-4 md:mx-auto">
+        <div id="invoice-print-area" className="bg-white p-5 sm:p-8 rounded-lg border border-[#f1f5f9] print:border-none print:p-0 relative overflow-hidden">
         
         {/* WATERMARK / STAMP LUNAS */}
         {invoice.status === "paid" && (
@@ -158,7 +158,7 @@ const DetailInvoice = () => {
         )}
 
         {/* HEADER: LOGO & STATUS */}
-        <div className="flex justify-between items-start border-b-2 border-[#1e293b] pb-8 mb-8 relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b-2 border-[#1e293b] pb-8 mb-8 relative z-10">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-[#F97316] rounded-lg flex items-center justify-center">
@@ -176,8 +176,8 @@ const DetailInvoice = () => {
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <h1 className="text-xl font-bold text-[#1e293b] mb-2">
+          <div className="text-left md:text-right w-full md:w-auto">
+            <h1 className="text-lg md:text-xl font-bold text-[#1e293b] mb-2 break-all">
               #{invoice.id}
             </h1>
             {invoice.status === "paid" ? (
@@ -191,9 +191,9 @@ const DetailInvoice = () => {
             )}
           </div>
         </div>
-
+ 
         {/* INFO PENGIRIM & PENERIMA */}
-        <div className="grid grid-cols-2 gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-10">
           <div className="relative z-10">
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-2">
               Diterbitkan Oleh:
@@ -208,7 +208,7 @@ const DetailInvoice = () => {
               <span className="font-medium text-[#f97316]">admin@aplikasidagang.co.id</span> • 0813 8486 8040
             </p>
           </div>
-          <div className="text-right relative z-10">
+          <div className="text-left md:text-right relative z-10">
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-2">
               Ditujukan Kepada:
             </p>
@@ -221,7 +221,7 @@ const DetailInvoice = () => {
         </div>
 
         {/* INFO TANGGAL */}
-        <div className="grid grid-cols-3 gap-6 mb-8 bg-[#0f172a] p-5 rounded-lg border border-[#1e293b] relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8 bg-[#0f172a] p-5 rounded-lg border border-[#1e293b] relative z-10">
           <div>
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-1">
               Tanggal Tagihan
@@ -238,7 +238,7 @@ const DetailInvoice = () => {
             </p>
             <p className="font-bold text-[#f97316] uppercase">{invoice.payment_method || "N/A"}</p>
           </div>
-          <div className="text-right">
+          <div className="text-left md:text-right sm:col-span-2 md:col-span-1">
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-1">
               Total Tagihan
             </p>
@@ -276,7 +276,7 @@ const DetailInvoice = () => {
         </div>
 
         {/* SUMMARY & SIGNATURE */}
-        <div className="grid grid-cols-2 gap-8 mb-8 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 relative z-10">
           <div>
              <p className="text-[9px] text-[#94a3b8] font-semibold uppercase tracking-widest leading-relaxed mb-4">
                 * Tagihan ini sah tanpa tanda tangan basah.<br/>
@@ -286,15 +286,46 @@ const DetailInvoice = () => {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between text-xs">
-              <span className="text-[#64748b] font-semibold uppercase tracking-wider">Subtotal</span>
-              <span className="font-bold text-[#1e293b]">{formatRupiah(invoice.subtotal)}</span>
+              <span className="text-[#64748b] font-semibold uppercase tracking-wider">Subtotal (Bruto)</span>
+              <span className="font-bold text-[#1e293b]">
+                {formatRupiah(invoice.subtotal + (invoice.discount || 0))}
+              </span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-[#64748b] font-semibold uppercase tracking-wider">Pajak (PPN 11%)</span>
-              <span className="font-bold text-[#16a34a]">Rp 0 (Promo)</span>
-            </div>
+
+            {invoice.discount_meta?.referral?.immediate_discount > 0 && (
+                <div className="flex justify-between text-xs text-[#c2410c] bg-orange-50 px-2 py-1 rounded">
+                    <span className="font-semibold uppercase tracking-wider flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">card_giftcard</span>
+                        Potongan Referral
+                    </span>
+                    <span className="font-bold">- {formatRupiah(invoice.discount_meta.referral.immediate_discount)}</span>
+                </div>
+            )}
+
+            {invoice.discount_meta?.voucher && (
+                <div className="flex justify-between text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded">
+                    <span className="font-semibold uppercase tracking-wider flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">confirmation_number</span>
+                        Diskon Voucher ({invoice.discount_meta.voucher.code})
+                    </span>
+                    <span className="font-bold">- {formatRupiah(invoice.discount_meta.voucher.amount)}</span>
+                </div>
+            )}
+
+            {invoice.tax > 0 && (
+              <div className="flex justify-between text-xs">
+                <span className="text-[#64748b] font-semibold uppercase tracking-wider">Pajak (PPN 11%)</span>
+                <span className="font-bold text-[#1e293b]">+ {formatRupiah(invoice.tax)}</span>
+              </div>
+            )}
+            {(invoice.service_fee > 0 || invoice.status === 'paid') && (
+              <div className="flex justify-between text-xs font-medium">
+                <span className="text-[#64748b] font-semibold uppercase tracking-wider">Biaya Layanan</span>
+                <span className="font-bold text-[#3b82f6]">+ {formatRupiah(invoice.service_fee || 0)}</span>
+              </div>
+            )}
             <div className="border-t-2 border-[#1e293b] pt-3 flex justify-between items-center">
-              <span className="text-[#1e293b] font-bold text-xs uppercase tracking-widest">Grand Total</span>
+              <span className="text-[#1e293b] font-bold text-xs uppercase tracking-widest">Total Bayar</span>
               <span className="text-[#F97316] font-bold text-xl tracking-tighter">{formatRupiah(invoice.total)}</span>
             </div>
           </div>

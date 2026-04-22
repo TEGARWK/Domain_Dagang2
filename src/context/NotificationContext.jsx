@@ -17,8 +17,11 @@ export const NotificationProvider = ({ children }) => {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+      const userStr = localStorage.getItem("user");
+      if (!userStr) return;
+
+      const user = JSON.parse(userStr);
+      if (!user?.token) return;
 
       const res = await api.get("/notifications");
 
@@ -39,7 +42,13 @@ export const NotificationProvider = ({ children }) => {
         }
       }
     } catch (err) {
-      console.error("Fetch notifications error:", err);
+      if (err.response?.status === 401) {
+          console.warn("Unauthorized fetch in NotificationContext - clearing state.");
+          setNotifications([]);
+          setUnreadCount(0);
+      } else {
+          console.error("Fetch notifications error:", err);
+      }
     }
   }, []);
 
@@ -67,9 +76,9 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  const addToast = useCallback((type, message, duration = 3000) => {
+  const addToast = useCallback((type, message, title = null, duration = 3000) => {
     const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    setToasts((prev) => [...prev, { id, type, message, duration }]);
+    setToasts((prev) => [...prev, { id, type, message, title, duration }]);
   }, []);
 
   const removeToast = useCallback((id) => {
@@ -82,10 +91,10 @@ export const NotificationProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  const success = (message) => addToast("success", message);
-  const error = (message) => addToast("error", message);
-  const warning = (message) => addToast("warning", message);
-  const info = (message) => addToast("info", message);
+  const success = (message, title = null) => addToast("success", message, title);
+  const error = (message, title = null) => addToast("error", message, title);
+  const warning = (message, title = null) => addToast("warning", message, title);
+  const info = (message, title = null) => addToast("info", message, title);
 
   return (
     <NotificationContext.Provider value={{ 
@@ -95,7 +104,7 @@ export const NotificationProvider = ({ children }) => {
     }}>
       {children}
       
-      <div className="fixed top-5 right-5 z-[100] flex flex-col items-end gap-2 pointer-events-none w-full max-w-sm">
+      <div className="fixed top-4 left-4 right-4 sm:top-5 sm:right-5 sm:left-auto z-[100] flex flex-col items-center sm:items-end gap-2 pointer-events-none w-auto sm:w-full sm:max-w-sm">
         {toasts.map((toast) => (
           <Toast
             key={toast.id}

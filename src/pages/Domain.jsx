@@ -133,7 +133,7 @@ const Domain = () => {
             <input
               type="text"
               placeholder="Cari ekstensi domain (contoh: .id)"
-              className="block w-full pl-14 pr-6 h-[56px] border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-[#F97316] transition-all shadow-[0_20px_50px_rgba(15,23,42,0.1)] hover:border-[#F97316]/30"
+              className="block w-full pl-14 pr-6 h-12 md:h-[56px] text-sm md:text-base border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-[#F97316] transition-all shadow-[0_20px_50px_rgba(15,23,42,0.1)] hover:border-[#F97316]/30"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -203,7 +203,14 @@ const Domain = () => {
                         </td>
                         <td className="px-10 py-6 text-right">
                           <button
-                            onClick={() => navigate("/")} // Navigate home to perform search
+                            onClick={() => {
+                              const user = localStorage.getItem("user");
+                              if (user) {
+                                navigate("/dashboard/buy");
+                              } else {
+                                navigate("/register");
+                              }
+                            }}
                             className="bg-slate-900 text-white px-6 py-3 rounded-lg font-bold text-[12px] uppercase tracking-widest hover:bg-[#F97316] hover:shadow-xl hover:shadow-orange-500/20 transition-all transform active:scale-95 shadow-md"
                           >
                             Beli

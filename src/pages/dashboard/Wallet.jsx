@@ -47,7 +47,7 @@ const Wallet = () => {
             // Create Top Up Invoice
             const res = await api.post('/checkout/topup', { 
                 userId: JSON.parse(localStorage.getItem('user')).id,
-                amount: amount 
+                amount: amount
             });
 
             // Redirect to Checkout Page with Invoice ID
@@ -55,7 +55,7 @@ const Wallet = () => {
 
         } catch (err) {
             console.error(err);
-            error("Gagal membuat top up: " + (err.response?.data?.error || err.message));
+            error(err.response?.data?.message || err.response?.data?.error || "Gagal membuat top up. Coba beberapa saat lagi.");
         } finally {
             setProcessingTopUp(false);
         }

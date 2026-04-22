@@ -88,9 +88,9 @@ const Support = () => {
   };
 
   return (
-    <div className="space-y-8 animate-[fadeIn_0.5s_ease-out] pb-10 max-w-6xl mx-auto">
+    <div className="space-y-8 animate-[fadeIn_0.5s_ease-out] pb-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 font-sans">
       {/* --- HEADER --- */}
-      <div className="bg-white rounded-xl p-8 md:p-10 shadow-sm border border-slate-100 relative overflow-hidden">
+      <div className="bg-white rounded-xl p-6 md:p-10 shadow-sm border border-slate-100 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-orange-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50"></div>
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div className="max-w-xl">
@@ -108,7 +108,7 @@ const Support = () => {
             </p>
           </div>
           
-          <div className="flex bg-slate-100 p-1.5 rounded-lg w-fit shrink-0">
+          <div className="flex bg-slate-100 p-1.5 rounded-lg w-full sm:w-fit overflow-x-auto scrollbar-hide">
             <button 
               onClick={() => { setActiveTab("faq"); setViewingTicket(null); }}
               className={`px-5 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${activeTab === "faq" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
@@ -210,10 +210,10 @@ const Support = () => {
                      <button 
                        type="submit" 
                        disabled={isSubmitting}
-                       className="px-8 py-3.5 bg-[#F97316] text-white rounded-lg font-bold hover:bg-orange-600 transition shadow-lg shadow-orange-500/30 flex items-center gap-2 disabled:opacity-50"
+                       className="px-8 py-3.5 bg-[#F97316] text-white rounded-lg font-bold hover:bg-orange-600 transition shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
                      >
                        {isSubmitting ? "Mengirim..." : "Kirim Tiket Sekarang"}
-                       {!isSubmitting && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>}
+                       {!isSubmitting && <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>}
                      </button>
                   </div>
                </form>
@@ -229,16 +229,16 @@ const Support = () => {
                
                {viewingTicket ? (
                   /* --- DETAIL VIEW (READ RECORD) --- */
-                  <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
+                  <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100">
                      <button onClick={() => setViewingTicket(null)} className="flex items-center gap-2 text-slate-400 hover:text-orange-500 text-xs font-bold mb-6 transition">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                         Kembali ke Daftar
                      </button>
                      <div className="flex justify-between items-start mb-6 pb-6 border-b border-slate-100">
                         <div>
-                           <div className="flex items-center gap-2 mb-2">
-                             {getStatusBadge(viewingTicket.status)}
-                             <span className="text-[10px] font-bold text-slate-400">Dirubah: {new Date(viewingTicket.updated_at).toLocaleString('id-ID')}</span>
+                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                             <div className="w-fit">{getStatusBadge(viewingTicket.status)}</div>
+                             <span className="text-[10px] font-bold text-slate-400 mt-1 sm:mt-0">Dirubah: {new Date(viewingTicket.updated_at).toLocaleString('id-ID')}</span>
                            </div>
                            <h3 className="text-2xl font-bold text-slate-900 leading-tight">{viewingTicket.subject}</h3>
                         </div>
@@ -298,9 +298,9 @@ const Support = () => {
                                   <h4 className="font-bold text-slate-900 text-base mb-1 truncate group-hover:text-[#F97316] transition-colors">{ticket.subject}</h4>
                                   <p className="text-xs text-slate-500 font-medium truncate max-w-sm">{ticket.message}</p>
                                </div>
-                               <div className="shrink-0 flex items-center gap-4">
+                               <div className="shrink-0 flex items-center justify-between md:justify-end gap-4 w-full md:w-auto mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-0 border-slate-50">
                                   {getStatusBadge(ticket.status)}
-                                  <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center group-hover:bg-orange-50 group-hover:text-[#F97316] transition-all">
+                                  <div className="w-8 h-8 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center group-hover:bg-orange-50 group-hover:text-[#F97316] transition-all shrink-0">
                                      <span className="material-symbols-outlined text-sm">chevron_right</span>
                                   </div>
                                </div>

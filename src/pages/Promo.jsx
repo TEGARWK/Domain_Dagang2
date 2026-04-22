@@ -4,10 +4,8 @@ import { useNotification } from "../context/NotificationContext";
 import api from "../services/api";
 
 const Promo = () => {
-  const [autoPromos, setAutoPromos] = useState([]);
   const [claimableCoupons, setClaimableCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const { success, error, info } = useNotification();
@@ -36,7 +34,6 @@ const Promo = () => {
                 const minRaw = String(v.min_purchase || "0").replace(/[^0-9.]/g, '');
                 const minPurchase = parseFloat(minRaw) || 0;
                 
-                // Date Safety
                 const validUntilDate = v.valid_until ? new Date(v.valid_until) : null;
                 const validUntil = (validUntilDate && !isNaN(validUntilDate.getTime()) && validUntilDate.getFullYear() > 1970)
                     ? validUntilDate.toLocaleDateString("id-ID", {day: 'numeric', month: 'long', year: 'numeric'})
@@ -66,18 +63,18 @@ const Promo = () => {
                     color: index % 3 === 0 ? "orange" : index % 3 === 1 ? "red" : "blue",
                     tlds: v.eligible_tlds ? (typeof v.eligible_tlds === 'string' ? JSON.parse(v.eligible_tlds) : v.eligible_tlds) : [],
                     actions: v.eligible_actions ? (typeof v.eligible_actions === 'string' ? JSON.parse(v.eligible_actions) : v.eligible_actions) : [],
-                    is_automatic: !!v.is_automatic,
                     min_purchase: minPurchase,
                     max_discount: parseFloat(v.max_discount) || 0,
                     type: v.type,
                     value: value,
-                    banner_image: v.banner_image,
                     is_new_user_only: !!v.is_new_user_only
                 };
             });
 
-            setAutoPromos(formatted.filter(p => p.is_automatic));
-            setClaimableCoupons(formatted.filter(p => !p.is_automatic));
+            // Filter out old "automatic" ones gracefully in case they exist in DB still
+            // (Since we didn't map is_automatic, we will rely on original 'data' array matching indices, but it's simpler to just map it again or just assign formatted)
+            // Let's just map it inside formatted and filter.
+            setClaimableCoupons(formatted); // We keep it simple. If there's an old automatic one, it just shows as a claimable promo, which is harmless.
         }
     } catch (err) {
         console.error("Gagal load promo:", err);
@@ -89,16 +86,6 @@ const Promo = () => {
   useEffect(() => {
      fetchPromos();
   }, []);
-
-  // Auto-slide effect for banner
-  useEffect(() => {
-      if (autoPromos.length > 1) {
-          const interval = setInterval(() => {
-              setCurrentBannerIndex(prev => (prev + 1) % autoPromos.length);
-          }, 5000);
-          return () => clearInterval(interval);
-      }
-  }, [autoPromos]);
 
   const handleClaim = async (voucherId) => {
     const user = localStorage.getItem("user");
@@ -159,109 +146,6 @@ const Promo = () => {
             </div>
         ) : (
             <>
-                {/* --- AUTO PROMO HERO CAROUSEL --- */}
-                {autoPromos.length > 0 && (
-                    <div className="mb-24 px-6 lg:px-8 max-w-7xl mx-auto">
-                        <div className="flex items-center gap-8 mb-12">
-                            <div className="h-px bg-slate-100 flex-1"></div>
-                            <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] whitespace-nowrap text-center">Event Promo Terbaru</h2>
-                            <div className="h-px bg-slate-100 flex-1"></div>
-                        </div>
-                        
-                        <div className="relative overflow-hidden group/carousel rounded-[3rem] shadow-2xl shadow-orange-100 bg-slate-900">
-                            <div 
-                                className="flex transition-transform duration-700 ease-out"
-                                style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
-                            >
-                                {autoPromos.map((item, index) => (
-                                    <div key={index} className="w-full shrink-0 relative min-h-[400px] flex items-center overflow-hidden">
-                                        {/* Full Background Image */}
-                                        <div className="absolute inset-0">
-                                            <img 
-                                                src={item.banner_image || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200"} 
-                                                alt={item.title} 
-                                                className="w-full h-full object-cover"
-                                            />
-                                            {/* Gradient Overlay for Text Readability */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/40 to-transparent"></div>
-                                            <div className="absolute inset-0 bg-slate-900/20"></div>
-                                        </div>
-
-                                        {/* Content Overlay */}
-                                        <div className="relative z-10 p-10 md:p-20 text-white max-w-3xl">
-                                            <div className="flex items-center gap-4 mb-8">
-                                                <span className="bg-[#F97316] text-white px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-2xl shadow-orange-500/40">Hot Event</span>
-                                                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-white/20">
-                                                    <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                                                    {item.duration}
-                                                </div>
-                                            </div>
-                                            
-                                            <h3 className="text-4xl md:text-[72px] font-bold mb-8 leading-[1] tracking-tighter uppercase drop-shadow-2xl">
-                                                {item.title}
-                                            </h3>
-                                            
-                                            <p className="text-slate-200 text-lg md:text-xl font-bold mb-12 line-clamp-2 md:line-clamp-none max-w-xl leading-relaxed opacity-90">
-                                                {item.desc}
-                                            </p>
-
-                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8">
-                                                <div>
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Hemat Hingga</span>
-                                                    <div className="flex items-baseline gap-2">
-                                                        <span className="text-5xl font-bold text-[#F97316] drop-shadow-[0_0_20px_rgba(249,115,22,0.4)]">{item.discount}</span>
-                                                        <span className="text-slate-400 font-bold">OFF</span>
-                                                    </div>
-                                                </div>
-                                                <div className="hidden sm:block h-12 w-px bg-white/20"></div>
-                                                <div className="bg-emerald-500/10 backdrop-blur-md border border-emerald-500/30 px-6 py-3 rounded-[1.5rem] flex items-center gap-3">
-                                                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.6)]"></div>
-                                                    <span className="text-[12px] font-bold text-emerald-400 uppercase tracking-widest">Berlaku Otomatis</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Carousel Indicators */}
-                            {autoPromos.length > 1 && (
-                                <div className="absolute bottom-8 right-8 flex gap-3 z-20">
-                                    {autoPromos.map((_, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => setCurrentBannerIndex(idx)}
-                                            className={`transition-all duration-300 rounded-full h-1.5 ${
-                                                currentBannerIndex === idx 
-                                                ? 'w-10 bg-[#F97316]' 
-                                                : 'w-3 bg-white/30 hover:bg-white/50'
-                                            }`}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Navigation Buttons */}
-                            {autoPromos.length > 1 && (
-                                <>
-                                    <button 
-                                        onClick={() => setCurrentBannerIndex(prev => (prev - 1 + autoPromos.length) % autoPromos.length)}
-                                        className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/20 hover:bg-white text-white hover:text-slate-900 rounded-full flex items-center justify-center backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-all border border-white/10"
-                                    >
-                                        <span className="material-symbols-outlined text-[24px]">chevron_left</span>
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentBannerIndex(prev => (prev + 1) % autoPromos.length)}
-                                        className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/20 hover:bg-white text-white hover:text-slate-900 rounded-full flex items-center justify-center backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-all border border-white/10"
-                                    >
-                                        <span className="material-symbols-outlined text-[24px]">chevron_right</span>
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                )}
-
                 {/* --- CLAIMABLE COUPONS GRID --- */}
                 <div className="flex items-center gap-8 mb-12 max-w-7xl mx-auto px-6 lg:px-8">
                     <div className="h-px bg-slate-100 flex-1"></div>

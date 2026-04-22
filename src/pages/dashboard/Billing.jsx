@@ -299,7 +299,31 @@ const Billing = () => {
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{inv.payment_method || "N/A"}</p>
                     </td>
                     <td className="px-8 py-5 text-right font-bold text-slate-900">
-                      {formatRupiah(inv.total)}
+                      <div>
+                        {(inv.is_topup || inv.first_item?.toLowerCase().includes('top up')) ? (
+                          formatRupiah(inv.total)
+                        ) : (
+                          <>
+                            <div className="flex flex-col items-end leading-tight">
+                              {parseFloat(inv.total_discount || 0) > 0 ? (
+                                <>
+                                  <span className="text-[9px] text-slate-400 line-through font-normal">{formatRupiah(inv.subtotal)}</span>
+                                  <p className="text-xs">
+                                    {formatRupiah(inv.subtotal - inv.total_discount)} 
+                                    <span className="ml-1 text-[9px] text-slate-400 font-medium">+ {formatRupiah(inv.tax_amount || inv.tax)}</span>
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-xs">
+                                  {formatRupiah(Math.ceil(inv.total / 1.11))} 
+                                  <span className="ml-1 text-[9px] text-slate-400 font-medium">+ {formatRupiah(inv.total - Math.ceil(inv.total / 1.11))}</span>
+                                </p>
+                              )}
+                              <p className="text-[10px] text-[#f97316] mt-1">{formatRupiah(inv.total)}</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="px-8 py-5 text-center">
                       <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border ${

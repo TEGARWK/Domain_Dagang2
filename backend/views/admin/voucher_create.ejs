@@ -1,0 +1,147 @@
+<div class="row section-title align-items-center">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="/admin/vouchers" class="text-decoration-none">Voucher</a></li>
+                <li class="breadcrumb-item active">Buat Baru</li>
+            </ol>
+        </nav>
+        <h2 class="mb-0">Buat Voucher Baru</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form id="createVoucherForm" class="card p-4">
+            <div class="row g-4">
+                <!-- Kode Voucher -->
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Kode Voucher</label>
+                    <div class="input-group">
+                        <input type="text" name="code" id="voucherCode" class="form-control form-control-lg text-uppercase fw-bold" placeholder="CONTOH: PROMO50" required>
+                        <button type="button" class="btn btn-outline-secondary" onclick="generateRandomCode()">
+                            <i class="fas fa-magic me-1"></i> Acak
+                        </button>
+                    </div>
+                    <small class="text-muted">Kode unik yang akan dimasukkan user saat checkout.</small>
+                </div>
+
+                <!-- Tipe & Nilai -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Tipe Diskon</label>
+                    <select name="discount_type" class="form-select" id="discountType" required>
+                        <option value="percentage">Persentase (%)</option>
+                        <option value="flat">Nominal Tetap (Rp)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Nilai Diskon</label>
+                    <div class="input-group">
+                        <span class="input-group-text" id="valuePrefix">%</span>
+                        <input type="number" name="discount_value" class="form-control" placeholder="0" required>
+                    </div>
+                </div>
+
+                <hr class="my-4 text-muted opacity-25">
+
+                <!-- Kuota & Limit -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Total Kuota</label>
+                    <input type="number" name="quota" class="form-control" value="10" min="1" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Limit per User</label>
+                    <input type="number" name="max_use_per_user" class="form-control" value="1" min="1" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Min. Transaksi</label>
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="number" name="min_transaction" class="form-control" value="0">
+                    </div>
+                </div>
+
+                <!-- Waktu -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Tanggal Mulai</label>
+                    <input type="datetime-local" name="started_at" id="startedAt" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Tanggal Berakhir</label>
+                    <input type="datetime-local" name="expired_at" id="expiredAt" class="form-control" required>
+                </div>
+
+                <div class="col-12 mt-5">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="/admin/vouchers" class="btn btn-light px-4">Batal</a>
+                        <button type="submit" class="btn btn-primary px-5">Simpan Voucher</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card p-4 bg-light border-0">
+            <h6 class="fw-bold mb-3"><i class="fas fa-info-circle text-primary me-2"></i> Tips Membuat Promo</h6>
+            <ul class="small text-muted ps-3">
+                <li class="mb-2">Gunakan kode yang mudah diingat seperti <b>DOMAINBARU</b> atau <b>HEMAT50</b>.</li>
+                <li class="mb-2">Untuk diskon persentase, pastikan Anda memberikan nilai yang wajar (contoh: 5-20%).</li>
+                <li class="mb-2">Kuota Flash Sale sebaiknya terbatas untuk meningkatkan urgensi pembelian.</li>
+                <li>Masa aktif voucher akan tersinkronisasi otomatis ke Redis untuk performa tinggi.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Set default dates
+    const now = new Date();
+    const nextMonth = new Date();
+    nextMonth.setMonth(now.getMonth() + 1);
+    
+    document.getElementById('startedAt').value = now.toISOString().slice(0, 16);
+    document.getElementById('expiredAt').value = nextMonth.toISOString().slice(0, 16);
+
+    document.getElementById('discountType').addEventListener('change', function() {
+        document.getElementById('valuePrefix').innerText = this.value === 'percentage' ? '%' : 'Rp';
+    });
+
+    function generateRandomCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let res = 'PROMO-';
+        for (let i = 0; i < 6; i++) {
+            res += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('voucherCode').value = res;
+    }
+
+    document.getElementById('createVoucherForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        // Validasi
+        if (data.discount_type === 'percentage' && data.discount_value > 100) {
+            alert('Persentase tidak boleh > 100%');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/admin/vouchers/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                alert('Voucher berhasil dibuat!');
+                window.location.href = '/admin/vouchers';
+            } else {
+                alert('Gagal: ' + result.message);
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    });
+</script>

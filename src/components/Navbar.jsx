@@ -62,6 +62,7 @@ const Navbar = () => {
   const handleLogout = () => {
     if (window.confirm("Yakin ingin keluar?")) {
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
       localStorage.removeItem("cart");
       setUser(null);
       window.location.reload(); // Force refresh to clear state completely
@@ -301,7 +302,7 @@ const Navbar = () => {
 
       {/* --- MOBILE MENU OVERLAY --- */}
       {isMobileMenuOpen && (
-        <div className="absolute top-20 left-0 w-full bg-white border-b border-slate-100 shadow-xl p-4 flex flex-col gap-2 md:hidden animate-fade-in-down origin-top">
+        <div className="absolute top-20 left-0 w-full bg-white border-b border-slate-100 shadow-xl p-4 flex flex-col gap-2 md:hidden animate-fade-in-down origin-top max-h-[calc(100vh-80px)] overflow-y-auto">
           <Link to="/" className={mobileLinkClasses("/")}>Home</Link>
           <Link to="/domain" className={mobileLinkClasses("/domain")}>Daftar Harga</Link>
           <Link to="/transfer" className={mobileLinkClasses("/transfer")}>Transfer Domain</Link>

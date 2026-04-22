@@ -5,13 +5,15 @@ import useAddress from "../hooks/useAddress";
 import AddressFields from "../components/forms/AddressFields";
 import { GoogleLogin } from '@react-oauth/google';
 import api from "../services/api";
+import LegalModal from "../components/ui/LegalModal";
+import { LEGAL_CONTENT } from "../constants/legalContent";
 
 const Register = () => {
   const { success, warning } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
@@ -22,8 +24,11 @@ const Register = () => {
     address_line1: "",
     city: "",
     state: "",
+    district: "",
+    village: "",
     zip_code: "",
     country: "ID",
+    referralCode: sessionStorage.getItem("referral_code") || "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +36,15 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [googleLoadError, setGoogleLoadError] = useState(false);
+
+  // --- LEGAL MODAL STATE ---
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState(null);
+
+  const openLegalModal = (type) => {
+    setModalContent(LEGAL_CONTENT[type]);
+    setIsLegalModalOpen(true);
+  };
 
   // --- ADDRESS HOOK ---
   const addressHook = useAddress();
@@ -64,15 +78,21 @@ const Register = () => {
         phone: formData.phone,
         bio: formData.bio,
         address_line1: formData.address_line1,
-        city: formData.city,
         state: formData.state,
+        city: formData.city,
+        district: formData.district,
+        village: formData.village,
         zip_code: formData.zip_code,
         country: formData.country,
+        referralCode: formData.referralCode,
       });
 
       if (response.status === 200 || response.status === 201) {
         success("✅ Registrasi Berhasil! Silakan cek email Anda untuk verifikasi akun.");
         
+        // Hapus kode referral dari penyimpanan agar tidak lengket untuk registrasi berikutnya
+        sessionStorage.removeItem("referral_code");
+
         // Redirect ke login setelah 3 detik
         setTimeout(() => {
           navigate("/login");
@@ -180,7 +200,7 @@ const Register = () => {
         </div>
 
         {/* RIGHT SIDE - FORM */}
-        <div className="w-full md:w-7/12 p-8 md:p-10 bg-white flex flex-col relative overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-7/12 p-6 md:p-10 bg-white flex flex-col relative overflow-y-auto custom-scrollbar">
           <Link
             to="/"
             className="absolute top-6 left-8 inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-[#F97316] transition group z-20"
@@ -204,9 +224,9 @@ const Register = () => {
           </Link>
 
           <div className="max-w-md w-full mx-auto mt-16 md:mt-12">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-900">Buat Akun</h2>
-              <p className="text-slate-500 text-sm mt-1">
+            <div className="mb-6 text-center md:text-left">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-900">Buat Akun</h2>
+              <p className="text-slate-500 text-xs md:text-sm mt-1">
                 Lengkapi data diri untuk memulai.
               </p>
             </div>
@@ -307,6 +327,25 @@ const Register = () => {
                       onChange={handleChange}
                     ></textarea>
                   </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Kode Referral <span className="text-slate-300 normal-case italic font-normal">(Opsional)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="referralCode"
+                        value={formData.referralCode}
+                        className="w-full px-4 py-2.5 rounded-lg bg-orange-50/50 border border-orange-100 focus:bg-white focus:border-[#F97316] focus:ring-2 focus:ring-orange-100 outline-none transition font-black text-[#F97316] text-sm uppercase tracking-widest placeholder:text-slate-300"
+                        placeholder="CONTOH-1234"
+                        onChange={handleChange}
+                      />
+                      <div className="absolute inset-y-0 right-3 flex items-center">
+                         <span className="material-symbols-outlined text-orange-400 text-sm">workspace_premium</span>
+                      </div>
+                    </div>
+                  </div>
               </div>
 
               {/* --- SECTION 2: ADDRESS INFO --- */}
@@ -405,16 +444,28 @@ const Register = () => {
                 />
                 <p className="text-[10px] text-slate-500 leading-relaxed">
                   Setuju dengan{" "}
-                  <a href="#" className="text-[#F97316] font-bold hover:underline">Ketentuan</a>{" "}
+                  <button 
+                    type="button"
+                    onClick={() => openLegalModal('terms')}
+                    className="text-[#F97316] font-bold hover:underline bg-transparent border-none p-0 inline"
+                  >
+                    Ketentuan
+                  </button>{" "}
                   &{" "}
-                  <a href="#" className="text-[#F97316] font-bold hover:underline">Privasi</a>.
+                  <button 
+                    type="button"
+                    onClick={() => openLegalModal('privacy')}
+                    className="text-[#F97316] font-bold hover:underline bg-transparent border-none p-0 inline"
+                  >
+                    Privasi
+                  </button>.
                 </p>
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#F97316] text-white font-bold py-3 rounded-lg hover:bg-slate-900 transition duration-300 shadow-lg shadow-orange-200 transform hover:-translate-y-0.5 active:translate-y-0 text-sm mt-4 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                className="w-full bg-[#F97316] text-white font-bold py-2.5 md:py-3 rounded-lg hover:bg-slate-900 transition duration-300 shadow-lg shadow-orange-200 transform hover:-translate-y-0.5 active:translate-y-0 text-xs md:text-sm mt-4 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -450,7 +501,7 @@ const Register = () => {
                     useOneTap
                     shape="pill"
                     theme="outline"
-                    width="350"
+                    width={window.innerWidth < 640 ? "280" : "340"}
                     use_fedcm_for_prompt={true}
                     text="signup_with"
                 />
@@ -459,7 +510,7 @@ const Register = () => {
                     <div className="mt-4 p-4 bg-orange-50 border border-orange-100 rounded-xl animate-pulse">
                         <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest mb-1">💡 Tips Masalah Daftar</p>
                         <p className="text-[11px] text-orange-700 leading-relaxed text-center">
-                            Jika tombol Google bermasalah, pastikan <strong>http://localhost:5173</strong> sudah terdaftar di Google Cloud Console atau coba gunakan <strong>Incognito Mode</strong>.
+                            Jika tombol Google bermasalah, pastikan <strong>domain website ini</strong> sudah terdaftar di Google Cloud Console atau coba gunakan <strong>Incognito Mode</strong>.
                         </p>
                     </div>
                 )}
@@ -477,6 +528,12 @@ const Register = () => {
           </div>
         </div>
       </div>
+
+      <LegalModal 
+        isOpen={isLegalModalOpen} 
+        onClose={() => setIsLegalModalOpen(false)} 
+        data={modalContent} 
+      />
     </div>
   );
 };

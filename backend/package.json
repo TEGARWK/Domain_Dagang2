@@ -16,16 +16,22 @@
     "axios": "^1.14.0",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-rate-limit": "^8.3.2",
     "google-auth-library": "^10.5.0",
+    "idn-area-data": "^4.0.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "mysql": "^2.18.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.1",
-    "pg": "^8.18.0"
+    "pg": "^8.18.0",
+    "redis": "^5.12.1",
+    "sharp": "^0.34.5"
   }
 }

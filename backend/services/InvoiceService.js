@@ -23,7 +23,8 @@ class InvoiceService {
                 totalCost,
                 profitAmount,
                 profitMarginPercent,
-                taxSubsidyAmount
+                taxSubsidyAmount,
+                appliedPromoSnapshot
             } = calculationResults;
 
             // 1. Create Invoice Record with granular financial metrics
@@ -37,11 +38,12 @@ class InvoiceService {
                     subtotal, total_discount, net_amount, tax_amount, 
                     final_amount, total_cost, profit_amount, 
                     profit_margin_percent, tax_subsidy_amount, total, checkout_config,
-                    payment_method, payment_reference, plink_ref_no, type
+                    applied_promo_snapshot, payment_method, payment_reference, plink_ref_no, type,
+                    discount_meta
                 ) VALUES (
                     $1, $2, $3, 'pending', NOW(), $4, 
                     $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-                    $16, $17, $18, $19
+                    $16, $17, $18, $19, $20, $21
                 )
             `;
             await client.query(insertInvoice, [
@@ -49,7 +51,9 @@ class InvoiceService {
                 subtotal || 0, totalDiscount || 0, netAmount || 0, taxAmount || 0, 
                 finalAmount || 0, totalCost || 0, profitAmount || 0, 
                 profitMarginPercent || 0, taxSubsidyAmount || 0, finalAmount || 0, JSON.stringify(config || {}),
-                null, null, null, type
+                appliedPromoSnapshot ? JSON.stringify(appliedPromoSnapshot) : null,
+                null, null, null, type,
+                calculationResults.discountMeta ? JSON.stringify(calculationResults.discountMeta) : null
             ]);
 
             // 2. Insert Items with Cost Tracking

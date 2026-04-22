@@ -100,36 +100,44 @@ const TopNavbar = ({ user, cartCount, setSidebarOpen }) => {
 
             {/* Notification Dropdown */}
             {showNotifDropdown && (
-              <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-100 rounded-lg shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                  <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-[0.2em]">Notifikasi</h3>
+              <div className="fixed inset-x-4 top-[70px] sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-3 w-auto sm:w-80 bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="p-4 border-b border-white/20 flex items-center justify-between bg-white/40">
+                  <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Notifikasi</h3>
                   {unreadCount > 0 && (
                     <button 
                       onClick={markAllAsRead}
-                      className="text-[9px] font-bold text-[#F97316] uppercase hover:underline"
+                      className="text-[9px] font-bold text-[#F97316] uppercase hover:underline bg-orange-50 px-2 py-1 rounded-md"
                     >
                       Baca Semua
                     </button>
                   )}
                 </div>
-                <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
+                <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
                   {notifications.length === 0 ? (
-                    <div className="p-10 text-center">
-                      <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Tidak ada notifikasi</p>
+                    <div className="p-12 text-center">
+                      <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 opacity-50">
+                        <span className="material-symbols-outlined text-slate-300">notifications_off</span>
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">Inbox Kosong</p>
                     </div>
                   ) : (
                     notifications.slice(0, 5).map(n => (
-                      <div key={n.id} className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors relative cursor-default ${!n.is_read ? 'bg-orange-50/20' : ''}`}>
-                        {!n.is_read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316]"></div>}
-                        <h4 className="text-[11px] font-bold text-slate-800 uppercase mb-1">{n.title}</h4>
-                        <p className="text-[10px] text-slate-500 font-bold leading-relaxed mb-2">{n.message}</p>
-                        <span className="text-[8px] text-slate-300 font-bold uppercase tracking-wider">{new Date(n.created_at).toLocaleString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'})}</span>
+                      <div key={n.id} className={`p-4 border-b border-white/10 hover:bg-white/60 transition-all relative cursor-default group ${!n.is_read ? 'bg-orange-50/30' : ''}`}>
+                        {!n.is_read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316] shadow-[2px_0_8px_rgba(249,115,22,0.3)]"></div>}
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <h4 className={`text-[11px] font-bold uppercase transition-colors ${!n.is_read ? 'text-[#F97316]' : 'text-slate-700'}`}>{n.title}</h4>
+                          <span className="text-[8px] text-slate-400 font-bold whitespace-nowrap">{new Date(n.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span>
+                        </div>
+                        <p className={`text-[10px] leading-relaxed mb-1 ${!n.is_read ? 'text-slate-800 font-bold' : 'text-slate-500 font-medium'}`}>{n.message}</p>
+                        <span className="text-[8px] text-slate-300 font-bold uppercase tracking-wider">{new Date(n.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
                       </div>
                     ))
                   )}
                 </div>
-                <div className="p-3 bg-slate-50/50 border-t border-slate-50 text-center">
-                   <Link to="/dashboard/notifications" onClick={() => setShowNotifDropdown(false)} className="text-[9px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition">Lihat Semua</Link>
+                <div className="p-3 bg-white/40 border-t border-white/20 text-center">
+                   <Link to="/dashboard/notifications" onClick={() => setShowNotifDropdown(false)} className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest hover:text-[#F97316] transition-colors inline-flex items-center gap-1">
+                      Lihat Semua <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
+                   </Link>
                 </div>
               </div>
             )}

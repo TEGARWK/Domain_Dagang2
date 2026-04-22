@@ -92,3 +92,30 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (Banner Sync):** Sinkronisasi data Banner Home Page dengan Admin Panel dengan mengubah sumber data dari `promo_events` ke tabel `coupons` (is_automatic = TRUE).
 - **Frontend (Payment Status Check):** Memperbaiki bug pada tombol "Cek Status" di halaman pembayaran dan implementasi **Auto-Polling status** agar status tagihan terupdate otomatis setiap 5 detik tanpa perlu klik tombol atau refresh.
 - **Backend (PrismaLink v1.121 Fix):** Memperbaiki Error 500/400 (FAILED_SYSTEM) pada pembuatan transaksi dengan menyinkronkan format `validity` ke Standar Dokumentasi v1.121 (Format String: `yyyy-MM-dd HH:mm:ss.SSS +0700`).
+
+### [2026-04-09] - Pemulihan Error 500, Integrasi WebP & Frontend UX State (Tegar Wira Kesuma)
+- **Backend (Critical Fixes):** Memperbaiki Error 500 pada integrasi Payment Gateway & Top-Up Wallet dengan mengimplementasikan sistem **Explicit Database Transaction** (`BEGIN/COMMIT/ROLLBACK`). Transaksi dibatalkan secara total apabila koneksi ke *PrismaLink* gagal, mencegah masuknya data korup.
+- **Backend (Security):** Menambahkan middleware `verifyToken` pada rute transaksi pembayaran (`/api/checkout/topup` dan `processCheckout`) untuk memblokir eksploitasi impersonasi dari celah publik.
+- **Backend (Data Normalization):** Menyelesaikan Error 500 pada kalkulasi Harga Keranjang (`/api/checkout/preview`) melalui penambahan validasi array ketat, parsial kalkulasi `cost_transfer`, dan perbaikan tipe data via `parseFloat` untuk menghindari output `NaN`.
+- **Backend (Query Fix):** Memperbaiki ambiguitas kolom (Duplikat Kolom SQL) pada endpoint `/promos/active`, serta membuat fungsi agregat _parser JSONB_ untuk menyamakan handling _Eligible TLDs_ di database.
+- **Backend (Image Optimization):** Mengimplementasikan utilitas `imageConverter.js` menggunakan library `sharp`. Semua gambar banner yang diunggah akan di-*resize* (max 1920px) dan dikonversi secara otomatis menjadi format WebP (`memoryStorage`) untuk menghemat konsumsi trafik *server*.
+- **Backend (Storage Management):** Menambahkan logic eliminasi *orphan files* secara otomatis saat admin memperbarui gambar pada panel Edit Promo.
+- **Backend (Routing Fix):** Migrasi metode *Absolute URL* (beserta IP host/ngrok) ke *Relative URL* (`/uploads/...`) pada output URL Banner untuk mencegah 404 error saat ter-serve di Node berbeda.
+- **Frontend (Vite Proxy):** Menambahkan router proxy `/uploads` pada `vite.config.js` sebagai perantara penyamaran image host untuk lokal development.
+- **Frontend (UI/UX Validation):** Menyelaraskan *error message* Gagal Top Up Wallet pada komponen Wallet API agar menayangkan respon komplit dari engine database (Bukan pesan *generic*).
+- **Frontend (Fault Tolerance):** Memitigasi risiko *crash* (White Screen) halaman Promo List jika `data.data` gagal dicerna karena perubahan format API. Tombol bayar pada halaman Checkout pun sekarang diblokir *(disabled)* otomatis apabila proses hitung `/checkout/preview` di backend bermasalah.
+- **Frontend (Skeletons & Fallback):** Pengamanan ekstra pada `<img/>` tag Banner Home, Promo, dan Admin Form menggunakan **Skeleton Loader Animasi** (Tailwind `animate-pulse`) sebagai pendahulu render, serta fallback error load `/fallback-banner.jpg` saat gambar rusak.
+
+### [2026-04-22] - Mobile Responsiveness, Payment Automation & System Cleanup (Tegar Wira Kesuma)
+- **Fitur Baru (Sistem Referral):** Implementasi penuh sistem referral mulai dari pembuatan kode kustom, pelacakan pendaftaran, hingga pembagian komisi otomatis ke saldo Wallet.
+- **Fitur Baru (Wallet & Penarikan Dana):** Penambahan fitur Dompet Digital (Wallet) untuk menampung *reward* dan dana hasil referral, serta sistem pengajuan penarikan dana (*Withdrawal*) yang terintegrasi.
+- **Fitur Baru (Voucher System 2.0):** Modernisasi sistem kupon menjadi "Interactive Selection" di halaman Checkout, menghilangkan input kode manual dan beralih ke sistem pilih dari daftar kupon yang sudah diklaim.
+- **Frontend (UI/UX Overhaul):** Perbaikan total responsivitas mobile pada halaman `Settings.jsx`, `Support.jsx`, dan `AdminPaymentGateways.jsx`. Implementasi *stacking layout*, *horizontal scrolling tabs*, dan tombol *full-width* untuk pengalaman pengguna yang lebih baik di perangkat seluler.
+- **Frontend (Checkout UX):** Penambahan validasi wajib kelengkapan profil (alamat & nomor telepon) serta banner peringatan di halaman Checkout untuk memastikan data registrar domain terpenuhi.
+- **Frontend (Admin Panel):** Pembersihan UI pada halaman Payment Gateways dengan menghapus widget "Total Saldo (Settled)" dan seluruh logika *fetching* saldo Tripay yang sudah tidak diperlukan.
+- **Frontend (Production Ready):** Mengganti hardcoded `localhost:5173` dengan teks generik "domain website ini" pada halaman `Login.jsx` dan `Register.jsx` untuk persiapan *deployment*.
+- **Backend (Automated Provisioning):** Mengintegrasikan `OrderService.activateDomain` ke dalam webhook Tripay dan pengecekan status manual. Domain sekarang otomatis terdaftar/aktif sesaat setelah pembayaran dikonfirmasi `PAID`.
+- **Backend (Maintenance & Cleanup):** Pembersihan repositori dari folder `scratch/` (script testing), file `error_debug.log` yang membengkak, dan file SQL sementara untuk menjaga performa server.
+- **Backend (Architecture):** Merapikan folder `backend/migrations` dengan memindahkan 26 file migrasi historis ke dalam subfolder `archive/` agar struktur proyek lebih bersih.
+- **Bug Fixes:** Memperbaiki kesalahan *casing* pemanggilan `voucherService` di `tripayController.js` dan menghapus duplikasi deklarasi *state* `suggestedWebhook` pada Panel Admin.
+

@@ -3,12 +3,18 @@ require("dotenv").config();
 
 class DaftarnamaService {
     constructor() {
-        // Authorized Whitelist IP: 157.66.56.62
+        // Log key presence for debugging (don't log the full key for security)
+        const key = process.env.DAFTARNAMA_API_KEY;
+        if (!key) {
+            console.error("[DaftarnamaService] CRITICAL: DAFTARNAMA_API_KEY is missing in .env!");
+        } else {
+            console.log(`[DaftarnamaService] Initialized with API Key: ${key.substring(0, 5)}...`);
+        }
+        
         this.client = axios.create({
             baseURL: process.env.DAFTARNAMA_BASE_URL,
             headers: {
-                "x-api-key": process.env.DAFTARNAMA_API_KEY,
-                "X-AUTHORIZED-IP": process.env.DAFTARNAMA_AUTHORIZED_IP,
+                "X-API-Key": key, 
                 Accept: "application/json",
                 "Content-Type": "application/json",
             },

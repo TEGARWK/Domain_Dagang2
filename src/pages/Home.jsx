@@ -425,7 +425,7 @@ function Home() {
               <input
                 type="text"
                 placeholder="Cari domain impian..."
-                className="flex-1 pl-6 pr-4 h-12 rounded-lg outline-none text-base text-neutral-800 placeholder:text-neutral-400 bg-transparent focus:bg-orange-50/30 transition-colors"
+                className="flex-1 pl-6 pr-4 h-12 md:h-[52px] text-sm md:text-base rounded-lg outline-none text-neutral-800 placeholder:text-neutral-400 bg-transparent focus:bg-orange-50/30 transition-colors"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 disabled={showResult}
@@ -456,7 +456,7 @@ function Home() {
               ) : (
                 <button
                   type="submit"
-                  className="bg-[#F97316] hover:bg-orange-600 text-white w-full md:w-auto px-10 h-[52px] rounded-lg font-bold text-sm uppercase tracking-widest transition duration-300 shadow-xl shadow-orange-500/20 flex items-center justify-center gap-3 active:scale-95 transform group"
+                  className="bg-[#F97316] hover:bg-orange-600 text-white w-full md:w-auto px-6 md:px-10 h-12 md:h-[52px] rounded-lg font-bold text-xs md:text-sm uppercase tracking-widest transition duration-300 shadow-xl shadow-orange-500/20 flex items-center justify-center gap-3 active:scale-95 transform group"
                 >
                   {isSearching ? (
                     <svg
@@ -607,9 +607,9 @@ function Home() {
                 </div>
               </div>
 
-              {/* Table Content */}
-              <div className="overflow-visible min-h-[400px]">
-                <table className="w-full text-left border-collapse">
+              {/* Table Content - Added Horizontal Scroll for Mobile */}
+              <div className="overflow-x-auto min-h-[400px] scrollbar-thin scrollbar-thumb-slate-200">
+                <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead className="bg-slate-50/50 border-b border-slate-100">
                     <tr>
                       <th 
@@ -813,7 +813,7 @@ function Home() {
                 <div
                   key={idx}
                   onClick={() => navigate("/domain")}
-                  className={`p-10 border-2 rounded-2xl transition-all duration-500 group text-center cursor-pointer relative overflow-hidden
+                  className={`p-4 sm:p-5 md:p-8 lg:p-10 border-2 rounded-2xl transition-all duration-500 group text-center cursor-pointer relative overflow-hidden
                     ${item.status === 'popular' 
                       ? "border-[#F97316] bg-orange-50/30 shadow-2xl shadow-orange-500/20 -translate-y-2 scale-105 z-10" 
                       : (item.status === 'promo' ? "border-orange-100 bg-orange-50/10 hover:border-[#F97316] hover:shadow-2xl hover:shadow-orange-200/50 hover:-translate-y-2" : "border-slate-100 bg-white hover:border-[#F97316] hover:shadow-2xl hover:shadow-orange-200/50 hover:-translate-y-2 opacity-90 hover:opacity-100")
@@ -822,7 +822,7 @@ function Home() {
                 >
                   {item.status && (
                     <span
-                      className={`absolute top-4 right-4 text-[11px] font-semibold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm ${
+                      className={`absolute top-2.5 right-2.5 md:top-4 md:right-4 text-[9px] sm:text-[10px] md:text-[11px] font-bold px-2 py-1 md:px-3 md:py-1.5 rounded-full uppercase tracking-wider shadow-sm ${
                         item.status === 'popular'
                           ? "bg-[#F97316] text-white"
                           : (item.status === 'promo' ? "bg-[#F97316] text-white" : "bg-orange-100 text-[#F97316] group-hover:bg-[#F97316] group-hover:text-white transition-colors")
@@ -831,18 +831,18 @@ function Home() {
                       {item.status === 'popular' ? 'Terlaris' : (item.status === 'best' ? 'Lokal' : 'Promo')}
                     </span>
                   )}
-                  <h3 className={`text-4xl font-bold mt-6 mb-2 transition-colors ${item.status === 'popular' ? "text-[#F97316]" : "text-neutral-800 group-hover:text-[#F97316]"}`}>
+                  <h3 className={`text-3xl md:text-4xl font-bold mt-6 mb-2 transition-colors ${item.status === 'popular' ? "text-[#F97316]" : "text-neutral-800 group-hover:text-[#F97316]"}`}>
                     {item.tld}
                   </h3>
                   <div className="mt-4">
-                    <p className="text-xl font-bold text-[#F97316]">
+                    <p className="text-[15px] sm:text-[17px] md:text-xl font-bold text-[#F97316]">
                       {hasDiscount ? (
                         <span className="flex flex-col items-center">
                           <span className="text-xs text-neutral-400 line-through leading-none mb-1">{formatRupiah(item.rawPrice)}</span>
                           <span>{formatRupiah(item.effectivePrice)}</span>
                         </span>
                       ) : formatRupiah(item.rawPrice)}
-                      <span className="text-sm font-medium text-neutral-400 ml-1">
+                      <span className="text-[10px] sm:text-xs md:text-sm font-medium text-neutral-400 ml-1">
                         /thn
                       </span>
                     </p>

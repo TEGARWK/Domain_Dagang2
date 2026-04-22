@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 
-const CreateCouponForm = () => {
+const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
     // FORM STATE
     const [coupon, setCoupon] = useState({
         title: '',
+        code: '', 
         description: '',
-        discount_type: 'nominal', // 'nominal' or 'percentage'
+        discount_type: 'nominal', 
         discount_value: '',
-        max_discount: '0', // Anti-Boncos
+        max_discount: '0',
         min_purchase: '0',
-        usage_limit: '0',
-        usage_limit_per_user: '1',
-        valid_until: '',
-        is_stackable: false,
-        is_new_user_only: false,
+        quota: '0', 
+        max_use_per_user: '1', 
+        started_at: '', 
+        expired_at: '', 
         selectedTlds: [],
-        eligible_actions: ['register'] // register, transfer, renew
+        eligible_actions: ['register'],
+        is_automatic: false,
+        priority: '0',
+        segment: 'all',
+        is_new_user_only: false,
+        is_stackable: false
     });
+
+    const isEdit = !!voucherId;
 
     // TLD DATA
     const [availableTlds, setAvailableTlds] = useState([]);
@@ -40,8 +47,43 @@ const CreateCouponForm = () => {
                 }
             } catch (err) {}
         };
+
+        const fetchVoucher = async () => {
+            if (!voucherId) return;
+            try {
+                const res = await api.get(`/admin/vouchers/list`);
+                const list = res.data.data || res.data;
+                const v = Array.isArray(list) ? list.find(item => item.id === parseInt(voucherId)) : null;
+                if (v) {
+                    setCoupon({
+                        title: v.title || '',
+                        code: v.code || '',
+                        description: v.description || '',
+                        discount_type: v.discount_type || 'nominal',
+                        discount_value: v.discount_value?.toString() || '',
+                        max_discount: v.max_discount?.toString() || '0',
+                        min_purchase: v.min_transaction?.toString() || '0',
+                        quota: v.quota?.toString() || '0',
+                        max_use_per_user: v.max_use_per_user?.toString() || '1',
+                        started_at: v.started_at ? new Date(v.started_at).toISOString().slice(0, 16) : '',
+                        expired_at: v.expired_at ? new Date(v.expired_at).toISOString().slice(0, 16) : '',
+                        selectedTlds: v.applicable_to ? (typeof v.applicable_to === 'string' ? JSON.parse(v.applicable_to) : v.applicable_to) : [],
+                        eligible_actions: v.eligible_actions ? (typeof v.eligible_actions === 'string' ? JSON.parse(v.eligible_actions) : v.eligible_actions) : ['register'],
+                        is_automatic: v.is_automatic || false,
+                        priority: v.priority?.toString() || '0',
+                        segment: v.segment || 'all',
+                        is_new_user_only: v.is_new_user_only || false,
+                        is_stackable: v.is_stackable || false
+                    });
+                }
+            } catch (err) {
+                console.error("Fetch Voucher Error:", err);
+            }
+        };
+
         fetchPricing();
-    }, []);
+        fetchVoucher();
+    }, [voucherId]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -96,37 +138,74 @@ const CreateCouponForm = () => {
         return null;
     };
 
+    const formatRupiah = (value) => {
+        if (!value) return '';
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
+
+    const parseNumber = (value) => {
+        return value.replace(/\./g, '');
+    };
+
+    const handleNumberChange = (e) => {
+        const { name, value } = e.target;
+        const cleanValue = parseNumber(value);
+        if (/^\d*$/.test(cleanValue)) {
+            setCoupon(prev => ({ ...prev, [name]: cleanValue }));
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         setStatus({ type: '', msg: '' });
 
         try {
-            // FORMAT PAYLOAD
+            // FORMAT PAYLOAD - SINKRON DENGAN BACKEND CONTROLLER
             const payload = {
-                ...coupon,
-                code: coupon.title.replace(/\s+/g, '-').toUpperCase(), // Generate safe code from title if needed by backend
-                eligible_tlds: coupon.selectedTlds,
+                title: coupon.title,
+                code: coupon.code.toUpperCase().replace(/\s+/g, ''),
+                discount_type: coupon.discount_type,
                 discount_value: parseFloat(coupon.discount_value),
                 max_discount: coupon.discount_type === 'percentage' ? parseFloat(coupon.max_discount) : 0,
-                min_purchase: parseFloat(coupon.min_purchase),
-                usage_limit_total: parseInt(coupon.usage_limit), // Map to backend field
-                valid_until: coupon.valid_until ? new Date(coupon.valid_until).toISOString() : null,
-                is_automatic: false, // Manual coupon
-                type: coupon.discount_type, // 'nominal' or 'percentage'
-                value: parseFloat(coupon.discount_value)
+                quota: parseInt(coupon.quota) || 0,
+                max_use_per_user: parseInt(coupon.max_use_per_user) || 1,
+                min_transaction: parseFloat(coupon.min_purchase) || 0,
+                applicable_to: JSON.stringify(coupon.selectedTlds),
+                started_at: new Date(coupon.started_at).toISOString(),
+                expired_at: new Date(coupon.expired_at).toISOString(),
+                is_new_user_only: coupon.is_new_user_only,
+                is_stackable: coupon.is_stackable,
+                description: coupon.description,
+                is_automatic: coupon.is_automatic,
+                priority: parseInt(coupon.priority) || 0,
+                segment: coupon.segment,
+                eligible_actions: coupon.eligible_actions
             };
 
-            const response = await api.post("/vouchers", payload);
+            let response;
+            if (isEdit) {
+                response = await api.put(`/admin/vouchers/${voucherId}`, payload);
+                setStatus({ type: 'success', msg: `Voucher "${coupon.code}" berhasil diperbarui!` });
+            } else {
+                response = await api.post("/admin/vouchers/create", payload);
+                setStatus({ type: 'success', msg: `Vocer "${coupon.code}" berhasil dibuat!` });
+                // Reset form only on create
+                setCoupon({
+                    title: '', code: '', description: '', discount_type: 'nominal', discount_value: '',
+                    max_discount: '0', min_purchase: '0', quota: '0', max_use_per_user: '1',
+                    started_at: '', expired_at: '',
+                    selectedTlds: [],
+                    eligible_actions: ['register'],
+                    is_automatic: false,
+                    priority: '0',
+                    segment: 'all',
+                    is_new_user_only: false,
+                    is_stackable: false
+                });
+            }
             
-            setStatus({ type: 'success', msg: `Vocer "${coupon.title}" berhasil dibuat!` });
-            setCoupon({
-                title: '', description: '', discount_type: 'nominal', discount_value: '',
-                max_discount: '0', min_purchase: '0', usage_limit: '0', usage_limit_per_user: '1',
-                valid_until: '', is_stackable: false, is_new_user_only: false,
-                selectedTlds: [],
-                eligible_actions: ['register']
-            });
+            if (onSuccess) onSuccess(response.data);
         } catch (err) {
             console.error("Coupon Create Error:", err);
             setStatus({ 
@@ -141,9 +220,16 @@ const CreateCouponForm = () => {
     return (
         <div className="bg-white rounded-lg p-8 border border-slate-200 shadow-sm max-w-2xl mx-auto">
             {/* Header */}
-            <div className="mb-8 overflow-hidden">
-                <h2 className="text-xl font-bold text-slate-800 tracking-tight">Buat Vocer Baru</h2>
-                <p className="text-sm text-slate-500 mt-1">Gunakan form ini untuk membuat kupon belanja manual.</p>
+            <div className="mb-8 overflow-hidden flex justify-between items-center">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">{isEdit ? 'Edit Voucher' : 'Buat Vocer Baru'}</h2>
+                    <p className="text-sm text-slate-500 mt-1">{isEdit ? 'Perbarui detail dan aturan promo ini.' : 'Gunakan form ini untuk membuat kupon belanja manual.'}</p>
+                </div>
+                {onCancel && (
+                    <button type="button" onClick={onCancel} className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -156,19 +242,30 @@ const CreateCouponForm = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Voucher Title */}
-                    <div className="md:col-span-2">
-                        <label className="block text-base font-semibold text-slate-700 mb-2">Judul Vocer</label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                name="title"
-                                value={coupon.title}
-                                onChange={handleChange}
-                                required
-                                placeholder="Masukan udul Vocer"
-                                className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all font-bold"
-                            />
-                        </div>
+                    <div className="md:col-span-1">
+                        <label className="block text-base font-semibold text-slate-700 mb-2">Judul Promo</label>
+                        <input
+                            type="text"
+                            name="title"
+                            value={coupon.title}
+                            onChange={handleChange}
+                            required
+                            placeholder="Contoh: Promo Ramadhan"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all font-bold"
+                        />
+                    </div>
+
+                    <div className="md:col-span-1">
+                        <label className="block text-base font-semibold text-slate-700 mb-2">Kode Voucher</label>
+                        <input
+                            type="text"
+                            name="code"
+                            value={coupon.code}
+                            onChange={handleChange}
+                            required
+                            placeholder="Contoh: RAMADHAN2026"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all font-black text-[#f97316] uppercase"
+                        />
                     </div>
 
                     {/* Description */}
@@ -203,13 +300,13 @@ const CreateCouponForm = () => {
                         <label className="block text-base font-semibold text-slate-700 mb-2">Nilai Diskon</label>
                         <div className="relative">
                             <input
-                                type="number"
+                                type="text"
                                 name="discount_value"
-                                value={coupon.discount_value}
-                                onChange={handleChange}
+                                value={formatRupiah(coupon.discount_value)}
+                                onChange={handleNumberChange}
                                 required
                                 placeholder="0"
-                                className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all"
+                                className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all font-bold"
                             />
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
                                 {coupon.discount_type === 'percentage' ? '%' : 'Rp'}
@@ -229,10 +326,10 @@ const CreateCouponForm = () => {
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400 font-bold">Rp</span>
                                 <input
-                                    type="number"
+                                    type="text"
                                     name="max_discount"
-                                    value={coupon.max_discount}
-                                    onChange={handleChange}
+                                    value={formatRupiah(coupon.max_discount)}
+                                    onChange={handleNumberChange}
                                     required
                                     placeholder="0"
                                     className="w-full h-12 pl-12 pr-4 bg-white border border-orange-200 rounded-lg text-base focus:border-[#f97316] outline-none transition-all font-bold"
@@ -246,11 +343,12 @@ const CreateCouponForm = () => {
                     <div>
                         <label className="block text-base font-semibold text-slate-700 mb-2">Minimal Transaksi (Rp)</label>
                         <input
-                            type="number"
+                            type="text"
                             name="min_purchase"
-                            value={coupon.min_purchase}
-                            onChange={handleChange}
-                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all"
+                            value={formatRupiah(coupon.min_purchase)}
+                            onChange={handleNumberChange}
+                            placeholder="0"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all font-bold"
                         />
                     </div>
 
@@ -259,25 +357,52 @@ const CreateCouponForm = () => {
                         <label className="block text-base font-semibold text-slate-700 mb-2">Limit Total (Kuota)</label>
                         <input
                             type="number"
-                            name="usage_limit"
-                            value={coupon.usage_limit}
+                            name="quota"
+                            value={coupon.quota}
                             onChange={handleChange}
                             placeholder="0 (Unlimited)"
-                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all font-bold"
                         />
                     </div>
 
-                    {/* Limit Per User */}
                     <div>
                         <label className="block text-base font-semibold text-slate-700 mb-2">Limit Per User</label>
                         <input
                             type="number"
-                            name="usage_limit_per_user"
-                            value={coupon.usage_limit_per_user}
+                            name="max_use_per_user"
+                            value={coupon.max_use_per_user}
                             onChange={handleChange}
                             placeholder="1"
-                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all font-bold"
                         />
+                    </div>
+
+                    {/* NEW: Priority & Segment */}
+                    <div>
+                        <label className="block text-base font-semibold text-slate-700 mb-2">Prioritas Tampil</label>
+                        <input
+                            type="number"
+                            name="priority"
+                            value={coupon.priority}
+                            onChange={handleChange}
+                            placeholder="0"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all font-bold"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-base font-semibold text-slate-700 mb-2">Segment User</label>
+                        <select
+                            name="segment"
+                            value={coupon.segment}
+                            onChange={handleChange}
+                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all cursor-pointer"
+                        >
+                            <option value="all">Semua User</option>
+                            <option value="regular">Regular</option>
+                            <option value="premium">Premium / Reseller</option>
+                            <option value="new">Hanya User Baru</option>
+                        </select>
                     </div>
 
                     {/* Transaction Targeting */}
@@ -325,13 +450,24 @@ const CreateCouponForm = () => {
                         <p className="text-[10px] text-slate-400 font-bold uppercase px-1">Pilih domain mana saja yang boleh pakai vocer ini. Kosongkan jika ingin berlaku untuk semua domain.</p>
                     </div>
 
-                    {/* Valid Until */}
-                    <div className="md:col-span-2">
-                        <label className="block text-base font-semibold text-slate-700 mb-2">Berlaku Hingga</label>
+                    <div className="md:col-span-1">
+                        <label className="block text-base font-semibold text-slate-700 mb-2">Waktu Mulai</label>
                         <input
                             type="datetime-local"
-                            name="valid_until"
-                            value={coupon.valid_until}
+                            name="started_at"
+                            value={coupon.started_at}
+                            onChange={handleChange}
+                            required
+                            className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all"
+                        />
+                    </div>
+
+                    <div className="md:col-span-1">
+                        <label className="block text-base font-semibold text-slate-700 mb-2">Waktu Selesai</label>
+                        <input
+                            type="datetime-local"
+                            name="expired_at"
+                            value={coupon.expired_at}
                             onChange={handleChange}
                             required
                             className="w-full h-12 px-4 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] outline-none transition-all"
@@ -363,20 +499,47 @@ const CreateCouponForm = () => {
                             />
                             <span className="text-base font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Bisa digabung dengan promo lain (Stackable)</span>
                         </label>
+
+                        {/* FITUR DI-HIDE SEMENTARA SESUAI REQUEST
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    name="is_automatic"
+                                    checked={coupon.is_automatic}
+                                    onChange={handleChange}
+                                    className="w-6 h-6 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer"
+                                />
+                                <div>
+                                    <span className="text-base font-bold text-blue-800 block">Pasang Otomatis (Event Promo)</span>
+                                    <span className="text-xs text-blue-600">Promo akan langsung terpasang di keranjang tanpa perlu klaim kode voucher.</span>
+                                </div>
+                            </label>
+                        </div>
+                        */}
                     </div>
                 </div>
 
                 {/* Submit button */}
-                <div className="pt-4">
+                <div className="pt-4 flex gap-4">
+                    {onCancel && (
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            className="flex-1 h-12 px-6 bg-slate-100 text-slate-600 rounded-lg text-base font-bold hover:bg-slate-200 transition-all uppercase tracking-widest"
+                        >
+                            Batal
+                        </button>
+                    )}
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className={`w-full h-12 px-6 bg-[#f97316] text-white rounded-lg text-base font-bold shadow-sm shadow-orange-200 hover:bg-[#ea580c] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait`}
+                        className={`${onCancel ? 'flex-[2]' : 'w-full'} h-12 px-6 bg-[#f97316] text-white rounded-lg text-base font-bold shadow-sm shadow-orange-200 hover:bg-[#ea580c] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait uppercase tracking-widest`}
                     >
                         {isLoading ? (
                             <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
                         ) : (
-                            'Simpan & Aktifkan Vocer'
+                            isEdit ? 'Simpan Perubahan' : 'Simpan & Aktifkan Vocer'
                         )}
                     </button>
                 </div>

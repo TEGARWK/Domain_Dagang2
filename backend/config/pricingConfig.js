@@ -19,5 +19,5 @@ module.exports = {
     ENFORCE_PROFIT_FLOOR: true,
     
     // Tax Display Mode
-    TAX_INCLUSIVE: true
+    TAX_INCLUSIVE: false
 };

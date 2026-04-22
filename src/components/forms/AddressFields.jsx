@@ -41,6 +41,34 @@ const AddressFields = ({ formData, setFormData, addressHook, required = true }) 
         </div>
       </div>
 
+      {/* ROW: KECAMATAN */}
+      <div className="space-y-2.5">
+        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Kecamatan</label>
+        <div className="w-full bg-slate-50/30 border border-slate-200 rounded-lg focus-within:ring-4 focus-within:ring-orange-50 focus-within:border-orange-500 transition-all font-medium text-slate-800 shadow-sm">
+            <CustomSelect 
+                value={addressHook.selectedDistrictId}
+                onChange={val => addressHook.handleDistrictChange({ target: { value: val } }, setFormData, formData)}
+                placeholder="Pilih Kecamatan"
+                options={addressHook.districts.map(dst => ({ value: dst.id, label: dst.name }))}
+                disabled={!selectedCityId || !addressHook.districts.length}
+            />
+        </div>
+      </div>
+
+      {/* ROW: DESA/KELURAHAN */}
+      <div className="space-y-2.5">
+        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Desa/Kelurahan</label>
+        <div className="w-full bg-slate-50/30 border border-slate-200 rounded-lg focus-within:ring-4 focus-within:ring-orange-50 focus-within:border-orange-500 transition-all font-medium text-slate-800 shadow-sm">
+            <CustomSelect 
+                value={addressHook.selectedVillageId}
+                onChange={val => addressHook.handleVillageChange({ target: { value: val } }, setFormData, formData)}
+                placeholder="Pilih Desa"
+                options={addressHook.villages.map(vil => ({ value: vil.id, label: vil.name }))}
+                disabled={!addressHook.selectedDistrictId || !addressHook.villages.length}
+            />
+        </div>
+      </div>
+
       {/* ROW: KODE POS */}
       <div className="space-y-2.5">
         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Kode Pos</label>

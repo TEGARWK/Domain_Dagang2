@@ -261,7 +261,7 @@ const BuyDomain = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-[fadeIn_0.5s_ease-out] pb-20">
       {/* 1. HERO HEADER (Tampilan Premium) */}
-      <div className="relative bg-slate-900 rounded-xl p-8 md:p-12 overflow-hidden shadow-2xl">
+      <div className="relative bg-slate-900 rounded-xl p-6 md:p-12 overflow-hidden shadow-2xl mt-4 md:mt-0">
         {/* Dekorasi Background */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#F97316] rounded-full blur-[120px] opacity-10"></div>
         <div className="absolute bottom-0 left-10 w-64 h-64 bg-blue-600 rounded-full blur-[100px] opacity-10"></div>
@@ -272,31 +272,31 @@ const BuyDomain = () => {
               <span className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
               Domain Finder
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
-              Bangun Identitas <br />{" "}
+            <h1 className="text-2xl md:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight">
+              Bangun Identitas <br className="hidden md:block" />{" "}
               <span className="text-[#F97316]">Digital</span> Anda.
             </h1>
-            <p className="text-slate-400 text-sm md:text-base leading-normal max-w-lg">
+            <p className="text-slate-400 text-xs md:text-base leading-relaxed max-w-lg">
               Ketik satu kata kunci, sistem kami akan mencarikan kombinasi TLD
               terbaik dengan harga paling kompetitif untuk bisnis Anda.
             </p>
           </div>
 
           {/* Search Box Floating */}
-          <div className="w-full md:w-auto min-w-[350px] bg-white/5 backdrop-blur-md border border-white/10 p-2 rounded-lg">
+          <div className="w-full md:w-auto md:min-w-[350px] bg-white/5 backdrop-blur-md border border-white/10 p-2 rounded-xl">
             <form onSubmit={handleSearch} className="flex flex-col gap-2">
               <input
                 type="text"
                 placeholder="Cari domain impian..."
-                className="w-full px-5 py-3 rounded-lg bg-slate-800/50 text-white placeholder:text-slate-500 font-bold outline-none focus:bg-slate-800 transition border border-transparent focus:border-[#F97316]/50"
+                className="w-full px-5 py-3 md:py-4 rounded-lg bg-slate-800/50 text-white placeholder:text-slate-500 font-bold outline-none focus:bg-slate-800 transition border border-transparent focus:border-[#F97316]/50 text-sm md:text-base"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
-              <button
-                type="submit"
-                disabled={isSearching}
-                className="w-full bg-[#F97316] text-white py-3 px-6 rounded-lg font-bold hover:bg-white hover:text-slate-900 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
-              >
+               <button
+                 type="submit"
+                 disabled={isSearching}
+                 className="w-full bg-[#F97316] text-white py-3 md:py-4 px-6 rounded-lg font-bold hover:bg-white hover:text-slate-900 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 text-xs md:text-sm uppercase tracking-widest"
+               >
                 {isSearching ? (
                   <span className="animate-spin">⏳</span>
                 ) : (
@@ -310,7 +310,7 @@ const BuyDomain = () => {
 
       {/* 2. RESULTS TABLE */}
       {results.length > 0 ? (
-        <div className="mt-20 space-y-6">
+        <div className="mt-10 md:mt-20 space-y-6">
           {/* Filter Kategori */}
           <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-100 rounded-lg w-fit">
             {["Semua", "Populer", "Lokal", "Promo"].map((cat) => (

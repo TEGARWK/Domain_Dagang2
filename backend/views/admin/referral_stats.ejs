@@ -1,0 +1,237 @@
+<div class="row section-title align-items-center">
+    <div class="col">
+        <h2 class="mb-1">Statistik Referral</h2>
+        <p class="text-muted">Pantau performa program ajak teman dan pertumbuhan user.</p>
+    </div>
+    <div class="col-auto d-flex gap-2">
+        <a href="/admin/referral/rewards" class="btn btn-outline-primary shadow-none">
+            <i class="fas fa-list-check me-2"></i> Daftar Reward
+        </a>
+        <a href="/admin/referral/tiers" class="btn btn-outline-secondary shadow-none">
+            <i class="fas fa-layer-group me-2"></i> Atur Tier
+        </a>
+    </div>
+</div>
+
+<!-- Kartu Statistik -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card p-4 h-100 border-start border-4 border-info">
+            <p class="text-muted small mb-1 fw-bold">Total Referral Sukses</p>
+            <h2 class="fw-extrabold mb-0"><%= overview.total_rewards %></h2>
+            <small class="text-info">Seluruh waktu</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 h-100 border-start border-4 border-warning">
+            <p class="text-muted small mb-1 fw-bold">Reward Pending</p>
+            <h2 class="fw-extrabold mb-0 text-warning">Rp <%= parseFloat(overview.total_pending || 0).toLocaleString('id-ID') %></h2>
+            <small class="text-muted">Dalam masa holding</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 h-100 border-start border-4 border-success">
+            <p class="text-muted small mb-1 fw-bold">Total Reward Cair</p>
+            <h2 class="fw-extrabold mb-0 text-success">Rp <%= parseFloat(overview.total_paid_out || 0).toLocaleString('id-ID') %></h2>
+            <small class="text-muted">Sudah masuk wallet</small>
+        </div>
+    </div>
+</div>
+
+<div class="row section-title">
+    <div class="col">
+        <h5 class="fw-bold"><i class="fas fa-crown text-warning me-2"></i> Top Referrers (Bulan Ini)</h5>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="px-4 py-3 border-0">Nama & Email</th>
+                        <th class="py-3 border-0 text-center">Referral Sukses</th>
+                        <th class="py-3 border-0">Total Pendapatan</th>
+                        <th class="py-3 border-0">Tier Saat Ini</th>
+                        <th class="px-4 py-3 border-0 text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (topReferrers.length === 0) { %>
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">Belum ada data referral aktif.</td>
+                        </tr>
+                    <% } %>
+                    <% topReferrers.forEach(r => { %>
+                        <tr>
+                            <td class="px-4">
+                                <div class="fw-bold"><%= r.name %></div>
+                                <div class="small text-muted"><%= r.email %></div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary-subtle text-primary py-2 px-3 rounded-pill fw-bold">
+                                    <%= r.success_referrals %>
+                                </span>
+                            </td>
+                            <td class="fw-bold text-success">
+                                Rp <%= parseFloat(r.total_earned).toLocaleString('id-ID') %>
+                            </td>
+                            <td>
+                                <% 
+                                    let badgeClass = 'bg-secondary';
+                                    if(r.tier === 'Gold') badgeClass = 'bg-warning text-dark';
+                                    else if(r.tier === 'Silver') badgeClass = 'bg-info text-white';
+                                %>
+                                <span class="badge <%= badgeClass %> px-3 py-2"><%= r.tier || 'Starter' %></span>
+                            </td>
+                            <td class="px-4 text-end">
+                                <button class="btn btn-light btn-sm rounded-3">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pengaturan Referral & Banned Words -->
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="mb-0 fw-bold underline-title">Banned Referral Codes</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Daftar kata-kata atau kode yang dilarang digunakan oleh pelanggan saat kustomisasi.</p>
+                
+                <div class="mb-4">
+                    <div class="d-flex flex-wrap gap-2 mb-3" id="bannedWordsContainer">
+                        <% (typeof bannedWords !== 'undefined' ? bannedWords : []).forEach(word => { %>
+                            <span class="badge bg-light text-dark border p-2 d-flex align-items-center gap-2">
+                                <%= word %>
+                                <i class="fas fa-times cursor-pointer text-danger remove-word" data-word="<%= word %>"></i>
+                            </span>
+                        <% }) %>
+                    </div>
+                </div>
+
+                <div class="input-group mb-2">
+                    <input type="text" id="newWordInput" class="form-control" placeholder="Contoh: official">
+                    <button class="btn btn-primary" type="button" id="addWordBtn">Tambah</button>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm w-100" id="resetDefaultBtn">
+                    <i class="fas fa-undo me-1"></i> Pulihkan Kata Terlarang Standar
+                </button>
+            </div>
+            <div class="card-footer bg-white border-top-0 pb-4">
+                <button class="btn btn-success w-100 py-2" id="saveBannedWordsBtn">
+                    <i class="fas fa-save me-2"></i> Simpan Daftar Banned
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100 bg-light border-0 shadow-none">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3">Aturan Custom Kode</h6>
+                <ul class="text-muted small ps-3">
+                    <li class="mb-2 text-dark">Fitur ini otomatis aktif untuk member <strong>Tier Silver ke atas</strong> (> 5 referral).</li>
+                    <li class="mb-2 font-italic text-info"><i class="fas fa-info-circle me-1"></i> Admin dapat meriset kode user secara manual di menu "Daftar User" jika terjadi pelanggaran.</li>
+                    <li class="mb-2">Panjang kode yang diperbolehkan: <strong>4 - 15 karakter</strong>.</li>
+                    <li>Sistem otomatis mengubah ke <strong>HURUF KAPITAL</strong>.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="bannedWordsData" type="application/json">
+    <%- JSON.stringify(typeof bannedWords !== 'undefined' ? bannedWords : []) %>
+</script>
+
+<script>
+    let currentWords = JSON.parse(document.getElementById('bannedWordsData').textContent || '[]');
+    function renderWords() {
+        const container = document.getElementById('bannedWordsContainer');
+        container.innerHTML = currentWords.map(word => `
+            <span class="badge bg-light text-dark border p-2 d-flex align-items-center gap-2">
+                ${word}
+                <i class="fas fa-times cursor-pointer text-danger remove-word" data-word="${word}"></i>
+            </span>
+        `).join('');
+
+        document.querySelectorAll('.remove-word').forEach(btn => {
+            btn.onclick = () => {
+                const wordToRemove = btn.getAttribute('data-word');
+                currentWords = currentWords.filter(w => w !== wordToRemove);
+                renderWords();
+            };
+        });
+    }
+
+    document.getElementById('addWordBtn').onclick = () => {
+        const input = document.getElementById('newWordInput');
+        const word = input.value.trim().toLowerCase();
+        if (word && !currentWords.includes(word)) {
+            currentWords.push(word);
+            input.value = '';
+            renderWords();
+        }
+    };
+
+    document.getElementById('saveBannedWordsBtn').onclick = async () => {
+        try {
+            const btn = document.getElementById('saveBannedWordsBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+
+            const response = await fetch('/admin/referral/banned-words', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ words: currentWords })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                Swal.fire('Berhasil', result.message, 'success');
+            } else {
+                Swal.fire('Gagal', result.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error', 'Gagal menyambung ke server.', 'error');
+        } finally {
+            const btn = document.getElementById('saveBannedWordsBtn');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Daftar Banned';
+        }
+    };
+
+    document.getElementById('resetDefaultBtn').onclick = () => {
+        Swal.fire({
+            title: 'Konfirmasi',
+            text: 'Ini akan memuat ulang daftar kata terlarang standar (Indo/English). Klik simpan setelah ini untuk memperbarui permanen.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Lanjutkan'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const defaults = [
+                    "ADMIN", "OFFICIAL", "SUPPORT", "SYSTEM", "OWNER", "STAFF", "MOD", "MODERATOR", 
+                    "ROOT", "SUPERUSER", "DAGANG", "DOMAIN", "KONTOL", "MEMEK", "ANJING", "BANGSAT", 
+                    "BABI", "GOBLOK", "TOLOL", "IDIOT", "PEREK", "LONTE", "JABLAY", "NGENTOT", "NGEYOTT",
+                    "TITIT", "MEMEK", "ASU", "PEPEK", "FUCK", "SHIT", "ASS", "BITCH"
+                ];
+                currentWords = [...new Set([...currentWords, ...defaults])];
+                renderWords();
+                Swal.fire('Daftar Diperbarui', 'Kata standar telah ditambahkan ke list sementara di bawah.', 'success');
+            }
+        });
+    };
+
+    renderWords();
+</script>

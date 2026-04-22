@@ -7,6 +7,7 @@ const { verifyAdmin } = require("../middleware/adminMiddleware");
 
 // Public / User Routes
 router.get("/check", controller.checkDomainAvailability);
+router.get("/check-availability", controller.checkDomainAvailability); // Alias untuk kompatibilitas frontend
 router.get("/user/:userId", verifyToken, controller.getUserDomains);
 router.get("/detail/:id", verifyToken, controller.getDomainDetail);
 router.put("/detail/:id", verifyToken, controller.updateDomain);

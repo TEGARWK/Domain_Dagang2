@@ -177,8 +177,8 @@ const MyDomains = () => {
                         className="w-full h-12 pl-12 pr-6 bg-white border border-slate-100 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] transition-all placeholder:text-slate-300"
                     />
                 </div>
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                    <div className="w-48">
+                <div className="grid grid-cols-1 sm:flex sm:items-center gap-3 w-full md:w-auto">
+                    <div className="w-full sm:w-48">
                         <CustomSelect
                             value={filterStatus}
                             onChange={(val) => setFilterStatus(val)}
@@ -190,21 +190,23 @@ const MyDomains = () => {
                             ]}
                         />
                     </div>
-                    <button 
-                        onClick={handleResync}
-                        disabled={resyncing}
-                        className="h-11 px-5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:border-[#f97316] hover:text-[#f97316] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
-                    >
-                        <span className={`material-symbols-outlined text-lg ${resyncing ? 'animate-spin' : ''}`}>sync</span>
-                        {resyncing ? "Syncing..." : "Sync Data"}
-                    </button>
-                    <Link 
-                        to="/dashboard/buy"
-                        className="h-11 px-6 bg-slate-900 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10 flex items-center gap-2"
-                    >
-                        <span className="material-symbols-outlined text-lg">add_circle</span>
-                        Beli Baru
-                    </Link>
+                    <div className="flex items-center gap-2 w-full">
+                        <button 
+                            onClick={handleResync}
+                            disabled={resyncing}
+                            className="flex-1 h-11 px-4 sm:px-5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:border-[#f97316] hover:text-[#f97316] transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            <span className={`material-symbols-outlined text-lg ${resyncing ? 'animate-spin' : ''}`}>sync</span>
+                            <span className="truncate">{resyncing ? "Syncing..." : "Sync Data"}</span>
+                        </button>
+                        <Link 
+                            to="/dashboard/buy"
+                            className="flex-1 h-11 px-4 sm:px-6 bg-slate-900 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-lg">add_circle</span>
+                            <span className="truncate">Beli Baru</span>
+                        </Link>
+                    </div>
                 </div>
             </div>
             {searchTerm && (
@@ -217,15 +219,15 @@ const MyDomains = () => {
             )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-separate border-spacing-0">
+        <div className="overflow-x-auto scrollbar-hide">
+          <table className="w-full min-w-[700px] text-left border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100" onClick={() => handleSort('name')}>Domain Asset</th>
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100" onClick={() => handleSort('expiration_date')}>Tanggal Kadaluarsa</th>
-                <th className="px-8 py-5 text-center border-b border-slate-100">Masa Berlaku</th>
-                <th className="px-8 py-5 text-center border-b border-slate-100">Status</th>
-                <th className="px-8 py-5 text-center border-b border-slate-100">Aksi</th>
+                <th className="px-4 sm:px-8 py-5 cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100" onClick={() => handleSort('name')}>Domain Asset</th>
+                <th className="hidden lg:table-cell px-8 py-5 cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100" onClick={() => handleSort('expiration_date')}>Tanggal Kadaluarsa</th>
+                <th className="px-4 sm:px-8 py-5 text-center border-b border-slate-100">Masa Berlaku</th>
+                <th className="px-4 sm:px-8 py-5 text-center border-b border-slate-100">Status</th>
+                <th className="px-4 sm:px-8 py-5 text-center border-b border-slate-100">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
@@ -236,38 +238,40 @@ const MyDomains = () => {
                   const statusConfig = getStatusBadge(dom.status);
                   return (
                     <tr key={dom.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-8 py-5">
-                          <p className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      <td className="px-4 sm:px-8 py-5">
+                          <p className="font-bold text-slate-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                               {dom.name}
-                              {dom.is_transfer ? (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">
-                                      Transfer
-                                  </span>
-                              ) : (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                      Register
-                                  </span>
-                              )}
+                              <span className="flex">
+                                {dom.is_transfer ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">
+                                        Transfer
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                        Register
+                                    </span>
+                                )}
+                              </span>
                           </p>
-                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">Asset Terverifikasi</p>
+                          <p className="hidden sm:block text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">Asset Terverifikasi</p>
                       </td>
-                      <td className="px-8 py-5">
+                      <td className="hidden lg:table-cell px-8 py-5">
                           <p className="text-[11px] font-bold text-slate-400 uppercase">
                             {dom.expiration_date ? new Date(dom.expiration_date).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
                           </p>
                       </td>
-                      <td className="px-8 py-5 text-center">
+                      <td className="px-4 sm:px-8 py-5 text-center">
                           {formatSisaWaktu(dom)}
                       </td>
-                      <td className="px-8 py-5 text-center">
-                        <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border ${statusConfig.className}`}>
+                      <td className="px-4 sm:px-8 py-5 text-center">
+                        <span className={`inline-flex px-2 sm:px-3 py-1 rounded-lg text-[8px] sm:text-[9px] font-bold uppercase tracking-widest border ${statusConfig.className}`}>
                           {statusConfig.label}
                         </span>
                       </td>
-                      <td className="px-8 py-5 text-center">
+                      <td className="px-4 sm:px-8 py-5 text-center">
                         <Link
                           to={`/dashboard/domains/${dom.id}`}
-                          className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10 active:scale-95"
+                          className="inline-flex px-3 sm:px-4 py-2 bg-slate-900 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10 active:scale-95"
                         >
                           Kelola
                         </Link>

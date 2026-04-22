@@ -25,7 +25,7 @@ import Transfer from "./pages/Transfer";
 import Promo from "./pages/Promo";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
-import Vouchers from "./pages/Vouchers";
+
 import VerifyEmail from "./pages/VerifyEmail";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -42,6 +42,8 @@ const Settings = lazy(() => import("./pages/dashboard/Settings"));
 const Support = lazy(() => import("./pages/dashboard/Support"));
 const TransferDomain = lazy(() => import("./pages/dashboard/TransferDomain"));
 const Notifications = lazy(() => import("./pages/dashboard/Notifications"));
+const Vouchers = lazy(() => import("./pages/Vouchers"));
+const Referral = lazy(() => import("./pages/dashboard/Referral"));
 
 // --- 4. ADMIN IMPORTS ---
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -62,6 +64,7 @@ const AdminRegistrarBalance = lazy(() => import("./pages/admin/AdminRegistrarBal
 const AdminFAQs = lazy(() => import("./pages/admin/AdminFAQs"));
 const AdminSupportTickets = lazy(() => import("./pages/admin/AdminSupportTickets"));
 const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
+const AdminReferral = lazy(() => import("./pages/admin/AdminReferral"));
 
 // --- 5. ERROR PAGES ---
 import Error404 from "./pages/error/Error404";
@@ -81,6 +84,18 @@ const PlaceholderPage = ({ title }) => (
 // --- MAIN LAYOUT COMPONENT ---
 const Layout = () => {
   const location = useLocation();
+
+  // --- 5. LOGIK REFERRAL: DETEKSI ?ref= ---
+  React.useEffect(() => {
+    // Bersihkan pelacak legacy dari localStorage jika ada yang tersangkut
+    localStorage.removeItem("referral_code");
+
+    const queryParams = new URLSearchParams(location.search);
+    const refCode = queryParams.get("ref");
+    if (refCode) {
+      sessionStorage.setItem("referral_code", refCode);
+    }
+  }, [location]);
 
   // Logic: Sembunyikan Navbar/Footer Public di:
   // 1. Halaman Auth (Login/Register)
@@ -135,7 +150,7 @@ const Layout = () => {
           {/* === C. DASHBOARD ROUTES (PROTECTED) === */}
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Overview />} />
-            <Route path="vouchers" element={<Vouchers />} />
+
             <Route path="buy" element={<BuyDomain />} />
             <Route path="transfer" element={<TransferDomain />} />
             <Route path="promo" element={<Promo />} />
@@ -153,6 +168,8 @@ const Layout = () => {
             <Route path="settings" element={<Settings />} />
             <Route path="support" element={<Support />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="vouchers" element={<Vouchers />} />
+            <Route path="referral" element={<Referral />} />
           </Route>
 
           {/* === TRANSACTIONS (STANDALONE) === */}
@@ -178,6 +195,7 @@ const Layout = () => {
             <Route path="faqs" element={<AdminFAQs />} />
             <Route path="support-tickets" element={<AdminSupportTickets />} />
             <Route path="logs" element={<AdminAuditLogs />} />
+            <Route path="referral" element={<AdminReferral />} />
           </Route>
 
 

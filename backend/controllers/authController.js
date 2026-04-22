@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const EmailService = require("../services/EmailService");
 const { createLog } = require("./auditController");
 const crypto = require("crypto");
+const referralService = require("../services/referralService");
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -17,7 +18,7 @@ exports.register = async (req, res) => {
     const existingUsers = await db.query(checkSql, [email]);
     
     if (existingUsers.length > 0) {
-      return res.status(409).json("User already exists!");
+      return res.status(409).json({ message: "Email sudah terdaftar! Silakan gunakan email lain atau masuk." });
     }
 
     // Hash Password
@@ -28,13 +29,13 @@ exports.register = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
     // Destructure new fields from req.body
-    const { bio, address_line1, city, state, zip_code, country } = req.body;
+    const { bio, address_line1, city, state, district, village, zip_code, country, referralCode } = req.body;
 
     const sql = `INSERT INTO users (
         name, email, phone, password, 
-        bio, address_line1, city, state, zip_code, country,
+        bio, address_line1, city, state, district, village, zip_code, country,
         verification_token
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`;
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`;
     
     const values = [
         name, email, phone, hashedPassword,
@@ -42,13 +43,22 @@ exports.register = async (req, res) => {
         address_line1 || null, 
         city || null, 
         state || null, 
+        district || null,
+        village || null,
         zip_code || null, 
         country || 'ID',
         verificationToken
     ];
 
-    await db.query(sql, values);
+    const result = await db.query(sql, values);
+    const newUserId = result[0].id;
       
+    // --- REFERRAL INTEGRATION ---
+    if (referralCode) {
+        await referralService.applyReferralOnRegister(newUserId, referralCode);
+    }
+    // ----------------------------
+
     // Send Verification Email
     await EmailService.sendVerificationEmail({ name, email }, verificationToken);
 
@@ -82,6 +92,19 @@ exports.verifyEmail = async (req, res) => {
     const userData = await db.query(userSql, [userId]);
     const user = userData[0];
 
+    // --- REFERRAL INTEGRATION ---
+    // 1. Generate Referral Code for this new user if not exists
+    if (!user.referral_code) {
+        await referralService.generateReferralCode(userId, user.name);
+    }
+
+    // 2. Check for referrer link (From Query or Cookie)
+    const referralCode = req.query.ref || req.cookies?.referral_code;
+    if (referralCode) {
+        await referralService.applyReferralOnRegister(userId, referralCode);
+    }
+    // ----------------------------
+
     // Generate Token
     const payload = { id: user.id, role: user.role || 'user' };
     const jwtToken = jwt.sign(payload, process.env.JWT_SECRET || 'secretkey', {
@@ -109,20 +132,20 @@ exports.login = async (req, res) => {
 
     const data = await db.query(sql, [req.body.email]);
 
-    if (data.length === 0) return res.status(404).json("User not found!");
+    if (data.length === 0) return res.status(404).json({ message: "User tidak ditemukan!" });
 
     const user = data[0];
     
     // Check if verified
     if (!user.is_verified) {
-        return res.status(403).json("Please verify your email address before logging in.");
+        return res.status(403).json({ message: "Harap verifikasi email Anda sebelum masuk." });
     }
 
     // Cek password hash
     const isPasswordValid = bcrypt.compareSync(req.body.password, user.password);
 
     if (!isPasswordValid) {
-        return res.status(400).json("Wrong password or username!");
+        return res.status(400).json({ message: "Kata sandi salah!" });
     }
 
     // Kirim data user (kecuali password) + TOKEN

@@ -1,0 +1,161 @@
+<div class="row section-title">
+    <div class="col">
+        <h2 class="mb-1">Statistik Dashboard</h2>
+        <p class="text-muted">Pantau pertumbuhan bisnis DagangDomain secara real-time.</p>
+    </div>
+</div>
+
+<!-- Kartu Statistik -->
+<div class="row g-4 mb-5">
+    <!-- Revenue -->
+    <div class="col-md-3">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="bg-success-subtle p-3 rounded-4">
+                    <i class="fas fa-wallet text-success fs-4"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0 fw-bold">Total Pendapatan</p>
+                    <h3 class="mb-0 fw-bold">Rp <%= parseFloat(stats.revenue).toLocaleString('id-ID') %>
+                    </h3>
+                </div>
+            </div>
+            <p class="text-muted small mb-0"><i class="fas fa-arrow-up text-success me-1"></i> Transaksi terverifikasi
+            </p>
+        </div>
+    </div>
+
+    <!-- Users -->
+    <div class="col-md-3">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="bg-primary-subtle p-3 rounded-4">
+                    <i class="fas fa-users text-primary fs-4"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0 fw-bold">Total User</p>
+                    <h3 class="mb-0 fw-bold">
+                        <%= stats.users %>
+                    </h3>
+                </div>
+            </div>
+            <p class="text-muted small mb-0">
+                <%= stats.newUsers %> user baru hari ini
+            </p>
+        </div>
+    </div>
+
+    <!-- Vouchers -->
+    <div class="col-md-3">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="bg-warning-subtle p-3 rounded-4">
+                    <i class="fas fa-ticket-alt text-warning fs-4"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0 fw-bold">Voucher Aktif</p>
+                    <h3 class="mb-0 fw-bold">
+                        <%= stats.vouchers %>
+                    </h3>
+                </div>
+            </div>
+            <p class="text-muted small mb-0">Promo sedang berjalan</p>
+        </div>
+    </div>
+
+    <!-- Referral Pending -->
+    <div class="col-md-3">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="bg-info-subtle p-3 rounded-4">
+                    <i class="fas fa-clock text-info fs-4"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0 fw-bold">Reward Pending</p>
+                    <h3 class="mb-0 fw-bold text-truncate">Rp <%= parseFloat(stats.referrals).toLocaleString('id-ID') %>
+                    </h3>
+                </div>
+            </div>
+            <p class="text-muted small mb-0">Menunggu cair ke wallet</p>
+        </div>
+    </div>
+</div>
+
+<!-- Grafik -->
+<div class="row g-4">
+    <!-- Sales Chart -->
+    <div class="col-md-8">
+        <div class="card p-4 h-100">
+            <h5 class="fw-bold mb-4">Transaksi 7 Hari Terakhir</h5>
+            <canvas id="salesChart" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Source Chart -->
+    <div class="col-md-4">
+        <div class="card p-4 h-100">
+            <h5 class="fw-bold mb-4">Akuisisi User</h5>
+            <canvas id="sourceChart" height="250"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Sales Chart ---
+        const salesData = <%- JSON.stringify(typeof charts !== 'undefined' ? charts.sales : []) %>;
+        if (salesData && salesData.length > 0) {
+            new Chart(document.getElementById('salesChart'), {
+                type: 'bar',
+                data: {
+                    labels: salesData.map(d => d.label),
+                    datasets: [{
+                        label: 'Pendapatan (IDR)',
+                        data: salesData.map(d => d.value),
+                        backgroundColor: '#F97316',
+                        borderRadius: 8,
+                        maxBarThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { borderDash: [5, 5], drawBorder: false },
+                            ticks: { callback: v => 'Rp ' + v.toLocaleString('id-ID') }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // --- Source Chart ---
+        const sourceData = <%- JSON.stringify(typeof charts !== 'undefined' ? charts.sources : []) %>;
+        if (sourceData && sourceData.length > 0) {
+            new Chart(document.getElementById('sourceChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: sourceData.map(d => d.label),
+                    datasets: [{
+                        data: sourceData.map(d => d.value),
+                        backgroundColor: ['#6366F1', '#F97316'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                    }
+                }
+            });
+        }
+    });
+</script>

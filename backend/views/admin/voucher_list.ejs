@@ -1,0 +1,119 @@
+<div class="row section-title align-items-center">
+    <div class="col">
+        <h2 class="mb-1">Manajemen Voucher</h2>
+        <p class="text-muted">Kelola promosi, diskon, dan kuota flash sale.</p>
+    </div>
+    <div class="col-auto">
+        <a href="/admin/vouchers/create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Buat Voucher
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="px-4 py-3 border-0">Kode Voucher</th>
+                        <th class="py-3 border-0">Tipe & Nilai</th>
+                        <th class="py-3 border-0">Kuota (Used/Total)</th>
+                        <th class="py-3 border-0">Sisa Redis</th>
+                        <th class="py-3 border-0">Masa Berlaku</th>
+                        <th class="py-3 border-0">Status</th>
+                        <th class="px-4 py-3 border-0 text-end">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (vouchers.length === 0) { %>
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">Belum ada voucher yang dibuat.</td>
+                        </tr>
+                    <% } %>
+                    <% vouchers.forEach(v => { %>
+                        <tr>
+                            <td class="px-4">
+                                <span class="fw-bold text-primary"><%= v.code %></span>
+                            </td>
+                            <td>
+                                <% if (v.discount_type === 'percentage') { %>
+                                    <span class="badge bg-info-subtle text-info"><%= v.discount_value %>% OFF</span>
+                                <% } else { %>
+                                    <span class="badge bg-success-subtle text-success">Rp <%= parseFloat(v.discount_value).toLocaleString('id-ID') %> OFF</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height: 6px; width: 80px;">
+                                        <% let percent = (v.total_claimed / v.quota) * 100 %>
+                                        <div class="progress-bar bg-primary" style="width: <%= percent %>%"></div>
+                                    </div>
+                                    <span class="small fw-bold"><%= v.total_claimed %>/<%= v.quota %></span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge <%= v.realtime_quota > 0 ? 'bg-primary' : 'bg-danger' %> rounded-pill">
+                                    <%= v.realtime_quota %>
+                                </span>
+                            </td>
+                            <td class="small">
+                                <div><i class="far fa-calendar-check me-1 text-muted"></i> <%= new Date(v.started_at).toLocaleDateString('id-ID') %></div>
+                                <div class="text-muted"><i class="far fa-calendar-times me-1"></i> <%= new Date(v.expired_at).toLocaleDateString('id-ID') %></div>
+                            </td>
+                            <td>
+                                <% let now = new Date() %>
+                                <% if (!v.is_active) { %>
+                                    <span class="badge bg-secondary">Nonaktif</span>
+                                <% } else if (now > new Date(v.expired_at)) { %>
+                                    <span class="badge bg-danger">Expired</span>
+                                <% } else if (now < new Date(v.started_at)) { %>
+                                    <span class="badge bg-warning">Upcoming</span>
+                                <% } else { %>
+                                    <span class="badge bg-success">Aktif</span>
+                                <% } %>
+                            </td>
+                            <td class="px-4 text-end">
+                                <div class="dropdown">
+                                    <button class="btn btn-light btn-sm rounded-circle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                        <li><a class="dropdown-item py-2" href="/admin/vouchers/<%= v.id %>/claims"><i class="fas fa-list-check me-2 text-muted"></i> Lihat Klaim</a></li>
+                                        <li><button class="dropdown-item py-2 text-primary" onclick="toggleActive('<%= v.id %>', <%= !v.is_active %>)"><i class="fas fa-power-off me-2"></i> <%= v.is_active ? 'Nonaktifkan' : 'Aktifkan' %></button></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item py-2 text-danger" href="#"><i class="fas fa-trash-alt me-2"></i> Hapus</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function toggleActive(id, newState) {
+        if (!confirm('Apakah Anda yakin ingin mengubah status voucher ini?')) return;
+        
+        try {
+            // Kita panggil API yang sudah ada
+            const res = await fetch(`/api/admin/vouchers/${id}/toggle`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: newState })
+            });
+            
+            const data = await res.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Gagal: ' + data.message);
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    }
+</script>
