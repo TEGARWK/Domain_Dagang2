@@ -3,6 +3,7 @@ const db = require('../config/db');
 /**
  * PromoEngine Service
  * Handles automatic promo events and manual coupon discounting with anti-loss protection.
+ * Schema standard: discount_type, discount_value, quota, quota_used, min_transaction, started_at, expired_at.
  */
 class PromoEngine {
     /**
@@ -36,8 +37,9 @@ class PromoEngine {
             // 1. Fetch Active Promo Events for the TLDs in cart
             const tldRegexString = /\.[a-z]{2,}(\.[a-z]{2})?$/;
             const tldsFound = [...new Set(items.map(i => {
-                const match = i.name.toLowerCase().match(tldRegexString);
-                return match ? match[0] : "." + i.name.split('.').slice(1).join('.');
+                const name = i.domain_name || i.name || '';
+                const match = name.toLowerCase().match(tldRegexString);
+                return match ? match[0] : "." + name.split('.').slice(1).join('.');
             }))];
 
             const eventsRes = await client.query(`
@@ -60,32 +62,34 @@ class PromoEngine {
                     WHERE code = $1 
                       AND is_active = TRUE
                       AND is_automatic = FALSE
-                      AND (valid_until IS NULL OR valid_until > NOW())
+                      AND (expired_at IS NULL OR expired_at > NOW())
                 `, [couponCode.toUpperCase()]);
                 coupon = couponRes.rows[0];
                 
                 if (coupon) {
                     // Check quota
-                    if (coupon.usage_limit > 0 && (coupon.usage_count + coupon.locked_count) >= coupon.usage_limit) {
-                        coupon = null; // Quota full, treat as invalid coupon
+                    const currentUsage = parseInt(coupon.quota_used || 0) + parseInt(coupon.locked_count || 0);
+                    if (coupon.quota > 0 && currentUsage >= coupon.quota) {
+                        coupon = null; // Quota full
                     }
                 }
             }
 
             // 3. Process each item
             const processedItems = items.map(item => {
-                let itemPrice = parseFloat(item.base_price) * (item.duration || 1);
-                let itemCost = parseFloat(item.cost_price) * (item.duration || 1);
+                const name = item.domain_name || item.name || '';
+                let itemPrice = parseFloat(item.base_price || item.price || 0) * (item.duration || 1);
+                let itemCost = parseFloat(item.cost_price || 0) * (item.duration || 1);
                 let itemDiscount = 0;
                 let eventApplied = null;
 
                 subtotal += itemPrice;
 
                 // A. Apply Promo Event (Automatic)
-                // Find first (highest priority) event that includes this item's TLD or 'all'
                 const tldRegex = /\.[a-z]{2,}(\.[a-z]{2})?$/;
-                const match = item.name.toLowerCase().match(tldRegex);
-                const itemTld = match ? match[0] : "." + item.name.split('.').slice(1).join('.');
+                const match = name.toLowerCase().match(tldRegex);
+                const itemTld = match ? match[0] : "." + name.split('.').slice(1).join('.');
+                
                 const event = activeEvents.find(e => {
                     try {
                         const tlds = typeof e.eligible_tlds === 'string' ? JSON.parse(e.eligible_tlds) : e.eligible_tlds;
@@ -111,7 +115,7 @@ class PromoEngine {
                         discountAmount = parseFloat(event.value);
                     }
 
-                    // Anti-Boncos clamping (at Item Level)
+                    // Anti-Boncos clamping
                     const potentialPrice = itemPrice - discountAmount;
                     if (potentialPrice < itemCost) {
                         discountAmount = Math.max(0, itemPrice - itemCost);
@@ -126,10 +130,10 @@ class PromoEngine {
 
                 return { 
                     ...item, 
-                    item_subtotal: itemPrice, // Base price * duration
-                    current_price: itemPrice - itemDiscount, // Running total after event
-                    item_discount: itemDiscount, // Event discount only for now
-                    effective_price: itemPrice - itemDiscount, // Final price after capping
+                    item_subtotal: itemPrice,
+                    current_price: itemPrice - itemDiscount,
+                    item_discount: itemDiscount,
+                    effective_price: itemPrice - itemDiscount,
                     event_applied: eventApplied
                 };
             });
@@ -137,38 +141,36 @@ class PromoEngine {
             // B. Apply Coupon (Manual)
             let couponApplied = null;
             if (coupon) {
-                // Rule: If item has event discount and coupon is not stackable, block coupon
                 if (!coupon.is_stackable && hasEventDiscount) {
-                    // Non-stackable with event promos.
+                    // Skip if not stackable
                 } else {
                     let couponTotalDiscount = 0;
                     const currentTotalAfterEvents = processedItems.reduce((acc, i) => acc + i.current_price, 0);
                     
-                    if (currentTotalAfterEvents >= parseFloat(coupon.min_purchase || 0)) {
+                    if (currentTotalAfterEvents >= parseFloat(coupon.min_transaction || 0)) {
                         const couponActions = typeof coupon.eligible_actions === 'string' ? JSON.parse(coupon.eligible_actions) : coupon.eligible_actions;
                         const isActionMatchAll = !couponActions || couponActions.length === 0 || couponActions.includes('all');
                         
-                        const couponTlds = typeof coupon.eligible_tlds === 'string' ? JSON.parse(coupon.eligible_tlds) : coupon.eligible_tlds;
+                        const couponTlds = typeof coupon.applicable_to === 'string' ? JSON.parse(coupon.applicable_to) : coupon.applicable_to;
                         const isTldMatchAll = !couponTlds || couponTlds.length === 0 || couponTlds.includes('all');
 
-                        if (coupon.type === 'percentage') {
+                        if (coupon.discount_type === 'percentage') {
                             processedItems.forEach(pItem => {
+                                const pName = pItem.domain_name || pItem.name || '';
                                 const tldRegex = /\.[a-z]{2,}(\.[a-z]{2})?$/;
-                                const match = pItem.name.toLowerCase().match(tldRegex);
-                                const itemTld = match ? match[0] : "." + pItem.name.split('.').slice(1).join('.');
+                                const match = pName.toLowerCase().match(tldRegex);
+                                const itemTld = match ? match[0] : "." + pName.split('.').slice(1).join('.');
 
                                 const isEligibleAction = isActionMatchAll || (Array.isArray(couponActions) && couponActions.includes(pItem.action));
                                 const isEligibleTld = isTldMatchAll || (Array.isArray(couponTlds) && couponTlds.includes(itemTld));
 
                                 if (!isEligibleAction || !isEligibleTld) return;
 
-                                let disc = pItem.current_price * (parseFloat(coupon.value) / 100);
+                                let disc = pItem.current_price * (parseFloat(coupon.discount_value) / 100);
                                 
-                                // Anti-Boncos floor: current_price vs cost_price
-                                const itemCost = parseFloat(pItem.cost_price) * (pItem.duration || 1);
+                                const itemCost = parseFloat(pItem.cost_price || 0) * (pItem.duration || 1);
                                 const availableMargin = pItem.current_price - itemCost;
                                 
-                                // Cap to available margin
                                 if (disc > availableMargin) disc = Math.max(0, availableMargin);
                                 
                                 pItem.current_price -= disc;
@@ -177,19 +179,19 @@ class PromoEngine {
                                 couponTotalDiscount += disc;
                             });
                         } else {
-                            // Fixed amount distribution (Only for eligible items)
-                            let remainingFixed = parseFloat(coupon.value);
+                            let remainingFixed = parseFloat(coupon.discount_value);
                             processedItems.forEach(pItem => {
+                                const pName = pItem.domain_name || pItem.name || '';
                                 const tldRegex = /\.[a-z]{2,}(\.[a-z]{2})?$/;
-                                const match = pItem.name.toLowerCase().match(tldRegex);
-                                const itemTld = match ? match[0] : "." + pItem.name.split('.').slice(1).join('.');
+                                const match = pName.toLowerCase().match(tldRegex);
+                                const itemTld = match ? match[0] : "." + pName.split('.').slice(1).join('.');
 
                                 const isEligibleAction = isActionMatchAll || (Array.isArray(couponActions) && couponActions.includes(pItem.action));
                                 const isEligibleTld = isTldMatchAll || (Array.isArray(couponTlds) && couponTlds.includes(itemTld));
 
                                 if (!isEligibleAction || !isEligibleTld) return;
 
-                                const itemCost = parseFloat(pItem.cost_price) * (pItem.duration || 1);
+                                const itemCost = parseFloat(pItem.cost_price || 0) * (pItem.duration || 1);
                                 const availableMargin = pItem.current_price - itemCost;
                                 
                                 let disc = Math.min(remainingFixed, availableMargin);
@@ -213,14 +215,13 @@ class PromoEngine {
             const finalTotal = processedItems.reduce((acc, i) => acc + i.current_price, 0);
             totalDiscount = subtotal - finalTotal;
 
-            // Collect unique promos applied
             const events = [...new Set(processedItems.filter(i => i.event_applied).map(i => i.event_applied.title))];
             const resultApplied = events.map(t => ({ title: t, type: 'event' }));
             if (couponApplied) resultApplied.push(couponApplied);
 
             return {
                 subtotal,
-                total_discount: totalDiscount, // This is effective_discount (Subtotal - Final)
+                total_discount: totalDiscount,
                 final_total: finalTotal,
                 applied_promos: resultApplied,
                 items: processedItems
@@ -233,13 +234,10 @@ class PromoEngine {
 
     /**
      * reserveCoupon
-     * Reserves a slot for a coupon to prevent double-spending in high-concurrency.
-     * Must be called inside a transaction.
      */
     static async reserveCoupon(userId, couponId, invoiceId, client) {
-        // 1. Lock Coupon Row for Update
         const couponRes = await client.query(`
-            SELECT id, usage_limit_total, used_count, locked_count 
+            SELECT id, quota, quota_used, locked_count 
             FROM vouchers 
             WHERE id = $1 
             FOR UPDATE
@@ -248,25 +246,22 @@ class PromoEngine {
         const coupon = couponRes.rows[0];
         if (!coupon) throw new Error("Coupon not found");
 
-        // 2. Check Capacity
-        if (coupon.usage_limit_total > 0) {
-            const currentUsage = parseInt(coupon.used_count) + parseInt(coupon.locked_count);
-            if (currentUsage >= parseInt(coupon.usage_limit_total)) {
+        if (coupon.quota > 0) {
+            const currentUsage = parseInt(coupon.quota_used || 0) + parseInt(coupon.locked_count || 0);
+            if (currentUsage >= parseInt(coupon.quota)) {
                 throw new Error("Coupon quota has been reached (Fully Reserved)");
             }
         }
 
-        // 3. Insert Reservation
-        const expiresAt = new Date(Date.now() + 15 * 60000); // 15 Minutes expiry
+        const expiresAt = new Date(Date.now() + 15 * 60000);
         await client.query(`
             INSERT INTO coupon_reservations (coupon_id, user_id, invoice_id, expires_at)
             VALUES ($1, $2, $3, $4)
         `, [couponId, userId, invoiceId, expiresAt]);
 
-        // 4. Update Locked Count
         await client.query(`
             UPDATE vouchers 
-            SET locked_count = locked_count + 1, updated_at = NOW() 
+            SET locked_count = COALESCE(locked_count, 0) + 1, updated_at = NOW() 
             WHERE id = $1
         `, [couponId]);
 

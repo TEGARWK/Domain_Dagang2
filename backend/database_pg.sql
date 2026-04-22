@@ -296,44 +296,44 @@ CREATE TABLE IF NOT EXISTS promo_events (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS coupons (
+CREATE TABLE IF NOT EXISTS vouchers (
     id SERIAL PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
     title VARCHAR(255),
     subtitle VARCHAR(255),
     description TEXT,
     banner_image TEXT,
-    type VARCHAR(20) NOT NULL CHECK (type IN ('fixed', 'percentage')),
-    value DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    discount_type VARCHAR(20) NOT NULL CHECK (discount_type IN ('fixed', 'percentage')),
+    discount_value DECIMAL(15, 2) NOT NULL DEFAULT 0,
     max_discount DECIMAL(15, 2),
-    min_purchase DECIMAL(15, 2) DEFAULT 0,
-    usage_limit INT DEFAULT 0, -- Deprecated (alias for usage_limit_total)
-    usage_limit_total INT DEFAULT 0,
+    min_transaction DECIMAL(15, 2) DEFAULT 0,
+    quota INT DEFAULT 0,
     usage_limit_per_user INT DEFAULT 1,
-    used_count INT DEFAULT 0,
+    quota_used INT DEFAULT 0,
     is_automatic BOOLEAN DEFAULT FALSE,
     is_stackable BOOLEAN DEFAULT FALSE,
     is_new_user_only BOOLEAN DEFAULT FALSE,
-    eligible_tlds JSONB,
+    applicable_to JSONB,
     eligible_actions JSONB,
-    start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    end_date TIMESTAMP WITH TIME ZONE,
-    valid_until TIMESTAMP WITH TIME ZONE, -- Alias for end_date for compatibility
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expired_at TIMESTAMP WITH TIME ZONE,
     priority INT DEFAULT 0,
     segment VARCHAR(50),
     is_active BOOLEAN DEFAULT TRUE,
+    created_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS user_vouchers (
+CREATE TABLE IF NOT EXISTS voucher_claims (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    coupon_id INT NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
+    voucher_id INT NOT NULL REFERENCES vouchers(id) ON DELETE CASCADE,
+    invoice_id VARCHAR(100) REFERENCES invoices(id),
     claimed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     used_at TIMESTAMP WITH TIME ZONE,
-    status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, USED, EXPIRED
-    UNIQUE(user_id, coupon_id)
+    status VARCHAR(20) DEFAULT 'claimed', -- claimed, used, expired
+    UNIQUE(user_id, voucher_id)
 );
 
 CREATE TABLE IF NOT EXISTS promo_event_tlds (
@@ -443,7 +443,7 @@ CREATE INDEX IF NOT EXISTS idx_dns_domain ON dns_records(domain_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_user_id ON invoices(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_promo_events_activity ON promo_events (is_active, start_date, end_date);
-CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons (code);
+CREATE INDEX IF NOT EXISTS idx_vouchers_code ON vouchers (code);
 CREATE INDEX IF NOT EXISTS idx_registrar_mutations_name ON registrar_mutations (registrar_name);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications (user_id) WHERE is_read = FALSE;
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs (created_at);
