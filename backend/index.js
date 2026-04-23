@@ -65,13 +65,10 @@ app.use("/api/referral", require("./routes/referral"));
 
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 
+// Health Check
 app.get("/", (req, res) => {
-  res.json("Backend Server Version 2.0 (Voucher Fix) 🚀");
+  res.json("Backend Server Version 2.1 (Domain Availability Fix) 🚀");
 });
-
-// Root route for domain availability (called via Vite proxy rewrite)
-const domainController = require("./controllers/domainController");
-app.get("/domain-availability", domainController.checkDomainAvailability);
 
 
 

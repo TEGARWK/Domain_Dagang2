@@ -133,5 +133,33 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Frontend (Production Ready):** Mengganti hardcoded localhost:5173 dengan teks generik "domain website ini" pada halaman Login.jsx and Register.jsx untuk persiapan *deployment*.
 - **Backend (Automated Provisioning):** Mengintegrasikan OrderService.activateDomain ke dalam webhook Tripay and pengecekan status manual. Domain sekarang otomatis terdaftar/aktif sesaat setelah pembayaran dikonfirmasi PAID.
 - **Backend (Maintenance & Cleanup):** Pembersihan repositori dari folder scratch/ (script testing), file error_debug.log yang membengkak, and file SQL sementara untuk menjaga performa server.
-- **Backend (Architecture):** Merapikan folder ackend/migrations dengan memindahkan 26 file migrasi historis ke dalam subfolder rchive/ agar struktur proyek lebih bersih.
-- **Bug Fixes:** Memperbaiki kesalahan *casing* pemanggilan oucherService di 	ripayController.js and menghapus duplikasi deklarasi *state* suggestedWebhook pada Panel Admin.
+- **Backend (Architecture):** Merapikan folder  ackend/migrations dengan memindahkan 26 file migrasi historis ke dalam subfolder  rchive/ agar struktur proyek lebih bersih.
+- **Bug Fixes:** Memperbaiki kesalahan *casing* pemanggilan  oucherService di 	ripayController.js and menghapus duplikasi deklarasi *state* suggestedWebhook pada Panel Admin.
+
+### [2026-04-23] - Perbaikan Skema Database, Top-Up & Sinkronisasi Voucher (Tegar Wira Kesuma)
+- **Backend (Voucher Fix):** Memperbaiki Error 500 pada halaman Promo dengan menyinkronkan nama fungsi `getAvailableClaimableVouchers` antara Controller dan Service. Menambahkan fungsi `getVoucherInfo` yang hilang pada `VoucherService.js` untuk mendukung detail kupon.
+- **Backend (Top-Up Wallet):** Mengatasi Error 500 pada proses Isi Saldo (Top-Up) melalui perbaikan logika `InvoiceService` yang sebelumnya gagal karena kolom-kolom finansial baru belum ada di database produksi.
+- **Database (Schema Self-Healing):** Merilis `master_database.sql` v2.7 yang mendukung migrasi otomatis (*Auto-Repair*). Skrip ini mendeteksi dan menambah kolom yang hilang secara otomatis tanpa merusak data yang sudah ada.
+- **Database (Invoices):** Menambahkan kolom krusial `applied_promo_snapshot`, `type` (untuk identifikasi Topup/Domain), `tax_amount`, dan metrik profit ke tabel `invoices` guna mendukung sistem laporan keuangan terbaru.
+- **Database (Users):** Menambahkan kolom alamat mendetail (`district` untuk Kecamatan dan `village` untuk Desa/Kelurahan) pada tabel `users` untuk mencegah crash saat sistem memuat data profil di halaman Checkout.
+- **Database (Regions):** Mengimplementasikan sistem data wilayah Indonesia menggunakan package `idn-area-data`. Menyediakan skrip `seed_regions.js` dan SQL khusus untuk mengisi data 38 Provinsi dan 514 Kota/Kabupaten guna memfungsikan dropdown alamat pada form pendaftaran.
+- **Backend (Diagnostics):** Meningkatkan sistem logging pada `checkoutController` untuk memberikan informasi error yang lebih akurat saat terjadi kegagalan pembuatan invoice di server produksi.
+- **Backend (Routing Fix):** Menyinkronkan endpoint cek domain dengan mengubah route `/domain-availability` menjadi `/api/domain-availability` agar sesuai dengan permintaan dari frontend.
+- **Admin (Voucher Management):** Memperbaiki Error 500 saat pembuatan voucher baru dengan melengkapi kolom `max_use_per_user`, `is_stackable`, `segment`, `eligible_actions`, dan `created_by` pada tabel `vouchers`.
+- **Database (Legacy Cleanup):** Melepaskan constraint `NOT NULL` pada kolom `type` di tabel `vouchers` untuk mendukung skema database terbaru yang kini menggunakan kolom `discount_type`.
+- **Integration (Payment Gateway):** Memberikan panduan konfigurasi Tripay untuk mengatasi error 400 (Bad Request) dengan memastikan penggunaan Merchant Code (T-ID) dan Private Key yang valid dari Dashboard Tripay.
+- **Frontend (Admin Dashboard):** Memperbaiki tampilan "Saldo Registrar" pada halaman Overview yang sebelumnya selalu Rp 0 karena kesalahan pemanggilan path data (`balance.current_balance`).
+- **Frontend (Home Layout):** Menghapus sistem Banner secara total pada halaman utama untuk menghilangkan spasi kosong dan menyederhanakan tampilan sesuai kebutuhan sistem terbaru.
+- **Database (Regions Fix):** Memperbaiki Error *Foreign Key Violation* pada proses import data wilayah dengan mengimplementasikan urutan *insert* hierarkis (Provinsi -> Kota -> Kecamatan -> Desa).
+- **Database (Regions Optimization):** Menyediakan skrip `export_regions_light.js` dan file `regions_light.sql` versi ringan (hanya Provinsi & Kota) untuk mempermudah migrasi data di server VPS tanpa resiko *timeout*.
+- **Backend (Invoice Service):** Memperbaiki bug deskripsi otomatis pada transaksi Top Up Saldo yang sebelumnya terdeteksi sebagai pendaftaran domain.
+- **Backend & Frontend (Tax Logic Fix):** Sinkronisasi logika kalkulasi PPN 11% di backend (`calculateCartPreview`) dan frontend (`Checkout.jsx`) untuk memastikan pajak hanya diterapkan pada transaksi terkait Domain. Top Up Wallet kini terdeteksi bebas pajak (Rp 0).
+- **Backend (Routing Fix):** Standarisasi endpoint ketersediaan domain dengan memindahkan rute ke `/api/domains/check` guna menjamin kompatibilitas *proxy* Nginx di server produksi.
+- **Frontend (Google Login Fix):** Menonaktifkan fitur *FedCM* pada `Login.jsx` dan `Register.jsx` untuk mengatasi *NetworkError* dan pemblokiran inisialisasi Google Identity Services oleh setelan privasi browser.
+- **Frontend (Services):** Sinkronisasi `domainService.js` untuk menggunakan endpoint baru `/api/domains/check`.
+- **Frontend (Admin Fix):** Memperbaiki `TypeError` pada halaman kelola domain admin (`AdminManageDomain.jsx`) dengan menambahkan logika *safe-parsing* untuk data Nameserver yang tersimpan sebagai string di database.
+- **Database (Security):** Menambahkan skrip `update_banned_words.sql` yang berisi daftar lengkap kata terlarang (Anti-Profanity) untuk filter kustomisasi kode referral.
+- **Maintenance (Cleanup):** Pembersihan tahap kedua; penghapusan skrip migrasi usang (`tripay_migration.js`, `export_regions.js`, dll) dan pengarsipan file hotfix database ke folder `archive` untuk merapikan struktur repositori.
+
+
+
