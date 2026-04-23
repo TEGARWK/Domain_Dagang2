@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const voucherService = require('../services/voucherService');
+const voucherService = require('../services/VoucherService');
 const redisClient = require('../config/redisClient');
 
 exports.renderVouchers = async (req, res) => {

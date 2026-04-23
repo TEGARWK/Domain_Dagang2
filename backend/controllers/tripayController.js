@@ -3,7 +3,7 @@ const TripayService = require('../services/TripayService');
 const WalletService = require('../services/WalletService');
 const { getIPv4 } = require('../utils/ipHelper');
 const referralService = require('../services/referralService');
-const voucherService = require('../services/voucherService');
+const voucherService = require('../services/VoucherService');
 const OrderService = require('../services/OrderService');
 
 
