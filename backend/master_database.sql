@@ -1,7 +1,8 @@
 -- =============================================
--- CONSOLIDATED SCHEMA & SEED DATA: database_pg.sql
--- DESCRIPTION: Full PostgreSQL Initial Schema + Sample Data for Dagang Domain
--- AUTHOR: Agent Anti-Gravity
+-- MASTER CONSOLIDATED SCHEMA: master_database.sql
+-- DESCRIPTION: Full PostgreSQL Initial Schema + Seed Data
+-- AUTHOR: Antigravity
+-- VERSION: 2.1 (Added Regions & Final Column Fixes)
 -- =============================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -36,6 +37,13 @@ CREATE TABLE IF NOT EXISTS users (
     verification_token VARCHAR(255),
     reset_token VARCHAR(255),
     reset_token_expires TIMESTAMP WITH TIME ZONE,
+    
+    -- Referral Columns
+    referral_code VARCHAR(50) UNIQUE,
+    referred_by_id INT REFERENCES users(id) ON DELETE SET NULL,
+    referral_reward_total DECIMAL(15, 2) DEFAULT 0.00,
+    referral_code_customized BOOLEAN DEFAULT FALSE,
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -123,17 +131,6 @@ CREATE TABLE IF NOT EXISTS dns_records (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS transfer_requests (
-    id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    domain_name VARCHAR(255) NOT NULL,
-    auth_code VARCHAR(255),
-    status VARCHAR(50) DEFAULT 'PENDING_TRANSFER',
-    invoice_id VARCHAR(100) REFERENCES invoices(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- ---------------------------------------------
 -- 4. BILLING & INVOICES
 -- ---------------------------------------------
@@ -155,11 +152,13 @@ CREATE TABLE IF NOT EXISTS invoices (
     tax_subsidy_amount DECIMAL(15, 2) DEFAULT 0,
     total DECIMAL(15, 2) NOT NULL DEFAULT 0,
     checkout_config JSONB DEFAULT '{}',
+    discount_meta JSONB DEFAULT '{}',
     payment_method VARCHAR(50),
     payment_reference VARCHAR(100),
     plink_ref_no VARCHAR(100),
     paid_at TIMESTAMP WITH TIME ZONE,
     refunded_at TIMESTAMP WITH TIME ZONE,
+    refund_reason TEXT,
     type VARCHAR(50) DEFAULT 'DOMAIN',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -194,6 +193,11 @@ CREATE TABLE IF NOT EXISTS payments (
     va_number VARCHAR(50),
     expired_at TIMESTAMP WITH TIME ZONE,
     plink_ref_no VARCHAR(100),
+    
+    -- Tripay Columns
+    tripay_reference VARCHAR(100),
+    pay_url TEXT,
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -208,7 +212,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 );
 
 -- ---------------------------------------------
--- 6. DISBURSEMENT & REGISTRAR FINANCIALS
+-- 6. DISBURSEMENT & FINANCIALS
 -- ---------------------------------------------
 CREATE TABLE IF NOT EXISTS payment_gateways (
     id SERIAL PRIMARY KEY,
@@ -219,6 +223,12 @@ CREATE TABLE IF NOT EXISTS payment_gateways (
     provider VARCHAR(50),
     is_active BOOLEAN DEFAULT TRUE,
     instructions TEXT,
+    
+    -- Tripay / Advanced Columns
+    mode VARCHAR(20) DEFAULT 'sandbox',
+    enabled_methods JSONB DEFAULT '[]',
+    enabled_banks JSONB DEFAULT '[]',
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -276,7 +286,31 @@ CREATE TABLE IF NOT EXISTS withdraw_transactions (
 );
 
 -- ---------------------------------------------
--- 6. MARKETING & PROMO
+-- 7. REFERRAL SYSTEM
+-- ---------------------------------------------
+CREATE TABLE IF NOT EXISTS referral_tiers (
+    id SERIAL PRIMARY KEY,
+    tier_name VARCHAR(50) NOT NULL,
+    min_referrals INT NOT NULL,
+    reward_amount DECIMAL(15, 2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS referral_rewards (
+    id SERIAL PRIMARY KEY,
+    referrer_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    referee_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    invoice_id VARCHAR(100) REFERENCES invoices(id) ON DELETE SET NULL,
+    reward_amount DECIMAL(15, 2) NOT NULL,
+    referee_discount DECIMAL(15, 2) DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'pending', -- pending, active, cancelled
+    holding_until TIMESTAMP WITH TIME ZONE,
+    activated_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ---------------------------------------------
+-- 8. MARKETING & PROMO
 -- ---------------------------------------------
 CREATE TABLE IF NOT EXISTS promo_events (
     id SERIAL PRIMARY KEY,
@@ -286,12 +320,19 @@ CREATE TABLE IF NOT EXISTS promo_events (
     banner_image TEXT,
     type VARCHAR(20) NOT NULL CHECK (type IN ('fixed', 'percentage')),
     value DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    max_discount DECIMAL(15, 2),
+    max_discount DECIMAL(15, 2) DEFAULT 0,
     min_purchase DECIMAL(15, 2) DEFAULT 0,
     start_date TIMESTAMP WITH TIME ZONE NOT NULL,
     end_date TIMESTAMP WITH TIME ZONE,
+    valid_until TIMESTAMP WITH TIME ZONE,
     is_active BOOLEAN DEFAULT TRUE,
     priority INT DEFAULT 0,
+    
+    -- Advanced Promo Columns
+    is_automatic BOOLEAN DEFAULT TRUE,
+    eligible_tlds JSONB DEFAULT '["all"]',
+    eligible_actions JSONB DEFAULT '["all"]',
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -305,21 +346,30 @@ CREATE TABLE IF NOT EXISTS vouchers (
     banner_image TEXT,
     discount_type VARCHAR(20) NOT NULL CHECK (discount_type IN ('fixed', 'percentage')),
     discount_value DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    max_discount DECIMAL(15, 2),
+    max_discount DECIMAL(15, 2) DEFAULT 0,
     min_transaction DECIMAL(15, 2) DEFAULT 0,
     quota INT DEFAULT 0,
-    usage_limit_per_user INT DEFAULT 1,
     quota_used INT DEFAULT 0,
+    locked_count INT DEFAULT 0,
+    usage_limit_per_user INT DEFAULT 1,
+    max_use_per_user INT DEFAULT 1,
+    
     is_automatic BOOLEAN DEFAULT FALSE,
     is_stackable BOOLEAN DEFAULT FALSE,
     is_new_user_only BOOLEAN DEFAULT FALSE,
-    applicable_to JSONB,
-    eligible_actions JSONB,
+    applicable_to JSONB DEFAULT '["all"]',
+    eligible_actions JSONB DEFAULT '["register"]',
+    
     started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     expired_at TIMESTAMP WITH TIME ZONE,
+    start_date TIMESTAMP WITH TIME ZONE, -- for compatibility
+    end_date TIMESTAMP WITH TIME ZONE, -- for compatibility
+    valid_until TIMESTAMP WITH TIME ZONE, -- for compatibility
+    
     priority INT DEFAULT 0,
-    segment VARCHAR(50),
+    segment VARCHAR(50) DEFAULT 'all',
     is_active BOOLEAN DEFAULT TRUE,
+    
     created_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -336,15 +386,23 @@ CREATE TABLE IF NOT EXISTS voucher_claims (
     UNIQUE(user_id, voucher_id)
 );
 
-CREATE TABLE IF NOT EXISTS promo_event_tlds (
-    promo_event_id INT NOT NULL REFERENCES promo_events(id) ON DELETE CASCADE,
-    tld_id INT NOT NULL REFERENCES pricing(id) ON DELETE CASCADE,
-    PRIMARY KEY (promo_event_id, tld_id)
+CREATE TABLE IF NOT EXISTS coupons (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    discount_type VARCHAR(20) NOT NULL,
+    discount_value DECIMAL(15, 2) NOT NULL,
+    min_purchase DECIMAL(15, 2) DEFAULT 0,
+    quota INT DEFAULT 0,
+    quota_used INT DEFAULT 0,
+    start_date TIMESTAMP WITH TIME ZONE,
+    end_date TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS coupon_reservations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    coupon_id INT NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
+    coupon_id INT REFERENCES vouchers(id) ON DELETE CASCADE,
     user_id INT REFERENCES users(id) ON DELETE SET NULL,
     invoice_id VARCHAR(100) NOT NULL,
     reserved_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -353,7 +411,7 @@ CREATE TABLE IF NOT EXISTS coupon_reservations (
 );
 
 -- ---------------------------------------------
--- 7. CONTENT & SUPPORT
+-- 9. CONTENT, SUPPORT & REGIONS
 -- ---------------------------------------------
 CREATE TABLE IF NOT EXISTS site_settings (
     setting_key VARCHAR(50) PRIMARY KEY,
@@ -392,8 +450,15 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS regions (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL, -- PROVINCE, REGENCY, DISTRICT, VILLAGE
+    parent_id VARCHAR(50) REFERENCES regions(id) ON DELETE CASCADE
+);
+
 -- ---------------------------------------------
--- 8. AUDIT & LOGGING
+-- 10. AUDIT & LOGGING
 -- ---------------------------------------------
 CREATE TABLE IF NOT EXISTS audit_logs (
     id SERIAL PRIMARY KEY,
@@ -433,9 +498,10 @@ CREATE TABLE IF NOT EXISTS email_logs (
 );
 
 -- ---------------------------------------------
--- 9. INDEXES
+-- 11. INDEXES
 -- ---------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_referral ON users(referral_code);
 CREATE INDEX IF NOT EXISTS idx_wallets_user ON wallets(user_id);
 CREATE INDEX IF NOT EXISTS idx_wt_wallet ON wallet_transactions(wallet_id);
 CREATE INDEX IF NOT EXISTS idx_domains_user_id ON domains(user_id);
@@ -444,21 +510,24 @@ CREATE INDEX IF NOT EXISTS idx_invoices_user_id ON invoices(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_promo_events_activity ON promo_events (is_active, start_date, end_date);
 CREATE INDEX IF NOT EXISTS idx_vouchers_code ON vouchers (code);
-CREATE INDEX IF NOT EXISTS idx_registrar_mutations_name ON registrar_mutations (registrar_name);
+CREATE INDEX IF NOT EXISTS idx_voucher_claims_user ON voucher_claims (user_id);
+CREATE INDEX IF NOT EXISTS idx_referral_rewards_referrer ON referral_rewards (referrer_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications (user_id) WHERE is_read = FALSE;
-CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs (created_at);
+CREATE INDEX IF NOT EXISTS idx_regions_type ON regions(type);
+CREATE INDEX IF NOT EXISTS idx_regions_parent ON regions(parent_id);
 
 -- =============================================
 -- DATA SEEDING (SAMPEL DATA)
 -- =============================================
 
--- 1. Default Admin User
--- Email: admin@example.com | Password: 'password123' (hash)
-INSERT INTO users (name, email, password, role, is_verified) 
-VALUES ('Super Admin', 'admin@example.com', '$2b$10$WqBExlWvYgD/lK7yvK2e8.6.x0m1m1m1m1m1m1m1m1m1m1m1m1', 'admin', true)
-ON CONFLICT (email) DO NOTHING;
+-- 1. Default Referral Tiers
+INSERT INTO referral_tiers (tier_name, min_referrals, reward_amount) VALUES
+('Starter', 0, 20000),
+('Silver', 5, 25000),
+('Gold', 20, 35000)
+ON CONFLICT DO NOTHING;
 
--- 2. TLD Pricing Data (Essential for App)
+-- 2. TLD Pricing Data
 INSERT INTO pricing (tld, cost_register, cost_renew, cost_transfer, cost_restore, price_register, price_renew, price_transfer, price_restore) VALUES
 ('.id', 200000, 200000, 200000, 1000000, 225000, 225000, 225000, 1200000),
 ('.com', 150000, 160000, 150000, 1200000, 185000, 195000, 185000, 1400000),
@@ -466,38 +535,16 @@ INSERT INTO pricing (tld, cost_register, cost_renew, cost_transfer, cost_restore
 ('.biz.id', 11000, 11000, 11000, 50000, 15000, 15000, 15000, 75000)
 ON CONFLICT (tld) DO NOTHING;
 
--- 3. Initial Wallet for Admin
-INSERT INTO wallets (user_id, balance, currency) 
-SELECT id, 5000000, 'IDR' FROM users WHERE email = 'admin@example.com'
-ON CONFLICT (user_id) DO NOTHING;
-
--- 4. Sample FAQ
-INSERT INTO faqs (question, answer, category) VALUES
-('Bagaimana cara transfer domain?', 'Anda cukup menyiapkan EPP Code dan memastikan domain tidak di-lock.', 'Domain'),
-('Apa itu Dagang Domain?', 'Platform reseller domain dengan API otomatis.', 'Umum');
-
--- 5. Sample Paid Invoices (Historical Data)
-INSERT INTO invoices (id, user_id, status, subtotal, final_amount, total, payment_method, date, paid_at)
-SELECT 'INV-SAMPLE-001', id, 'paid', 225000, 225000, 225000, 'QRIS', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'
-FROM users WHERE email = 'admin@example.com'
-ON CONFLICT (id) DO NOTHING;
-
--- 6. Sample Active Domains
-INSERT INTO domains (user_id, domain_name, status, registration_date, expiration_date)
-SELECT id, 'tokoonline.com', 'active', NOW() - INTERVAL '1 month', NOW() + INTERVAL '11 months'
-FROM users WHERE email = 'admin@example.com'
-ON CONFLICT (domain_name) DO NOTHING;
-
--- 7. Default Payment Gateways (Essential for Integration)
-INSERT INTO payment_gateways (bank_name, account_number, account_holder, provider, is_active) VALUES
-('BCA', '1501548465', 'PT Domain Dagang', 'manual', true),
-('Mandiri', '1234567890', 'PT Domain Dagang', 'manual', true),
-('PrismaLink', 'SYSTEM', 'SYSTEM', 'prismalink', true)
+-- 3. Default Payment Gateways
+INSERT INTO payment_gateways (bank_name, account_number, account_holder, provider, is_active, instructions) VALUES
+('BCA', '1501548465', 'PT Domain Dagang', 'manual', true, 'Transfer manual ke rekening BCA'),
+('Tripay', '0', 'SYSTEM', 'tripay', true, 'Pembayaran otomatis via Tripay')
 ON CONFLICT DO NOTHING;
 
--- 8. Site Settings (Basic)
+-- 4. Essential Site Settings
 INSERT INTO site_settings (setting_key, setting_value) VALUES
 ('site_name', '"Domain Dagang"'),
 ('contact_email', '"support@domaindagang.com"'),
-('maintenance_mode', 'false')
+('referral_config', '{"referee_discount": 5000, "holding_period_days": 3}'),
+('banned_referral_codes', '["admin", "official", "support", "dagang"]')
 ON CONFLICT (setting_key) DO NOTHING;

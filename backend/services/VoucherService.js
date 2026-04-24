@@ -356,6 +356,21 @@ class VoucherService {
         }
     }
 
+    /**
+     * Get Detailed Voucher Info by Code
+     */
+    async getVoucherInfo(code, userId) {
+        const query = `
+            SELECT id, title, subtitle, description, code, discount_type, discount_value, 
+                   min_transaction, max_discount, started_at, expired_at, banner_image,
+                   is_new_user_only, applicable_to, eligible_actions
+            FROM vouchers 
+            WHERE code = $1 AND is_active = true
+        `;
+        const result = await db.pool.query(query, [code.toUpperCase()]);
+        return result.rows[0];
+    }
+
     // ---------------------------------------------------------
     // B. ADMIN METHODS (CRUD)
     // ---------------------------------------------------------

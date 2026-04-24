@@ -330,9 +330,8 @@ const Checkout = () => {
         const discountedSubtotal = Math.max(0, grossSubtotal - voucherDiscount);
 
         const hasDomainInInv = invoiceDetails.items?.some(it =>
-            it.name?.includes('.') ||
-            (it.description || "").toLowerCase().includes('reg') ||
-            (it.action_type || "").toLowerCase().includes('register')
+            (it.name && it.name.includes('.')) ||
+            (it.action_type && ['register', 'renew', 'transfer', 'restore'].includes(it.action_type.toLowerCase()))
         );
 
         if (hasDomainInInv) {

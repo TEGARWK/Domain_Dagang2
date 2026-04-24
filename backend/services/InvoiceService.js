@@ -28,6 +28,10 @@ class InvoiceService {
             } = calculationResults;
 
             // 1. Create Invoice Record with granular financial metrics
+            const hasDomainInInv = items?.some(it =>
+                (it.name && it.name.includes('.')) ||
+                (it.action && ['register', 'renew', 'transfer', 'restore'].includes(it.action.toLowerCase()))
+            );
             const invoiceNumber = customInvoiceId || `INV-${Date.now()}`;
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 1);
@@ -92,6 +96,7 @@ class InvoiceService {
         if (action === 'renew') return `Perpanjangan Domain ${duration} Tahun`;
         if (action === 'transfer') return `Transfer Domain (+ ${duration} Tahun)`;
         if (action === 'restore') return `Pemulihan Domain (Redemption Restore)`;
+        if (action === 'topup') return `Top Up Saldo Wallet`;
         return `Registration Domain ${duration} Year`;
     }
 }

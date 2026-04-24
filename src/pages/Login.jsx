@@ -340,7 +340,7 @@ const Login = () => {
                     shape="pill"
                     theme="outline"
                     width={window.innerWidth < 640 ? "280" : "340"}
-                    use_fedcm_for_prompt={true}
+                    use_fedcm_for_prompt={false}
                     text="continue_with"
                 />
 

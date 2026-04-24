@@ -55,7 +55,7 @@ const AdminOverview = () => {
         let balance = 0;
         try {
             const balanceRes = await api.get("/admin/registrar-balance");
-            balance = balanceRes.data?.data?.balance || 0;
+            balance = balanceRes.data?.balance?.current_balance || 0;
         } catch (e) {
             console.error("Failed to fetch balance from admin endpoint", e);
         }

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Import navigasi
 import CustomSelect from "../components/ui/CustomSelect";
 import { useNotification } from "../context/NotificationContext";
-import BannerSection from "../components/BannerSection";
 import { checkDomainAvailability } from "../services/domainService";
 import api from "../services/api";
 
@@ -785,10 +784,6 @@ function Home() {
         )}
       </header>
 
-      {/* 3. PROMO BANNER SECTION */}
-      <section className="py-12 px-6 lg:px-8">
-        <BannerSection />
-      </section>
 
       {/* 4. POPULAR EXTENSIONS */}
       <section className="py-24 bg-white border-y border-neutral-100 relative overflow-hidden">

@@ -437,17 +437,26 @@ exports.calculateCartPreview = async (req, res) => {
 
         const netAmount = Math.max(0, subtotal - totalDiscount - referralDiscount);
 
-        // Calculate Tax Standardized
+        // Calculate Tax Standardized (Only for Domain Items)
         const PPN_RATE = pricingConfig.PPN_PERCENT !== undefined ? pricingConfig.PPN_PERCENT : 0.11;
         let taxAmount = 0;
         let finalTotal = 0;
+
+        const hasDomainItem = cartItems.some(item => 
+            ['register', 'renew', 'transfer', 'restore'].includes(item.action?.toLowerCase())
+        );
         
-        if (pricingConfig.TAX_INCLUSIVE) {
-            finalTotal = netAmount;
-            taxAmount = Math.floor(finalTotal - (finalTotal / (1 + PPN_RATE)));
+        if (hasDomainItem) {
+            if (pricingConfig.TAX_INCLUSIVE) {
+                finalTotal = netAmount;
+                taxAmount = Math.floor(finalTotal - (finalTotal / (1 + PPN_RATE)));
+            } else {
+                taxAmount = Math.floor(netAmount * PPN_RATE);
+                finalTotal = netAmount + taxAmount;
+            }
         } else {
-            taxAmount = Math.floor(netAmount * PPN_RATE);
-            finalTotal = netAmount + taxAmount;
+            taxAmount = 0;
+            finalTotal = netAmount;
         }
 
         res.json({

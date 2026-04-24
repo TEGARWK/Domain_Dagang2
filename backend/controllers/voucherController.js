@@ -18,7 +18,7 @@ exports.getPublicVouchers = async (req, res) => {
 exports.getAvailableVouchers = async (req, res) => {
     try {
         const userId = req.user.id;
-        const vouchers = await voucherService.getAvailableVouchers(userId);
+        const vouchers = await voucherService.getAvailableClaimableVouchers(userId);
         return res.status(200).json(vouchers);
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });

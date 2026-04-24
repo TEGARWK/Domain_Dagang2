@@ -320,12 +320,25 @@ const AdminManageDomain = () => {
                         <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-xl shadow-slate-200/30 hover:shadow-2xl transition-all border-l-4 border-l-indigo-500">
                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Nameservers Config</p>
                              <div className="space-y-2">
-                                {(domain.nameservers || ["ns1.daftarnama.id", "ns2.daftarnama.id"]).map((ns, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 group/ns">
-                                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
-                                        <span className="text-xs font-bold text-slate-600 font-mono tracking-tight group-hover/ns:text-[#f97316] transition-colors">{ns}</span>
-                                    </div>
-                                ))}
+                                {(() => {
+                                    let nsList = ["ns1.daftarnama.id", "ns2.daftarnama.id"];
+                                    try {
+                                        if (Array.isArray(domain.nameservers)) {
+                                            nsList = domain.nameservers;
+                                        } else if (typeof domain.nameservers === 'string' && domain.nameservers.startsWith('[')) {
+                                            nsList = JSON.parse(domain.nameservers);
+                                        }
+                                    } catch (e) {
+                                        console.error("Failed to parse nameservers:", e);
+                                    }
+                                    
+                                    return nsList.map((ns, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 group/ns">
+                                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
+                                            <span className="text-xs font-bold text-slate-600 font-mono tracking-tight group-hover/ns:text-[#f97316] transition-colors">{ns}</span>
+                                        </div>
+                                    ));
+                                })()}
                              </div>
                         </div>
                     </div>
