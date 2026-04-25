@@ -175,14 +175,12 @@ exports.update = (req, res) => {
     WHERE provider = $10
   `;
   
-  const methodsStr = JSON.stringify(enabled_methods || []);
-  const banksStr = JSON.stringify(enabled_banks || {});
-
+  // Pass objects directly for JSONB columns, the pg driver handles them better than strings
   const values = [
     is_active, 
     mode, 
-    methodsStr, 
-    banksStr, 
+    enabled_methods || [], 
+    enabled_banks || {}, 
     instructions || "", 
     api_key || null, 
     private_key || null, 
@@ -192,7 +190,14 @@ exports.update = (req, res) => {
   ];
 
   db.query(sql, values, (err, data) => {
-    if (err) return res.status(500).json(err);
+    if (err) {
+      console.error("[PaymentGateway] Update Error:", err);
+      return res.status(500).json({ 
+        error: "Database error during configuration update", 
+        details: err.message,
+        code: err.code 
+      });
+    }
     return res.status(200).json({ success: true, message: "Payment Gateway configuration updated." });
   });
 };

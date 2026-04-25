@@ -245,7 +245,7 @@ const Navbar = () => {
                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">Kelola Akun Anda</p>
                           </div>
                         </Link>
-                        <Link to="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all group/item">
+                        <Link to={user?.role === "admin" ? "/admin/settings" : "/dashboard/settings"} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all group/item">
                           <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center group-hover/item:bg-white group-hover/item:text-slate-900 transition-colors shadow-sm">
                             <span className="material-symbols-outlined text-lg">person_edit</span>
                           </div>

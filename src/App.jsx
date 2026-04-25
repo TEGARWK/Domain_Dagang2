@@ -65,6 +65,7 @@ const AdminFAQs = lazy(() => import("./pages/admin/AdminFAQs"));
 const AdminSupportTickets = lazy(() => import("./pages/admin/AdminSupportTickets"));
 const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
 const AdminReferral = lazy(() => import("./pages/admin/AdminReferral"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 
 // --- 5. ERROR PAGES ---
 import Error404 from "./pages/error/Error404";
@@ -196,6 +197,7 @@ const Layout = () => {
             <Route path="support-tickets" element={<AdminSupportTickets />} />
             <Route path="logs" element={<AdminAuditLogs />} />
             <Route path="referral" element={<AdminReferral />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
 
 

@@ -8,6 +8,14 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Frontend (Social Media):** Implementasi ikon sosial media lengkap (Instagram, Youtube, Facebook, TikTok, X) dengan desain modern.
 - **Frontend (UX):** Update link "Kontak Support" agar langsung terhubung ke WhatsApp resmi.
 - **Maintenance:** Perbaikan struktur kode dan optimalisasi komponen `Footer.jsx`.
+- **Modernisasi Footer:** Update informasi kontak resmi, alamat kantor Bandung, dan integrasi ikon sosial media (IG, Youtube, FB, TikTok, X).
+- **Fix Sinkronisasi Harga:** Perbaikan pada `VoucherService.js` untuk menyertakan voucher otomatis dalam API publik agar "Harga Pasar Terbaik" di halaman depan mencerminkan diskon yang aktif.
+- **Admin Profile Settings:** Implementasi halaman pengaturan profil khusus Admin (`AdminSettings.jsx`) untuk mengelola data personal dan reset password.
+- **Navigasi Dinamis:** Update `Navbar` dan `AdminNavbar` untuk mendeteksi role user dan mengarahkan admin ke area kontrol yang tepat secara otomatis.
+- **Fix Domain Transfer:** Perbaikan Error 500 & 404 pada fitur migrasi domain dengan melakukan migrasi skema database `transfer_requests` (penambahan kolom `epp_code`, `invoice_id` dll) dan standarisasi tipe data `invoice_id` menjadi `VARCHAR`.
+- **Fix Payment Gateways:** Perbaikan Error 500 pada pengaturan Tripay di Admin Panel dengan optimasi pengiriman data JSONB ke PostgreSQL dan penyelarasan skema tabel `payment_gateways`.
+- **Audit Sistem Transaksi:** Melakukan audit menyeluruh pada alur pendaftaran, perpanjangan (renew), dan pemulihan (restore) domain untuk memastikan konsistensi data dan mencegah error skema database serupa di masa depan.
+- **Fix Order Activation (Renew):** Perbaikan pada `OrderService.js` untuk menyertakan parameter `current_expiry_date` saat aktivasi otomatis perpanjangan domain, memastikan sinkronisasi yang akurat dengan API Registrar (Daftarnama).
 
 ## [2026-04-23] - Stabilization & Security Patch
 - **Backend (Voucher Fix):** Memperbaiki Error 500 pada halaman Promo dengan menyinkronkan nama fungsi `getAvailableClaimableVouchers` antara Controller dan Service. Menambahkan fungsi `getVoucherInfo` yang hilang pada `VoucherService.js` untuk mendukung detail kupon.

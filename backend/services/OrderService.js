@@ -255,12 +255,30 @@ class OrderService {
                     } else if (actionType === 'renew') {
                         // --- RENEWAL LOGIC ---
                         console.log(`[OrderService] Executing API Renewal for ${domainName}`);
-                        const renewResult = await DaftarnamaService.renewDomain(domainName, item.years || 1);
+                        
+                        // Daftarnama v2 requires current_expiry_date
+                        const [domainRows] = await client.query("SELECT expiration_date FROM domains WHERE domain_name = $1", [domainName]);
+                        let currentExpiryStr = null;
+                        if (domainRows.length > 0 && domainRows[0].expiration_date) {
+                            const d = new Date(domainRows[0].expiration_date);
+                            currentExpiryStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        }
+
+                        const renewResult = await DaftarnamaService.renewDomain(domainName, item.years || 1, currentExpiryStr);
                         
                         if (renewResult && (renewResult.success || renewResult.code === 200)) {
                             const renewData = renewResult.data || {};
+                            
+                            // Calculate new expiry locally if API doesn't return it
+                            let newExpiry = renewData.expiry_date;
+                            if (!newExpiry && domainRows.length > 0) {
+                                const d = new Date(domainRows[0].expiration_date);
+                                d.setFullYear(d.getFullYear() + (item.years || 1));
+                                newExpiry = d;
+                            }
+
                             await this.upsertDomainStatus(client, user.id, domainName, 'active', {
-                                expiration_date: renewData.expiry_date,
+                                expiration_date: newExpiry,
                                 reason: `Renewal SUCCESS (${item.years} year(s))`
                             });
                             await this.logActivity(client, invoiceId, "Domain Diperpanjang", `Berhasil perpanjang: ${domainName}`);
