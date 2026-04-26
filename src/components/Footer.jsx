@@ -1,7 +1,23 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import api from "../services/api";
 
 const Footer = () => {
+  const [payments, setPayments] = useState([]);
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const res = await api.get("/payment-gateways");
+        if (Array.isArray(res.data)) {
+          setPayments(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch payment gateways for footer:", err);
+      }
+    };
+    fetchPayments();
+  }, []);
   return (
     <footer className="bg-white border-t border-slate-100 pt-20 pb-10">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -57,7 +73,7 @@ const Footer = () => {
                     <div className="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                     </div>
-                    <span className="font-bold tracking-tight lowercase">info@aplikasidagang.co.id</span>
+                    <span className="font-bold tracking-tight lowercase">admin@aplikasidagang.co.id</span>
                 </div>
             </div>
 
@@ -140,14 +156,9 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a 
-                  href="https://wa.me/6281222429289" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="hover:text-[#F97316] transition"
-                >
+                <Link to="/contact" className="hover:text-[#F97316] transition">
                   Kontak Support
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -161,14 +172,21 @@ const Footer = () => {
               Otomatis verifikasi 24 jam.
             </p>
             <div className="grid grid-cols-3 gap-2">
-              {["BCA", "Mandiri", "BRI", "BNI", "QRIS", "GoPay"].map((bank) => (
-                <div
-                  key={bank}
-                  className="bg-slate-50 text-slate-600 px-2 py-1.5 rounded text-[10px] font-bold border border-slate-200 text-center hover:border-[#F97316] transition cursor-default"
-                >
-                  {bank}
+              {payments.length > 0 ? (
+                payments.slice(0, 9).map((pay) => (
+                  <div
+                    key={pay.code}
+                    className="bg-slate-50 text-slate-600 px-2 py-1.5 rounded text-[10px] font-bold border border-slate-200 text-center hover:border-[#F97316] transition cursor-default truncate"
+                    title={pay.name}
+                  >
+                    {pay.code.replace('VA', '').replace('FULL', '')}
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-3 text-[10px] text-slate-400 italic">
+                  Otomatis verifikasi 24 jam.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -179,12 +197,12 @@ const Footer = () => {
             &copy; 2026 PT. Aplikasi Dagang Teknologi. All rights reserved.
           </p>
           <div className="flex gap-6 text-xs text-slate-400 font-medium">
-            <a href="#" className="hover:text-slate-600">
+            <Link to="/privacy-policy" className="hover:text-slate-600">
               Privacy Policy
-            </a>
-            <a href="#" className="hover:text-slate-600">
+            </Link>
+            <Link to="/terms-of-service" className="hover:text-slate-600">
               Terms of Service
-            </a>
+            </Link>
           </div>
         </div>
       </div>

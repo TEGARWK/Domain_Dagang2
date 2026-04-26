@@ -188,7 +188,7 @@ const ManageDomain = ({ isAdmin = false }) => {
             setDomainData(newDomain);
             
             // Toast logic simplified for brevity
-            success("Data berhasil disinkronisasi.");
+            success("Data berhasil disinkronkan.");
         }
     } catch (err) {
         console.error("Sync Error:", err);

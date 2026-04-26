@@ -130,6 +130,13 @@ const Navbar = () => {
               )}
             </Link>
 
+            <Link to="/contact" className={linkClasses("/contact")}>
+              Kontak
+              {isActive("/contact") && (
+                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#F97316] rounded-full animate-fade-in"></span>
+              )}
+            </Link>
+
             {/* NEW: MENU LAINNYA DROPDOWN */}
             <div className="relative group/other py-2">
               <button
@@ -307,6 +314,7 @@ const Navbar = () => {
           <Link to="/domain" className={mobileLinkClasses("/domain")}>Daftar Harga</Link>
           <Link to="/transfer" className={mobileLinkClasses("/transfer")}>Transfer Domain</Link>
           <Link to="/promo" className={mobileLinkClasses("/promo")}>Promo</Link>
+          <Link to="/contact" className={mobileLinkClasses("/contact")}>Kontak</Link>
 
           {/* NEW: MOBILE MENU LAINNYA */}
           <div className="px-4 py-2">

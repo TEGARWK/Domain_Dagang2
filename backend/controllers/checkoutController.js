@@ -290,7 +290,7 @@ exports.processTopUp = async (req, res) => {
     const { userId, amount } = req.body;
     
     if (!userId || !amount || isNaN(amount) || amount < 10000) {
-        return res.status(400).json({ error: "Invalid Top-Up Data. Min amount 10.000" });
+        return res.status(400).json({ error: "Jumlah Top-Up minimal adalah Rp 10.000" });
     }
 
     const client = await db.pool.connect();
@@ -300,7 +300,7 @@ exports.processTopUp = async (req, res) => {
 
         // 1. Verify User
         const userRes = await client.query("SELECT email FROM users WHERE id = $1", [userId]);
-        if (userRes.rows.length === 0) return res.status(404).json({ error: "User not found" });
+        if (userRes.rows.length === 0) return res.status(404).json({ error: "Akun tidak ditemukan." });
 
         // 2. Prepare Calculation Results (Simple pass-through)
         const total = parseFloat(amount);
@@ -339,7 +339,7 @@ exports.processTopUp = async (req, res) => {
 
     } catch (err) {
         console.error("[TopUp] Failed:", err);
-        res.status(500).json({ error: "Failed to create Top Up invoice" });
+        res.status(500).json({ error: "Gagal membuat tagihan Top Up. Silakan coba lagi." });
     } finally {
         client.release();
     }
@@ -354,7 +354,7 @@ exports.calculateCartPreview = async (req, res) => {
     const { items, userVoucherCode, userId } = req.body;
     
     if (!items || items.length === 0) {
-        return res.status(400).json({ error: "Cart is empty" });
+        return res.status(400).json({ error: "Keranjang belanja Anda kosong." });
     }
 
     const client = await db.pool.connect();

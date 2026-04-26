@@ -3,34 +3,49 @@ import { Link } from "react-router-dom";
 
 const Error404 = () => {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 text-center font-sans overflow-hidden relative">
-      {/* Background Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#F97316] rounded-full mix-blend-multiply filter blur-[100px] opacity-10 animate-blob"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-10 animate-blob animation-delay-2000"></div>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center font-sans overflow-hidden relative">
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-orange-100 to-transparent rounded-full blur-[120px] opacity-40"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-tl from-blue-50 to-transparent rounded-full blur-[120px] opacity-40"></div>
 
-      <div className="relative z-10 max-w-lg w-full">
-        {/* 404 Big Text */}
-        <h1 className="text-[150px] font-bold text-slate-900 leading-none tracking-tighter select-none drop-shadow-sm">
-          4<span className="text-[#F97316]">0</span>4
-        </h1>
+      <div className="relative z-10 max-w-2xl w-full">
+        {/* Modern 404 Header */}
+        <div className="mb-8 relative inline-block">
+          <h1 className="text-[120px] sm:text-[180px] font-black text-slate-900 leading-none tracking-tight select-none opacity-[0.03] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
+            404
+          </h1>
+          <div className="relative flex items-center justify-center gap-4">
+            <span className="text-6xl sm:text-8xl font-black text-slate-900">4</span>
+            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-[#F97316] rounded-2xl rotate-12 flex items-center justify-center shadow-2xl shadow-orange-200">
+               <span className="text-white text-4xl sm:text-6xl font-black -rotate-12">0</span>
+            </div>
+            <span className="text-6xl sm:text-8xl font-black text-slate-900">4</span>
+          </div>
+        </div>
         
-        <div className="bg-white/50 backdrop-blur-sm border border-white/60 p-8 rounded-xl shadow-xl mt-[-20px] relative z-20">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">
+        <div className="max-w-md mx-auto">
+          <h2 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">
             Halaman Tidak Ditemukan
           </h2>
-          <p className="text-slate-500 font-medium mb-8 leading-relaxed">
-            Oops! Sepertinya Anda tersesat di antah berantah. Domain yang Anda cari mungkin sudah expired atau memang tidak pernah ada.
+          <p className="text-slate-500 font-medium mb-10 leading-relaxed text-lg">
+            Maaf, halaman yang Anda tuju tidak tersedia atau telah dipindahkan. Pastikan alamat URL sudah benar.
           </p>
 
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-slate-900 text-white rounded-lg font-bold hover:bg-[#F97316] hover:shadow-lg hover:shadow-orange-200 transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Kembali ke Home
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-full font-bold hover:from-[#F97316] hover:to-[#EA580C] transition-all duration-500 group shadow-lg shadow-slate-200 hover:shadow-orange-200 whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
+              Kembali ke Beranda
+            </Link>
+            <Link
+              to="/contact"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 bg-white border border-slate-200 text-slate-600 rounded-full font-bold hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 whitespace-nowrap shadow-sm"
+            >
+              Laporkan Masalah
+            </Link>
+          </div>
         </div>
       </div>
     </div>

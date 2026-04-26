@@ -26,35 +26,35 @@ const Toast = ({ id, type = "success", message, title, duration = 3000, onClose 
           container: "bg-emerald-50/80 border-emerald-200/50 text-emerald-900 ring-emerald-500/10",
           iconColor: "text-emerald-500",
           progress: "bg-emerald-500",
-          label: title || "Success"
+          label: title || "Berhasil"
         };
       case "error":
         return {
           container: "bg-red-50/80 border-red-200/50 text-red-900 ring-red-500/10",
           iconColor: "text-red-500",
           progress: "bg-red-500",
-          label: title || "Error"
+          label: title || "Kesalahan"
         };
       case "warning":
         return {
           container: "bg-amber-50/80 border-amber-200/50 text-amber-900 ring-amber-500/10",
           iconColor: "text-amber-500",
           progress: "bg-amber-500",
-          label: title || "Warning"
+          label: title || "Peringatan"
         };
       case "info":
         return {
           container: "bg-blue-50/80 border-blue-200/50 text-blue-900 ring-blue-500/10",
           iconColor: "text-blue-500",
           progress: "bg-blue-500",
-          label: title || "Info"
+          label: title || "Informasi"
         };
       default:
         return {
           container: "bg-slate-50/80 border-slate-200/50 text-slate-900 ring-slate-500/10",
           iconColor: "text-slate-500",
           progress: "bg-slate-500",
-          label: title || "Notification"
+          label: title || "Notifikasi"
         };
     }
   };

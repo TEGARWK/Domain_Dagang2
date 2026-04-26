@@ -99,7 +99,7 @@ const Payment = () => {
               setPaymentState('PAID');
               setShowSuccessPopup(true);
               clearInterval(interval);
-              success("Pembayaran Berhasil Diterima!");
+              success("Pembayaran berhasil diterima!");
 
               // Auto-redirect based on content
               setTimeout(() => {
@@ -377,7 +377,7 @@ const Payment = () => {
       downloadLink.href = finalUrl;
       downloadLink.click();
       
-      success("Premium QRIS Berhasil Disimpan!");
+      success("Informasi pembayaran berhasil disimpan.");
     } catch (err) {
       console.error("Premium Download error", err);
       // Fallback
@@ -540,7 +540,7 @@ const Payment = () => {
                         navigator.clipboard.writeText(paymentResult.pay_code || paymentResult.va_number);
                         setIsCopied(true);
                         setTimeout(() => setIsCopied(false), 2000);
-                        success("Nomor VA Disalin!");
+                        success("Nomor VA berhasil disalin");
                       }}
                       className={`p-2 border rounded-lg transition-all active:scale-90 flex items-center justify-center ${isCopied ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white shadow-sm border-slate-100 text-slate-400 hover:text-orange-500 hover:border-orange-200'}`}
                     >
@@ -624,7 +624,7 @@ const Payment = () => {
               </div>
             </div>
             <button
-              onClick={() => { navigator.clipboard.writeText(paymentResult.amount); success("Jumlah Disalin!"); }}
+              onClick={() => { navigator.clipboard.writeText(paymentResult.amount); success("Jumlah berhasil disalin"); }}
               className="px-3 py-2 bg-slate-50 border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-sm">content_copy</span>

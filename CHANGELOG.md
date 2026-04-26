@@ -2,7 +2,16 @@
 
 Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi tim pengembang.
 
-## [2026-04-24] - Footer Enhancement & Branding
+### [2026-04-26] - Error System Overhaul & Humanization (Tegar Wira Kesuma)
+- **Frontend (Error Pages):** Redesign total halaman 404, 403, dan 500 dengan estetika premium white/orange. Menghapus teks "Oops!" dan menggantinya dengan bahasa yang lebih profesional.
+- **Frontend (New Pages):** Implementasi halaman Maintenance (`/maintenance`) dengan indikator estimasi waktu dan halaman Coming Soon (`/coming-soon`) dengan animasi roket.
+- **Frontend (UI/UX):** Modernisasi desain tombol (Pill-shaped, gradients, sleek) dan memastikan teks tombol tidak terpotong (anti-wrap).
+- **Frontend (Branding):** Update teks Hero pada halaman Home untuk memperjelas visi identitas digital yang aman dan terpercaya.
+- **Global (Humanization):** Audit menyeluruh dan penghapusan emoji serta bahasa teknis (programmer jargon) pada seluruh sistem notifikasi (Toast) dan respon error di Backend.
+- **Backend (Fix):** Perbaikan syntax error pada `domainController.js` di fungsi `getDomainDetail` untuk memastikan kestabilan data domain.
+- **Frontend (Footer):** Integrasi channel pembayaran dinamis yang otomatis menyesuaikan dengan gateway yang aktif di Admin Panel.
+
+### [2026-04-24] - Footer Enhancement & Branding (Tegar Wira Kesuma)
 - **Frontend (Branding):** Penambahan informasi alamat resmi PT. Aplikasi Dagang Teknologi pada Footer.
 - **Frontend (Contact):** Penambahan detail kontak WhatsApp, Telepon, dan Email pada Footer untuk meningkatkan kepercayaan pelanggan.
 - **Frontend (Social Media):** Implementasi ikon sosial media lengkap (Instagram, Youtube, Facebook, TikTok, X) dengan desain modern.
@@ -17,7 +26,7 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Audit Sistem Transaksi:** Melakukan audit menyeluruh pada alur pendaftaran, perpanjangan (renew), dan pemulihan (restore) domain untuk memastikan konsistensi data dan mencegah error skema database serupa di masa depan.
 - **Fix Order Activation (Renew):** Perbaikan pada `OrderService.js` untuk menyertakan parameter `current_expiry_date` saat aktivasi otomatis perpanjangan domain, memastikan sinkronisasi yang akurat dengan API Registrar (Daftarnama).
 
-## [2026-04-23] - Stabilization & Security Patch
+### [2026-04-23] - Stabilization & Security Patch (Tegar Wira Kesuma)
 - **Backend (Voucher Fix):** Memperbaiki Error 500 pada halaman Promo dengan menyinkronkan nama fungsi `getAvailableClaimableVouchers` antara Controller dan Service. Menambahkan fungsi `getVoucherInfo` yang hilang pada `VoucherService.js` untuk mendukung detail kupon.
 - **Backend (Top-Up Wallet):** Mengatasi Error 500 pada proses Isi Saldo (Top-Up) melalui perbaikan logika `InvoiceService` yang sebelumnya gagal karena kolom-kolom finansial baru belum ada di database produksi.
 - **Database (Schema Self-Healing):** Merilis `master_database.sql` v2.7 yang mendukung migrasi otomatis (*Auto-Repair*). Skrip ini mendeteksi dan menambah kolom yang hilang secara otomatis tanpa merusak data yang sudah ada.
@@ -47,7 +56,7 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Backend (Hotfix):** Membuat skrip mandiri `backend/migrations/hotfix_vouchers_columns.js` untuk menambahkan kolom-kolom operasional voucher (`eligible_tlds`, `is_automatic`, `priority`, dll) yang tertinggal di tabel `vouchers` pada server production. Ini fix bug 500 saat membuat Kupon dan Promo Event.
 - **Backend (Database Sync):** Menambahkan `vouchers` dan `promo_events` table sync operations ke `backend/scripts/sync_production_db.js`. Hal ini memastikan server production benar-benar mendapatkan kolom *eligible_tlds*, *valid_until*, *is_automatic*, *min_purchase* yang sebelumnya menyebabkan Error 500 di halaman checkout.
 
-## [2026-03-31] - Stabilisasi & Automasi Deployment
+### [2026-03-31] - Stabilisasi & Automasi Deployment (Tegar Wira Kesuma)
 ### 1. Keamanan & Autentikasi (Frontend)
 - **Refactor API Calls:** Semua panggilan `fetch()` mentah telah dimigrasi ke layanan `api` terpusat (Axios).
 - **Authorization:** Menambahkan sistem token `Authorization: Bearer <JWT>` otomatis pada setiap request untuk mengatasi error **401 Unauthorized** di Dashboard Admin & User.

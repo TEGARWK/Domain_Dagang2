@@ -155,7 +155,7 @@ exports.getDomainDetail = (req, res) => {
     db.query(sql, params, (err, data) => {
       if (err) {
           console.error("[DEBUG] SQL Error in getDomainDetail:", err);
-          return res.status(500).json({ error: err.message, stack: err.stack });
+          return res.status(500).json({ error: "Gagal memuat rincian domain." });
       }
       if (data.length === 0) return res.status(404).json("Domain not found or unauthorized");
 
@@ -168,12 +168,12 @@ exports.getDomainDetail = (req, res) => {
           return res.status(200).json(domain);
       } catch (innerErr) {
           console.error("[DEBUG] JS Error in getDomainDetail callback:", innerErr);
-          return res.status(500).json({ error: innerErr.message, stack: innerErr.stack });
+          return res.status(500).json({ error: "Gagal memproses data domain." });
       }
     });
   } catch (outerErr) {
     console.error("[DEBUG] JS Error in getDomainDetail:", outerErr);
-    return res.status(500).json({ error: outerErr.message, stack: outerErr.stack });
+    return res.status(500).json({ error: "Terjadi gangguan pada sistem. Silakan coba lagi." });
   }
 };
 
@@ -286,8 +286,7 @@ exports.updateDomain = async (req, res) => {
 
       return res.status(500).json({
           success: false,
-          error: err.message,
-          message: "Gagal memperbarui data domain. Silakan coba lagi nanti."
+          message: "Gagal memperbarui data domain. Silakan coba lagi beberapa saat lagi."
       });
   }
 };
@@ -382,7 +381,7 @@ exports.syncDomain = async (req, res) => {
 
     } catch (err) {
         console.error("Sync Error:", err);
-        res.status(500).json({ success: false, message: "Failed to sync domain", error: err.message });
+        res.status(500).json({ success: false, message: "Gagal melakukan sinkronisasi data domain." });
     }
 };
 
@@ -442,7 +441,7 @@ exports.renewDomain = async (req, res) => {
         const errorMsg = err.response?.data?.message || err.message || "Gagal memperpanjang domain.";
         res.status(err.response?.status || 500).json({ 
             success: false, 
-            message: "Registrar Error: " + errorMsg 
+            message: "Gagal memperpanjang domain. Silakan hubungi dukungan jika masalah berlanjut." 
         });
     }
 };
@@ -496,7 +495,7 @@ exports.retryRegistration = async (req, res) => {
         res.json({ success: true, message: "Retry pendaftaran berhasil dipicu." });
     } catch (err) {
         console.error("Manual Retry Error:", err);
-        res.status(500).json({ success: false, message: "Gagal memicu retry pendaftaran", error: err.message });
+        res.status(500).json({ success: false, message: "Gagal memicu proses pendaftaran ulang." });
     }
 };
 
@@ -610,7 +609,7 @@ exports.getEPPCode = async (req, res) => {
         console.error("[DomainController] EPP retrieval error."); // Sanitize log (no domain name to be safe)
         res.status(500).json({ 
             success: false, 
-            message: "Registrar API Error: " + (err.response?.data?.message || "Gagal mengambil kode EPP.") 
+            message: "Gagal mengambil kode EPP. Silakan coba lagi beberapa saat lagi." 
         });
     }
 };

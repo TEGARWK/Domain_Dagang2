@@ -88,7 +88,7 @@ const Register = () => {
       });
 
       if (response.status === 200 || response.status === 201) {
-        success("✅ Registrasi Berhasil! Silakan cek email Anda untuk verifikasi akun.");
+        success("Registrasi berhasil! Silakan cek email Anda untuk verifikasi akun.");
         
         // Hapus kode referral dari penyimpanan agar tidak lengket untuk registrasi berikutnya
         sessionStorage.removeItem("referral_code");
@@ -120,7 +120,7 @@ const Register = () => {
         localStorage.setItem("user", JSON.stringify(result));
         localStorage.setItem("token", result.token);
 
-        success(`👋 Selamat datang, ${result.name}!`);
+        success(`Selamat datang, ${result.name}!`);
 
         if (result.role === "admin") {
             navigate("/admin");

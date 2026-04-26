@@ -177,7 +177,8 @@ const Vouchers = () => {
                                                             <button 
                                                                 onClick={() => {
                                                                     localStorage.setItem("pending_voucher", v.code);
-                                                                    success(`Voucher siap dipakai! Silakan pilih layanan.`);
+                                                                    success(`Voucher berhasil dipilih.`);
+
                                                                     navigate("/dashboard/buy");
                                                                 }}
                                                                 className="px-6 py-2.5 border-2 border-slate-900 text-slate-900 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all active:scale-95"
