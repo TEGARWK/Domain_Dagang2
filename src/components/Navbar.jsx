@@ -130,6 +130,13 @@ const Navbar = () => {
               )}
             </Link>
 
+            <Link to="/contact" className={linkClasses("/contact")}>
+              Kontak
+              {isActive("/contact") && (
+                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[#F97316] rounded-full animate-fade-in"></span>
+              )}
+            </Link>
+
             {/* NEW: MENU LAINNYA DROPDOWN */}
             <div className="relative group/other py-2">
               <button
@@ -245,7 +252,7 @@ const Navbar = () => {
                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">Kelola Akun Anda</p>
                           </div>
                         </Link>
-                        <Link to="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all group/item">
+                        <Link to={user?.role === "admin" ? "/admin/settings" : "/dashboard/settings"} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all group/item">
                           <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center group-hover/item:bg-white group-hover/item:text-slate-900 transition-colors shadow-sm">
                             <span className="material-symbols-outlined text-lg">person_edit</span>
                           </div>
@@ -307,6 +314,7 @@ const Navbar = () => {
           <Link to="/domain" className={mobileLinkClasses("/domain")}>Daftar Harga</Link>
           <Link to="/transfer" className={mobileLinkClasses("/transfer")}>Transfer Domain</Link>
           <Link to="/promo" className={mobileLinkClasses("/promo")}>Promo</Link>
+          <Link to="/contact" className={mobileLinkClasses("/contact")}>Kontak</Link>
 
           {/* NEW: MOBILE MENU LAINNYA */}
           <div className="px-4 py-2">

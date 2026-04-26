@@ -27,10 +27,9 @@ class VoucherService {
                    is_new_user_only, banner_image, applicable_to as eligible_tlds, eligible_actions, is_automatic 
             FROM vouchers 
             WHERE is_active = true 
-              AND expired_at > NOW() 
+              AND (expired_at > NOW() OR expired_at IS NULL)
               AND (started_at <= NOW() OR started_at IS NULL)
-              AND quota > quota_used
-              AND is_automatic = false
+              AND (quota > quota_used OR quota = 0)
             ORDER BY priority DESC, created_at DESC
         `;
         const result = await db.pool.query(query);

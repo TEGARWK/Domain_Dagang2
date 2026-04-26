@@ -43,7 +43,7 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(result));
       localStorage.setItem("token", result.token); // Fix: Store token separately for API calls
 
-      success(`👋 Selamat datang kembali!`);
+      success(`Selamat datang kembali!`);
 
       // 3. Cek Redirect (Ke Admin, Checkout, atau Dashboard?)
       if (result.role === "admin") {
@@ -75,7 +75,7 @@ const Login = () => {
         localStorage.setItem("user", JSON.stringify(result));
         localStorage.setItem("token", result.token);
 
-        success(`👋 Selamat datang kembali, ${result.name}!`);
+        success(`Selamat datang kembali, ${result.name}!`);
 
         if (result.role === "admin") {
             navigate("/admin");

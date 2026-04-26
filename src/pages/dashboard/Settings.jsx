@@ -140,7 +140,7 @@ const Settings = () => {
     try {
       await api.put(`/users/${storedUser.id}`, payload);
       
-      success("✅ Data berhasil disimpan ke Database!");
+      success("Perubahan profil berhasil disimpan.");
       
       // Update local storage
       const updatedUser = { 
@@ -165,7 +165,7 @@ const Settings = () => {
 
     } catch (err) {
       console.error(err);
-      error("❌ Gagal menyimpan data profil");
+      error("Gagal menyimpan perubahan profil.");
     } finally {
        if (loadingBtn) loadingBtn.innerHTML = "Simpan Perubahan";
     }
@@ -191,7 +191,7 @@ const Settings = () => {
           newPassword: security.newPassword
       });
 
-      success("✅ Password berhasil diubah!");
+      success("Password berhasil diubah.");
       setSecurity({
           currentPassword: "",
           newPassword: "",
@@ -202,7 +202,7 @@ const Settings = () => {
     } catch (err) {
       console.error(err);
       const msg = err.response?.data || "Gagal mengubah password";
-      error(`❌ ${msg}`);
+      error(msg);
     }
   };
 

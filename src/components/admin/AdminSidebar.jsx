@@ -18,6 +18,7 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
     { name: "Log Aktivitas", path: "/admin/logs", icon: "history" },
     { name: "Atur Referral", path: "/admin/referral", icon: "share" },
     { name: "Metode Pembayaran", path: "/admin/payment-gateways", icon: "credit_card" },
+    { name: "Pengaturan Profil", path: "/admin/settings", icon: "settings" },
   ];
 
   const handleLogout = () => {

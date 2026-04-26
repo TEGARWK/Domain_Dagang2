@@ -9,6 +9,7 @@ import {
 // --- 1. COMPONENTS (PUBLIC) ---
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 
 // --- 2. LAYOUTS ---
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -28,6 +29,9 @@ import Checkout from "./pages/Checkout";
 
 import VerifyEmail from "./pages/VerifyEmail";
 import ResetPassword from "./pages/ResetPassword";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Contact from "./pages/Contact";
 
 // --- 4. PAGES: DASHBOARD (MEMBER AREA) ---
 const Overview = lazy(() => import("./pages/dashboard/Overview")); // Halaman Utama Dashboard
@@ -65,11 +69,14 @@ const AdminFAQs = lazy(() => import("./pages/admin/AdminFAQs"));
 const AdminSupportTickets = lazy(() => import("./pages/admin/AdminSupportTickets"));
 const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
 const AdminReferral = lazy(() => import("./pages/admin/AdminReferral"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 
 // --- 5. ERROR PAGES ---
 import Error404 from "./pages/error/Error404";
 import Error403 from "./pages/error/Error403";
 import Error500 from "./pages/error/Error500";
+import Maintenance from "./pages/error/Maintenance";
+import ComingSoon from "./pages/error/ComingSoon";
 
 // --- 5. PLACEHOLDERS (Halaman yang belum dibuat) ---
 const PlaceholderPage = ({ title }) => (
@@ -138,6 +145,9 @@ const Layout = () => {
           <Route path="/transfer" element={<Transfer />} />
           <Route path="/promo" element={<Promo />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* === B. AUTH ROUTES === */}
           <Route path="/login" element={<Login />} />
@@ -196,12 +206,15 @@ const Layout = () => {
             <Route path="support-tickets" element={<AdminSupportTickets />} />
             <Route path="logs" element={<AdminAuditLogs />} />
             <Route path="referral" element={<AdminReferral />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
 
 
           {/* === D. ERROR ROUTES === */}
           <Route path="/403" element={<Error403 />} />
           <Route path="/500" element={<Error500 />} />
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/coming-soon" element={<ComingSoon />} />
           <Route path="*" element={<Error404 />} />
             </Routes>
               </Suspense>
@@ -218,6 +231,7 @@ const Layout = () => {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Layout />
     </Router>
   );

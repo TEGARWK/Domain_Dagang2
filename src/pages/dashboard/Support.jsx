@@ -58,7 +58,7 @@ const Support = () => {
 
     try {
       await api.post("/support/tickets", { subject, message });
-      success("Pesanan berhasil dikirim ke Admin!");
+      success("Tiket dukungan berhasil dikirim.");
       setSubject("");
       setMessage("");
       fetchMyTickets(); // Refresh lists

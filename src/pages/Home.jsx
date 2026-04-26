@@ -268,7 +268,7 @@ function Home() {
       // Trigger event storage biar komponen lain tau ada update
       window.dispatchEvent(new Event("storage"));
 
-      success(`🛒 ${item.domainName} berhasil masuk keranjang!`);
+      success(`${item.domainName} berhasil masuk keranjang!`);
     }
   };
 
@@ -413,7 +413,7 @@ function Home() {
             </h1>
             
             <p className="text-[17px] text-slate-500 max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium">
-              Platform manajemen domain tercanggih. Cari, pilih, dan amankan brand digital Anda dalam sekejap dengan standar keamanan enterprise.
+              Wujudkan identitas digital Anda dengan layanan pencarian, registrasi, dan manajemen domain yang cepat, aman, dan terpercaya.
             </p>
 
             {/* Search Box - Enhanced Shadow & Ring */}

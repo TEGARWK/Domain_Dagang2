@@ -26,7 +26,7 @@ exports.getInvoices = (req, res) => {
   db.query(query, [userId], (err, results) => {
     if (err) {
       console.error("Error fetching invoices:", err);
-      return res.status(500).json({ error: "Internal Server Error" });
+      return res.status(500).json({ error: "Terjadi gangguan pada sistem. Silakan coba beberapa saat lagi." });
     }
 
     res.json(results);
@@ -67,7 +67,7 @@ exports.getInvoiceById = async (req, res) => {
 
     const invoiceRes = await db.query(invoiceQuery, params);
     if (invoiceRes.length === 0) {
-        return res.status(404).json({ error: "Invoice not found or unauthorized" });
+        return res.status(404).json({ error: "Tagihan tidak ditemukan atau Anda tidak memiliki akses." });
     }
 
     const invoice = invoiceRes[0];
@@ -529,7 +529,7 @@ exports.cancelInvoice = async (req, res) => {
         const result = await db.query(query, [reason, invoiceId, userId]);
 
         if (result.rowCount === 0 || result.affectedRows === 0) {
-            return res.status(404).json({ error: "Invoice not found, already paid, or unauthorized" });
+            return res.status(404).json({ error: "Tagihan tidak ditemukan, sudah dibayar, atau Anda tidak memiliki akses." });
         }
 
         res.json({ message: "Invoice cancelled successfully", status: "cancelled" });

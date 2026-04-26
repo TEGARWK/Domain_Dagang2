@@ -4,13 +4,24 @@ import { useNotification } from "../../context/NotificationContext";
 
 const AdminNavbar = ({ setSidebarOpen }) => {
   const location = useLocation();
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem("user")) || {});
   const [currentTime, setCurrentTime] = useState(new Date());
   const { notifications, unreadCount, markAllAsRead } = useNotification();
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    
+    // Listen for profile updates
+    const handleUpdate = () => {
+        setUser(JSON.parse(localStorage.getItem("user")) || {});
+    };
+    window.addEventListener("user_updated", handleUpdate);
+
+    return () => {
+        clearInterval(timer);
+        window.removeEventListener("user_updated", handleUpdate);
+    };
   }, []);
 
   const getPageTitle = () => {
@@ -28,6 +39,7 @@ const AdminNavbar = ({ setSidebarOpen }) => {
     if (path.startsWith("/admin/faqs")) return "Katalog Bantuan";
     if (path.startsWith("/admin/support-tickets")) return "Tiket Bantuan";
     if (path.startsWith("/admin/logs")) return "Log Aktivitas";
+    if (path.startsWith("/admin/settings")) return "Pengaturan Profil";
     return "Admin Panel";
   };
 
@@ -46,6 +58,7 @@ const AdminNavbar = ({ setSidebarOpen }) => {
     if (path.startsWith("/admin/faqs")) return "live_help";
     if (path.startsWith("/admin/support-tickets")) return "support_agent";
     if (path.startsWith("/admin/logs")) return "history";
+    if (path.startsWith("/admin/settings")) return "settings";
     return "admin_panel_settings";
   };
 
@@ -142,19 +155,20 @@ const AdminNavbar = ({ setSidebarOpen }) => {
         </div>
 
         {/* Profile / Account */}
-        <div className="flex items-center gap-3 pl-4 border-l border-slate-100 group cursor-default">
+        <Link to="/admin/settings" className="flex items-center gap-3 pl-4 border-l border-slate-100 group cursor-pointer">
           <div className="text-right hidden xl:block">
-            <p className="text-xs font-bold text-slate-800 leading-none mb-1">
-              Administrator
+            <p className="text-xs font-bold text-slate-800 leading-none mb-1 group-hover:text-[#F97316] transition-colors">
+              {user.name || "Administrator"}
             </p>
             <p className="text-[9px] font-bold text-[#F97316] uppercase tracking-tighter">
-              Master Level
+              {user.role || "Admin"} Level
             </p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[#faefe9] flex items-center justify-center text-[#F97316] font-bold text-sm border-2 border-transparent group-hover:border-orange-200 transition shadow-sm overflow-hidden">
-            A
+          <div className="w-9 h-9 rounded-full bg-[#faefe9] flex items-center justify-center text-[#F97316] font-bold text-sm border-2 border-transparent group-hover:border-orange-200 transition shadow-sm overflow-hidden bg-cover bg-center"
+               style={user.avatar ? { backgroundImage: `url(${user.avatar})` } : {}}>
+            {!user.avatar && (user.name ? user.name[0].toUpperCase() : "A")}
           </div>
-        </div>
+        </Link>
       </div>
     </header>
   );
