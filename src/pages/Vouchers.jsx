@@ -7,6 +7,7 @@ const Vouchers = () => {
     const [myVouchers, setMyVouchers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('Semua');
+    const [expandedVoucher, setExpandedVoucher] = useState(null);
     const { success, error, info } = useNotification();
     const navigate = useNavigate();
 
@@ -126,7 +127,7 @@ const Vouchers = () => {
                                     const category = getVoucherCategory(v);
                                     const isUsed = v.claim_status === 'used';
                                     return (
-                                        <div key={v.id} className={`flex h-40 rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:border-orange-200 transition-all duration-300 group relative bg-white ${isUsed ? 'opacity-60 grayscale' : ''}`}>
+                                        <div key={v.id} className={`flex ${expandedVoucher === v.id ? 'h-auto min-h-40' : 'h-40'} rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:border-orange-200 transition-all duration-300 group relative bg-white ${isUsed ? 'opacity-60 grayscale' : ''}`}>
                                             {/* LEFT SECTION (BRANDING) */}
                                             <div className="w-[30%] bg-[#F97316] relative flex flex-col items-center justify-center overflow-hidden shrink-0">
                                                 <div className="absolute top-0 right-0 h-full w-2 flex flex-col justify-around py-1">
@@ -137,7 +138,9 @@ const Vouchers = () => {
                                                 
                                                 <div className="text-white text-center">
                                                     <div className="text-2xl font-bold leading-none mb-1">
-                                                        {v.type === 'percentage' ? `${parseFloat(v.value)}%` : `${v.value / 1000}K`}
+                                                        {v.type === 'percentage' || v.discount_type === 'percentage' 
+                                                            ? `${parseFloat(v.value || v.discount_value)}%` 
+                                                            : `${(v.value || v.discount_value) / 1000}K`}
                                                     </div>
                                                     <div className="text-[8px] font-bold uppercase tracking-tighter opacity-80">DISKON</div>
                                                 </div>
@@ -157,14 +160,46 @@ const Vouchers = () => {
                                                         )}
                                                     </div>
                                                     <h3 className="text-sm font-bold text-slate-800 uppercase leading-snug truncate mb-1">
-                                                        {v.title || "Voucher Promo"}
+                                                        {v.title || v.code || "Voucher Promo"}
                                                     </h3>
-                                                    <p className="text-[10px] font-bold text-slate-400 mb-2 flex items-center gap-1.5">
-                                                        Min. {formatRupiah(v.min_purchase)}
-                                                    </p>
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2">
+                                                        <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
+                                                            <span className="material-symbols-outlined text-[14px]">payments</span>
+                                                            Min. {formatRupiah(v.min_purchase || v.min_transaction || 0)}
+                                                        </p>
+                                                        <button 
+                                                            onClick={() => setExpandedVoucher(expandedVoucher === v.id ? null : v.id)}
+                                                            className="text-[10px] font-bold text-[#F97316] hover:underline flex items-center gap-0.5"
+                                                        >
+                                                            {expandedVoucher === v.id ? 'Tutup Detail' : 'S&K Detail'}
+                                                            <span className="material-symbols-outlined text-[14px]">
+                                                                {expandedVoucher === v.id ? 'expand_less' : 'expand_more'}
+                                                            </span>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* EXPANDABLE DETAIL SECTION */}
+                                                    {expandedVoucher === v.id && (
+                                                        <div className="mb-3 p-3 bg-slate-50 rounded-xl border border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                            <p className="text-[10px] text-slate-500 leading-relaxed mb-2 font-medium">
+                                                                {v.description || "Gunakan voucher ini untuk mendapatkan potongan harga pada transaksi Anda."}
+                                                            </p>
+                                                            {v.max_discount > 0 && (
+                                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mb-1">
+                                                                    • Maks. Potongan: {formatRupiah(v.max_discount)}
+                                                                </p>
+                                                            )}
+                                                            {category === 'Domain' && (
+                                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
+                                                                    • Berlaku untuk: {Array.isArray(v.eligible_tlds) ? v.eligible_tlds.join(', ') : (v.eligible_tlds || 'Semua Domain')}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )}
+
                                                     <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
                                                         <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                                                        {isUsed ? 'TELAH DIGUNAKAN' : `S/D: ${new Date(v.valid_until).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}`}
+                                                        {isUsed ? 'TELAH DIGUNAKAN' : `S/D: ${new Date(v.valid_until || v.expired_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}`}
                                                     </div>
                                                 </div>
 

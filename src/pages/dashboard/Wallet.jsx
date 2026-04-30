@@ -77,7 +77,7 @@ const Wallet = () => {
                     <div>
                         <p className="text-orange-100 font-medium mb-1">Saldo Aktif</p>
                         <h2 className="text-4xl font-bold">
-                            Rp {wallet.balance.toLocaleString('id-ID')}
+                            Rp {(wallet?.balance || 0).toLocaleString('id-ID')}
                         </h2>
                     </div>
                     <div className="flex gap-3">
@@ -144,10 +144,10 @@ const Wallet = () => {
                                         <td className={`px-8 py-5 text-right font-bold ${
                                             tx.type === 'CREDIT' ? 'text-emerald-600' : 'text-slate-900'
                                         }`}>
-                                            {tx.type === 'CREDIT' ? '+' : '-'} Rp {tx.amount.toLocaleString('id-ID')}
+                                            {tx.type === 'CREDIT' ? '+' : '-'} Rp {(tx.amount || 0).toLocaleString('id-ID')}
                                         </td>
                                         <td className="px-8 py-5 text-right text-slate-400 font-bold text-xs">
-                                            Rp {tx.balance_after.toLocaleString('id-ID')}
+                                            Rp {(tx.balance_after || 0).toLocaleString('id-ID')}
                                         </td>
                                     </tr>
                                 ))

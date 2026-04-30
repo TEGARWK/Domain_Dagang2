@@ -13,6 +13,8 @@ router.get("/invoice/:id", verifyToken, controller.getInvoiceById);
 router.get("/admin/user/:userId/invoices", verifyAdmin, controller.getUserInvoicesAdmin);
 router.post("/invoice/:id/pay", verifyAdmin, controller.payInvoice);
 router.post("/invoice/:id/pay-wallet", verifyToken, controller.payInvoiceWithWallet);
+router.post("/invoice/pay-manual", verifyToken, controller.initializeManualPayment);
+router.post("/invoice/:id/confirm-payment", verifyToken, controller.confirmManualPayment);
 router.put("/invoice/:id/cancel", verifyToken, controller.cancelInvoice);
 router.post("/invoice/:id/recalculate", verifyToken, controller.recalculateInvoice);
 router.delete("/invoice/:id", verifyAdmin, controller.deleteInvoice);

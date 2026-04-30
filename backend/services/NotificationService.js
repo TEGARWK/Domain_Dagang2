@@ -15,7 +15,6 @@ class NotificationService {
             const query = `
                 INSERT INTO notifications (user_id, title, message, type, reference_id, reference_type)
                 VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (user_id, title, reference_id, reference_type) DO NOTHING
                 RETURNING *;
             `;
             const result = await db.pool.query(query, [userId, title, message, type, referenceId, referenceType]);

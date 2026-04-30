@@ -11,6 +11,7 @@ const AdminInvoiceDetail = () => {
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [checking, setChecking] = useState(false);
+    const [approving, setApproving] = useState(false);
 
     useEffect(() => {
         fetchDetail();
@@ -69,8 +70,27 @@ const AdminInvoiceDetail = () => {
     };
 
     const handleApprove = async () => {
-        if (!window.confirm("Apakah Anda yakin ingin menerima pembayaran ini secara manual? Domain akan otomatis didaftarkan.")) return;
-        setLoading(true);
+        const isRetry = invoice.status === 'paid';
+        let confirmMessage = isRetry 
+            ? "Apakah Anda yakin ingin mencoba ulang proses aktivasi untuk pesanan ini?"
+            : "Apakah Anda yakin ingin menerima pembayaran ini secara manual?";
+            
+        const cat = (invoice.category || 'REGISTER').toUpperCase();
+        
+        if (cat === 'TOPUP') {
+            confirmMessage += isRetry ? "" : "\nSaldo akan otomatis ditambahkan ke Wallet pelanggan.";
+        } else if (cat === 'RENEW') {
+            confirmMessage += "\nDomain akan otomatis diperpanjang.";
+        } else if (cat === 'TRANSFER') {
+            confirmMessage += "\nProses transfer domain akan segera dimulai.";
+        } else if (cat === 'RESTORE') {
+            confirmMessage += "\nDomain akan otomatis dipulihkan (Restore).";
+        } else {
+            confirmMessage += "\nDomain akan otomatis didaftarkan.";
+        }
+
+        if (!window.confirm(confirmMessage)) return;
+        setApproving(true);
         try {
             const response = await api.post(`/billing/invoice/${id}/pay`, {
                 payment_method: "MANUAL_ADMIN"
@@ -80,12 +100,12 @@ const AdminInvoiceDetail = () => {
             } else {
                 success("Pembayaran diterima dan domain berhasil diaktifkan!");
             }
-            fetchDetail();
+            await fetchDetail();
         } catch (err) {
             console.error("Approve error:", err);
             error(err.response?.data?.error || "Gagal memproses pembayaran.");
         } finally {
-            setLoading(false);
+            setApproving(false);
         }
     };
 
@@ -108,6 +128,17 @@ const AdminInvoiceDetail = () => {
             currency: "IDR",
             minimumFractionDigits: 0,
         }).format(num);
+    };
+
+    const getCategoryBadge = (cat) => {
+        const c = (cat || 'REGISTER').toUpperCase();
+        switch(c) {
+            case 'TOPUP': return <span className="px-3 py-1 bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm">Top-up Saldo</span>;
+            case 'RENEW': return <span className="px-3 py-1 bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm">Perpanjang Domain</span>;
+            case 'TRANSFER': return <span className="px-3 py-1 bg-amber-100 text-amber-700 border border-amber-200 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm">Transfer Domain</span>;
+            case 'RESTORE': return <span className="px-3 py-1 bg-rose-100 text-rose-700 border border-rose-200 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm">Restore Domain</span>;
+            default: return <span className="px-3 py-1 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm">Registrasi Domain</span>;
+        }
     };
 
     const hasFailedActivation = invoice.status === 'paid' && invoice.items?.some(item => item.domain_status !== 'active');
@@ -217,15 +248,27 @@ const AdminInvoiceDetail = () => {
                 <div className="flex justify-end mb-12">
                     <div className="w-64 space-y-3">
                         <div className="flex justify-between text-[10px] font-semibold text-[#64748b] uppercase tracking-widest">
-                            <span>Subtotal</span>
-                            <span className="text-[#0f172a]">{formatRupiah(invoice.total)}</span>
+                            <span>Harga Dasar</span>
+                            <span className="text-[#0f172a]">{formatRupiah(invoice.subtotal)}</span>
                         </div>
+                        {invoice.discount > 0 && (
+                            <div className="flex justify-between text-[10px] font-semibold text-[#64748b] uppercase tracking-widest">
+                                <span>Diskon</span>
+                                <span className="text-rose-600">-{formatRupiah(invoice.discount)}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between text-[10px] font-semibold text-[#64748b] uppercase tracking-widest">
-                            <span>Tax (11%)</span>
-                            <span className="text-[#22c55e]">Rp 0 (Promo)</span>
+                            <span>PPN (11%)</span>
+                            <span className="text-[#0f172a]">{formatRupiah(invoice.tax)}</span>
                         </div>
+                        {invoice.service_fee > 0 && (
+                            <div className="flex justify-between text-[10px] font-semibold text-[#64748b] uppercase tracking-widest">
+                                <span>Biaya Layanan</span>
+                                <span className="text-[#0f172a]">{formatRupiah(invoice.service_fee)}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between items-center py-2.5 px-5 bg-[#0f172a] rounded-lg">
-                            <span className="text-[10px] font-semibold text-white uppercase tracking-[0.2em]">Grand Total</span>
+                            <span className="text-[10px] font-semibold text-white uppercase tracking-[0.2em]">Total Bayar</span>
                             <span className="text-lg font-bold text-[#f97316]">{formatRupiah(invoice.total)}</span>
                         </div>
                     </div>
@@ -295,18 +338,25 @@ const AdminInvoiceDetail = () => {
                         {invoice.status === 'pending' && (
                             <button 
                                 onClick={handleApprove}
-                                className="h-12 px-6 bg-[#F97316] text-white rounded-lg text-sm font-semibold hover:bg-[#0f172a] transition-all classic-shadow active:scale-95"
+                                disabled={approving}
+                                className="h-12 px-6 bg-[#F97316] text-white rounded-lg text-sm font-semibold hover:bg-[#0f172a] transition-all classic-shadow active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                Terima Pembayaran
+                                {approving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
+                                {approving ? 'Memproses...' : 'Terima Pembayaran'}
                             </button>
                         )}
                         {hasFailedActivation && (
                             <button 
                                 onClick={handleApprove}
-                                className="h-12 px-6 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700 transition-all classic-shadow flex items-center gap-2 active:scale-95"
+                                disabled={approving}
+                                className="h-12 px-6 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700 transition-all classic-shadow flex items-center gap-2 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                <span className="material-symbols-outlined text-lg">replay</span>
-                                Retry Aktivasi
+                                {approving ? (
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                ) : (
+                                    <span className="material-symbols-outlined text-lg">replay</span>
+                                )}
+                                {approving ? 'Mengaktifkan...' : 'Retry Aktivasi'}
                             </button>
                         )}
                     </div>
@@ -317,8 +367,11 @@ const AdminInvoiceDetail = () => {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-2xl p-6 border border-[#f1f5f9] classic-shadow">
                             <div className="p-8 border-b border-[#f8fafc] flex justify-between items-center bg-[#f8fafc]/20">
-                                <h3 className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest">Item Tagihan</h3>
-                                <span className={`-lg text-[10px] font-bold uppercase tracking-widest border ${
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest">Item Tagihan</h3>
+                                    {getCategoryBadge(invoice.category)}
+                                </div>
+                                <span className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${
                                     invoice.status === 'paid' ? 'bg-[#ecfdf5] text-[#059669] border-[#d1fae5]' : 'bg-amber-50 text-amber-600 border-amber-100'
                                 }`}>
                                     {invoice.status === 'paid' ? 'Lunas' : 'Menunggu'}
@@ -385,15 +438,25 @@ const AdminInvoiceDetail = () => {
 
                                 <div className="mt-10 space-y-3 bg-[#f8fafc]/50 p-6 rounded-xl border border-[#f1f5f9]">
                                     <div className="flex justify-between text-xs font-bold text-[#94a3b8] uppercase tracking-widest">
-                                        <span>Subtotal</span>
-                                        <span className="text-[#475569]">{formatRupiah(invoice.total)}</span>
+                                        <span>Harga Dasar</span>
+                                        <span className="text-[#475569]">{formatRupiah(invoice.subtotal)}</span>
+                                    </div>
+                                    {invoice.discount > 0 && (
+                                        <div className="flex justify-between text-xs font-bold text-[#94a3b8] uppercase tracking-widest">
+                                            <span>Diskon / Promo</span>
+                                            <span className="text-rose-500">-{formatRupiah(invoice.discount)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-xs font-bold text-[#94a3b8] uppercase tracking-widest">
+                                        <span>PPN (11%)</span>
+                                        <span className="text-[#475569]">{formatRupiah(invoice.tax)}</span>
                                     </div>
                                     <div className="flex justify-between text-xs font-bold text-[#94a3b8] uppercase tracking-widest">
-                                        <span>Pajak (0%)</span>
-                                        <span className="text-[#475569]">Rp 0</span>
+                                        <span>Biaya Layanan</span>
+                                        <span className="text-[#475569]">{formatRupiah(invoice.service_fee || 0)}</span>
                                     </div>
                                     <div className="flex justify-between items-center pt-5 mt-2 border-t border-[#e2e8f0]">
-                                        <span className="text-sm font-bold text-[#0f172a] uppercase tracking-widest">Total Pembayaran</span>
+                                        <span className="text-sm font-bold text-[#0f172a] uppercase tracking-widest">Total Tagihan</span>
                                         <span className="text-2xl font-bold text-[#f97316]">{formatRupiah(invoice.total)}</span>
                                     </div>
                                 </div>
@@ -420,6 +483,35 @@ const AdminInvoiceDetail = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {invoice.payment_instructions?.payment_proof && (
+                             <div className="bg-white rounded-2xl p-6 border border-[#f1f5f9] classic-shadow border-l-4 border-l-orange-500 animate-[fadeIn_0.5s_ease-out]">
+                                <h3 className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest mb-6 flex justify-between items-center">
+                                    Bukti Pembayaran
+                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px]">Manual</span>
+                                </h3>
+                                <div className="relative group overflow-hidden rounded-xl border border-slate-100 mb-4 bg-slate-50">
+                                    <img 
+                                        src={invoice.payment_instructions.payment_proof} 
+                                        alt="Proof" 
+                                        className="w-full object-contain max-h-[300px] transition-transform group-hover:scale-105" 
+                                    />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <a 
+                                            href={invoice.payment_instructions.payment_proof} 
+                                            target="_blank" 
+                                            rel="noreferrer" 
+                                            className="bg-white text-slate-900 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-colors"
+                                        >
+                                            Lihat Full
+                                        </a>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-400 leading-relaxed italic">
+                                    * Silakan periksa mutasi rekening Anda sebelum menekan tombol <b>Terima Pembayaran</b>.
+                                </p>
+                             </div>
+                        )}
 
                         <div className="bg-white rounded-2xl p-6 border border-[#f1f5f9] classic-shadow">
                             <h3 className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest mb-8">Log Aktivitas</h3>

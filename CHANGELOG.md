@@ -2,6 +2,75 @@
 
 Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi tim pengembang.
 
+### [2026-04-30] - Payment Sync, Transaction Stability & Ownership Fixes (Tegar Wira Kesuma)
+- **Sistem (Desentralisasi):** Migrasi konfigurasi kritis (SMTP Email, Google OAuth, App URLs) dari file `.env` statis ke tabel database `site_settings`. Memungkinkan perubahan konfigurasi *real-time* tanpa perlu restart server.
+- **Backend (Payment Timer):** Perbaikan format `due_date` di `billingController.js` menjadi ISO String untuk akurasi *countdown timer* di frontend.
+- **Backend (Payment Gateway):** Sinkronisasi kolom `expired_at` pada tabel `payments` menggunakan data `validity` dari API Prismalink.
+- **Backend (Database Stability):** Implementasi **Atomic Transactions** (BEGIN/COMMIT/ROLLBACK) pada `transferController.js` untuk menjamin persistensi data invoice dan mencegah Error 404.
+- **Backend (Performance UX):** Modifikasi `OrderService.js` untuk memproses transfer domain di **background** (non-blocking), mempercepat respon sukses pembayaran ke user.
+- **Backend (Domain Ownership):** Perbaikan logika *Upsert Domain* agar selalu memperbarui `user_id` dan `registrant_snapshot` saat terjadi perpindahan kepemilikan domain.
+- **Frontend (UI Domain Detail):** Refactor `ManageDomain.jsx` untuk menampilkan data "Kontak Administratif" secara dinamis dari snapshot database, menggantikan data hardcoded.
+- **Backend (Mail Service):** Refactoring `EmailService.js` agar menggunakan kredensial SMTP dinamis dari database. Panduan implementasi **Google App Password** untuk fix error `EAUTH`.
+- **Frontend (Admin UX Overhaul):** Redesign total navigasi **Sistem Konfigurasi**. Implementasi layout tab vertikal (icon-on-top) untuk mencegah penumpukan teks.
+- **Frontend (Typography):** Standardisasi bobot font di seluruh dashboard (mengganti `font-black` ke `font-bold`).
+
+- **Frontend (Admin Management):** Overhaul total halaman **Manajemen Domain** (`AdminManageDomain.jsx`). Penambahan informasi krusial: Email & WhatsApp Pelanggan, Detail Pembelian (Invoice ID & Harga Beli), serta Info Registrant mendetail dari Daftarnama.
+- **Frontend (Admin Management):** Implementasi sistem **Smart Fallback** untuk ID Registrar. Menggunakan ID Invoice dan Nama Domain sebagai referensi jika API Registrar tidak memberikan Order/Domain ID, menghilangkan status "N/A" yang membingungkan.
+- **Frontend (Admin Management):** Implementasi fitur **Auto-Parsing Data Mentah**. Sistem kini otomatis mengonversi data string dari API Daftarnama menjadi objek interaktif di dashboard admin.
+- **Frontend (Security & Stability):** Refactor `api.js` (Axios Response Interceptor). Perbaikan logika penanganan error `401/403` untuk mencegah **Logout Paksa** saat terjadi masalah Whitelist IP atau error API Registrar.
+- **Backend (Registrar Integration):** Sinkronisasi `domainController.js` untuk menyertakan data pembelian (Invoice & Price) dan kontak user pada setiap pemanggilan detail domain admin.
+- **Backend (Voucher Logic):** Standardisasi penamaan metadata voucher (`applicable_to`) pada `VoucherService.js` dan `voucherController.js` untuk memastikan validasi pembatasan TLD (e.g. Voucher .id tidak bisa dipakai di .com) berjalan 100%.
+- **Backend (Daftarnama):** Perbaikan `DaftarnamaService.js` untuk selalu menggunakan `getClient()` dinamis guna memastikan setiap request menggunakan konfigurasi API (Sandbox/Production) yang paling aktual.
+- **Frontend (UI Polish):** Labeling status domain di `BuyDomain.jsx`. Mengganti status domain yang tidak didukung atau bermasalah di Registrar menjadi **"BELUM AKTIF"** (Oranye) untuk membedakannya dari domain yang sudah benar-benar **"TERPAKAI"** (Merah).
+- **Frontend (Security):** Implementasi pengecekan saldo sebelum mengaktifkan **Auto Renewal**. Sistem kini mencegah aktivasi jika saldo Rp 0 dan memberikan instruksi pengisian saldo (Top Up) via SweetAlert.
+- **Backend (Security):** Penambahan validasi saldo *server-side* pada fungsi `updateDomain` guna memastikan konsistensi data dan mencegah aktivasi perpanjangan otomatis tanpa saldo Wallet.
+- **Backend (Fix & Stability):** Perbaikan sinkronisasi **Transfer Domain** pada `transferController.js` dengan menyertakan data profil administratif (`registrant_snapshot`) yang sebelumnya menyebabkan data pemilik tidak muncul di dashboard.
+- **Backend (Database):** Perbaikan skema tabel `notifications` dengan penambahan kolom `reference_id` dan `reference_type` untuk kestabilan sistem notifikasi status domain.
+- **Frontend (Admin Settings):** Perbaikan bug `activeTab` pada halaman Admin Settings dan penambahan fitur pengaturan kontak WhatsApp & Email admin yang tersinkronisasi ke halaman publik.
+- **Frontend (UI/UX):** Integrasi kembali peta interaktif (Google Maps) dengan marker lokasi yang presisi pada halaman **Hubungi Kami**.
+- **Backend (Audit):** Implementasi pembersihan data kepemilikan domain pasca transfer untuk memastikan informasi di dashboard user 100% akurat.
+- **Maintenance:** Pembersihan skrip debug `scratch/check_domain_11.cjs` dan optimalisasi query database pada modul domain.
+
+### [2026-04-29] - Domain Dashboard Modernization & Lifecycle Optimization (Tegar Wira Kesuma)
+- **Frontend (UI Modernization):** Overhaul tab **Overview** dengan informasi teknis mendalam (Nameservers aktif, Registrar API, tanggal registrasi) dan ringkasan kontak administratif yang lebih profesional.
+- **Frontend (UI Modernization):** Membuka akses manajemen (DNS, Nameservers, Keamanan) untuk domain berstatus `provisioned`, memungkinkan pengguna melakukan konfigurasi sebelum aktivasi penuh selesai.
+- **Frontend (UI Modernization):** Redesign total tab **Verifikasi** dengan kartu sukses premium untuk domain yang sudah disetujui, menggantikan tombol aksi yang sudah tidak diperlukan.
+- **Frontend (UX/Billing):** Optimalisasi alur perpanjangan domain. Tombol **Perpanjang** kini langsung mengarahkan pengguna ke halaman Checkout (bypassing Cart) untuk mempercepat proses transaksi.
+- **Frontend (Design Polish):** Standardisasi bobot font di seluruh dashboard manajemen. Mengganti `font-black` menjadi `font-bold` untuk keseimbangan estetika yang lebih baik dan keterbacaan tinggi.
+- **Backend (DNS Management):** Perbaikan sistem input DNS record untuk menangani simbol `@` secara otomatis (dikonversi menjadi *empty string*) sesuai standar API Registrar untuk root record.
+- **Backend (DNS Management):** Optimalisasi penarikan data DNS agar lebih fleksibel dalam menangani berbagai format respon API Registrar (Array-direct maupun Object-wrapped).
+- **Backend (Fix & Stability):** Perbaikan validasi nomor telepon untuk API Daftarnama dengan format ketat `+62.xxxx` guna menghindari error registrasi.
+- **Backend (Fix & Stability):** Perbaikan bug persistensi konfigurasi Prismalink yang sebelumnya gagal tersimpan karena masalah sensitivitas karakter (case-sensitivity) pada database.
+- **Backend (Logging):** Implementasi logging error mendalam pada modul DNS untuk mempermudah diagnosa masalah komunikasi (Status 502/500) dengan API upstream.
+- **Frontend (Checkout Fix):** Mengatasi masalah `RpNaN` pada daftar layanan dengan standarisasi penyimpanan harga sebagai *raw number* di LocalStorage (perbaikan di `BuyDomain.jsx` dan `Checkout.jsx`).
+- **Frontend (Checkout UX):** Implementasi fitur interaktif pada Daftar Layanan. Sekarang pengguna bisa **Menghapus Item** dan **Mengubah Durasi (1-10 Tahun)** langsung di halaman Checkout tanpa harus kembali ke keranjang.
+- **Frontend (Checkout UX):** Kalkulasi ulang subtotal, pajak, dan biaya layanan secara real-time saat terjadi perubahan durasi atau penghapusan item di daftar layanan.
+- **Frontend (Wallet UI):** Modernisasi komponen Pembayaran Wallet. Sekarang label berubah menjadi **Saldo Akun (Wallet)**, dilengkapi proteksi otomatis (disabled) jika saldo kurang, serta indikator deficit (e.g., `-Rp 150.000`) untuk transparansi.
+
+### [2026-04-28] - Registrar Stability & Voucher Logic Fix (Tegar Wira Kesuma)
+- **Frontend (Security):** Refactor `api.js` (Axios Interceptor) untuk memisahkan error `401` (Logout) dan `403` (Forbidden). Sekarang error IP Whitelist dari Registrar tidak akan menyebabkan pengguna ter-logout paksa.
+- **Backend (Voucher):** Fix mapping data `applicable_to` pada `voucherController.js` untuk memastikan pembatasan voucher per-TLD (e.g., khusus .id) terbaca dengan benar di Frontend.
+- **Backend (Daftarnama):** Standarisasi `DaftarnamaService.js` menggunakan metode `getClient()` dinamis untuk menjamin setiap request menggunakan konfigurasi API terbaru.
+- **Frontend (UI/UX):** Perubahan label status domain pada `BuyDomain.jsx`. Domain yang tidak didukung atau bermasalah di Registrar kini berstatus **"BELUM AKTIF"** (Oranye) alih-alih **"TERPAKAI"** (Merah) untuk akurasi informasi ke pengguna.
+- **Backend (PrismaLink):** Implementasi rincian produk dinamis (`product_details`) pada payload API Prismalink. Sekarang item invoice (Domain, Renew, Topup, dll) terperinci secara otomatis di halaman pembayaran gateway.
+- **Backend (Security):** Penambahan validasi status gateway (`is_active`) pada level controller (`prismaLinkController.js`). Transaksi otomatis diblokir jika gateway dinonaktifkan di Admin Panel untuk mencegah penyalahgunaan API.
+- **Frontend (UI/UX):** Implementasi label "via Provider" (e.g., *via Prismalink* / *via Tripay*) pada halaman Checkout untuk transparansi channel pembayaran jika terdapat bank yang sama dari provider berbeda.
+- **Frontend (Payment Dashboard):** Optimalisasi rendering logo bank pada `Payment.jsx` menggunakan pemetaan kode angka standar Bank Indonesia (BI) untuk menjamin akurasi identitas visual bank.
+- **Frontend (Fix):** Standardisasi penamaan Virtual Account pada UI Dashboard. Sekarang label bank (e.g., *BCA*, *Mandiri*) tampil konsisten terlepas dari variasi format data respon API.
+- **Frontend (Checkout):** Pembersihan total syntax error and karakter sampah (backslash) pada `Checkout.jsx` untuk menjamin stabilitas aplikasi di sisi client.
+- **Frontend (Admin):** Overhaul **Dashboard Sistem Konfigurasi** (Admin Settings) dengan desain premium. Implementasi *Tabbed Interface* untuk manajemen terpusat: Profil, Keamanan, Site Settings, Domain API, Mail Server, dan Pembayaran.
+- **Frontend (Admin):** Integrasi **Kontrol Gateway Aktif** pada tab Pembayaran. Memungkinkan admin untuk mengaktifkan/menonaktifkan Tripay, Prismalink, dan Manual secara real-time dengan status visual yang informatif.
+
+### [2026-04-27] - Mobile Optimization & Registrar Transparency (Tegar Wira Kesuma)
+- **Backend (Fix):** Optimalisasi `syncDomain` dengan pemetaan ID registrar yang lebih fleksibel (mendukung field `id`, `domain_id`, dan `registration_id`) untuk menjamin akurasi data Daftarnama.
+- **Frontend (Admin):** Overhaul `AdminManageDomain.jsx` untuk responsivitas mobile total. Implementasi layout fleksibel dan penyesuaian font agar navigasi di HP sempurna.
+- **Feature (Admin):** Penambahan seksi "Daftarnama Raw Data" pada detail domain untuk verifikasi data API langsung dari registrar (transparansi data Daftarnama).
+- **Backend (Fix):** Implementasi *strict typing* (boolean casting & JSON stringify) pada `paymentGatewayController.js` untuk mengatasi Error 500 saat update setting Tripay di PostgreSQL.
+- **Frontend (UI/UX):** Perbaikan masalah `z-index` pada menu mobile. Sekarang Navbar memiliki prioritas tertinggi (`z-100`) agar tidak tertutup oleh elemen melayang.
+- **Frontend (Home):** Penyesuaian `z-index` pada Floating Cart Badge menjadi `z-40` untuk memastikan navigasi mobile tetap dapat diakses dengan mudah.
+- **Frontend (Admin):** Pembaruan rincian biaya pada `AdminInvoiceDetail.jsx`. Sekarang menampilkan rincian Harga Dasar, PPN 11%, Biaya Layanan, dan Diskon secara transparan baik di tampilan layar maupun PDF.
+- **Database (Fix):** Penambahan kolom konfigurasi Tripay yang hilang (`api_key`, `private_key`, `merchant_code`, `webhook_url`) ke tabel `payment_gateways`.
+
 ### [2026-04-26] - Error System Overhaul & Humanization (Tegar Wira Kesuma)
 - **Frontend (Error Pages):** Redesign total halaman 404, 403, dan 500 dengan estetika premium white/orange. Menghapus teks "Oops!" dan menggantinya dengan bahasa yang lebih profesional.
 - **Frontend (New Pages):** Implementasi halaman Maintenance (`/maintenance`) dengan indikator estimasi waktu dan halaman Coming Soon (`/coming-soon`) dengan animasi roket.
@@ -10,6 +79,7 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
 - **Global (Humanization):** Audit menyeluruh dan penghapusan emoji serta bahasa teknis (programmer jargon) pada seluruh sistem notifikasi (Toast) dan respon error di Backend.
 - **Backend (Fix):** Perbaikan syntax error pada `domainController.js` di fungsi `getDomainDetail` untuk memastikan kestabilan data domain.
 - **Frontend (Footer):** Integrasi channel pembayaran dinamis yang otomatis menyesuaikan dengan gateway yang aktif di Admin Panel.
+- **Frontend (Promo):** Redesign total bagian Newsletter. Mengganti tema "Promo Gila!" menjadi "Penawaran Eksklusif" dengan bahasa yang lebih profesional dan estetika *glassmorphism* yang lebih premium.
 
 ### [2026-04-24] - Footer Enhancement & Branding (Tegar Wira Kesuma)
 - **Frontend (Branding):** Penambahan informasi alamat resmi PT. Aplikasi Dagang Teknologi pada Footer.

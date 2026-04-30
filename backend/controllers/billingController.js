@@ -3,33 +3,44 @@ const OrderService = require("../services/OrderService");
 const EmailService = require("../services/EmailService");
 const NotificationService = require("../services/NotificationService");
 const VoucherService = require("../services/VoucherService");
+const WalletService = require("../services/WalletService");
 const TransferController = require("./transferController");
 
 // 1. Get All Invoices (By User ID - SECURE)
 exports.getInvoices = (req, res) => {
   const userId = req.user.id; 
 
-
-  // Query using Postgres native syntax ($1) to avoid adapter issues
   const query = `
     SELECT i.*, 
     (SELECT name FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as first_item,
+    (SELECT action_type FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as action_type,
     (SELECT COUNT(*) FROM transfer_requests tr WHERE tr.invoice_id = i.id) > 0 as is_transfer,
+    (SELECT COUNT(*) FROM payments p WHERE p.invoice_number = i.id AND p.payment_proof IS NOT NULL) > 0 as has_proof,
     (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as item_count
     FROM invoices i 
     WHERE i.user_id = $1 
     ORDER BY i.created_at DESC
   `;
   
-
-
   db.query(query, [userId], (err, results) => {
     if (err) {
       console.error("Error fetching invoices:", err);
       return res.status(500).json({ error: "Terjadi gangguan pada sistem. Silakan coba beberapa saat lagi." });
     }
 
-    res.json(results);
+    const invoices = results.map(inv => {
+        let category = 'REGISTER';
+        const at = (inv.action_type || '').toUpperCase();
+        const firstItem = (inv.first_item || '').toLowerCase();
+        
+        if (at === 'TOPUP' || firstItem.includes('top up')) category = 'TOPUP';
+        else if (at === 'TRANSFER' || inv.is_transfer) category = 'TRANSFER';
+        else if (at === 'RENEW') category = 'RENEW';
+        else if (at === 'RESTORE') category = 'RESTORE';
+        return { ...inv, category };
+    });
+
+    res.json(invoices);
   });
 };
 
@@ -48,7 +59,7 @@ exports.getInvoiceById = async (req, res) => {
       SELECT i.*, 
              u.name as customer_name, u.email as customer_email, u.phone as customer_phone,
              p.transaction_id as plink_ref_no, p.payment_method as payment_channel, p.status as payment_status_detail, p.raw_response,
-             p.va_number, p.expired_at
+             p.va_number, p.expired_at, p.payment_proof
       FROM invoices i
       JOIN users u ON i.user_id = u.id
       LEFT JOIN (
@@ -114,7 +125,10 @@ exports.getInvoiceById = async (req, res) => {
 
 // Helper response sender
 function sendResponse(invoice, items, logs, res) {
-    const isExpired = invoice.status === 'pending' && new Date(invoice.due_date) < new Date();
+    const now = new Date();
+    const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
+    const isExpired = (invoice.status === 'pending' || invoice.status === 'waiting') && 
+                      dueDate && (dueDate < now);
     
     // Inisialisasi variabel di awal untuk mencegah ReferenceError
     let raw = null;
@@ -135,13 +149,27 @@ function sendResponse(invoice, items, logs, res) {
         }
     }
 
+    const isTopUp = items.some(it => it.action_type === 'topup' || it.name?.toLowerCase().includes('top up'));
+    const isTransfer = items.some(it => it.action_type === 'transfer');
+    const isRenew = items.some(it => it.action_type === 'renew');
+    const isRestore = items.some(it => it.action_type === 'restore');
+
+    let category = 'REGISTER';
+    if (isTopUp) category = 'TOPUP';
+    else if (isTransfer) category = 'TRANSFER';
+    else if (isRenew) category = 'RENEW';
+    else if (isRestore) category = 'RESTORE';
+
     const fullInvoice = {
         id: invoice.id,
         status: isExpired ? 'expired' : invoice.status,
-        date: new Date(invoice.date || invoice.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-        due_date: new Date(invoice.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+        category: category,
+        has_proof: !!invoice.payment_proof,
+        date: new Date(invoice.date || invoice.created_at || now).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+        due_date: invoice.due_date || null,
+        due_date_formatted: dueDate ? dueDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "Batas waktu tidak ditentukan",
         total: invoice.total,
-        is_topup: items.some(it => it.action_type === 'topup' || it.name?.toLowerCase().includes('top up')),
+        is_topup: isTopUp,
         subtotal: parseFloat(invoice.subtotal || (parseFloat(invoice.total) - parseFloat(invoice.tax_amount || 0))), 
         tax: parseFloat(invoice.tax_amount || 0),
         service_fee: 0, 
@@ -154,9 +182,19 @@ function sendResponse(invoice, items, logs, res) {
             expired_at: invoice.expired_at,
             qr_string: qrString,
             qr_image: qrImage,
-            bank_code: (invoice.payment_channel || "").replace("VA_", ""),
+            bank_code: (String(invoice.payment_channel || "")).replace("VA_", ""),
             amount: invoice.total,
-            total_fee: parseFloat(invoice.service_fee || (raw?.fee_customer ?? raw?.total_fee ?? 0))
+            total_fee: parseFloat(invoice.service_fee || (raw?.fee_customer ?? raw?.total_fee ?? 0)),
+            provider: 'manual',
+            manual_details: raw?.provider === 'manual' ? {
+                bank_name: raw.bank_name,
+                account_number: raw.account_number,
+                account_holder: raw.account_holder,
+                instructions: raw.instructions,
+                qris_url: raw.qris_url,
+                logo_url: raw.logo_url
+            } : null,
+            payment_proof: invoice.payment_proof || null
         },
         customer: {
           name: invoice.customer_name,
@@ -172,6 +210,15 @@ function sendResponse(invoice, items, logs, res) {
         if (raw.plink_ref_no) {
             fullInvoice.plink_ref_no = raw.plink_ref_no;
             fullInvoice.payment_instructions.plink_ref_no = raw.plink_ref_no;
+            fullInvoice.payment_instructions.provider = 'prismalink';
+        }
+        // Prismalink VA Number List
+        if (raw.va_number_list) {
+            fullInvoice.payment_instructions.va_number_list = raw.va_number_list;
+        }
+        // Prismalink Expiry
+        if (raw.validity) {
+            fullInvoice.payment_instructions.expired_at = raw.validity;
         }
         const qStr = raw.qris_data || raw.qr_string || raw.qr_code || raw.payment_url;
         if (qStr) {
@@ -205,33 +252,58 @@ exports.getInvoiceByIdAdmin = (req, res) => {
 // 3. Process Payment and Activate Domains (Manual Admin Approval)
 exports.payInvoice = async (req, res) => {
   const invoiceId = req.params.id;
-  const { payment_method } = req.body; // e.g., 'MANUAL_TF', 'CASH'
+  const { payment_method } = req.body; 
 
   const client = await db.pool.connect();
   try {
       await client.query('BEGIN');
 
-      // 1. Update Invoice Status
-      const updateQuery = "UPDATE invoices SET status = 'paid', payment_method = $1, paid_at = NOW() WHERE id = $2";
-      const result = await client.query(updateQuery, [payment_method, invoiceId]);
+      // 1. Fetch Invoice & Items to identify type
+      const invRes = await client.query("SELECT * FROM invoices WHERE id = $1 FOR UPDATE", [invoiceId]);
+      if (invRes.rows.length === 0) throw new Error("Invoice tidak ditemukan");
+      const invoice = invRes.rows[0];
+
+      if (invoice.status === 'paid') {
+          return res.json({ message: "Invoice sudah dibayar sebelumnya", status: "paid" });
+      }
+
+      const itemsRes = await client.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [invoiceId]);
+      const items = itemsRes.rows;
+
+      // 2. Update Invoice Status
+      await client.query("UPDATE invoices SET status = 'paid', payment_method = $1, paid_at = NOW() WHERE id = $2", [payment_method, invoiceId]);
 
       // Finalize Voucher
       await VoucherService.finalizeVoucherUsage(invoiceId, client);
 
-      if (result.rowCount === 0) {
-          throw new Error("Invoice tidak ditemukan");
-      }
+      // Update payments status for manual
+      await client.query("UPDATE payments SET status = 'SUCCESS' WHERE invoice_number = $1 AND status = 'PENDING'", [invoiceId]);
 
-      // 2. Trigger Domain Activation via OrderService
-      const activationResult = await OrderService.activateDomain(invoiceId);
+      // 3. Handle by Type
+      const isTopUp = items.some(it => it.action_type === 'topup' || it.name?.toLowerCase().includes('top up')) || invoiceId.startsWith('TOPUP-');
+      const isTransfer = items.some(it => it.action_type === 'transfer' || it.name?.toLowerCase().includes('transfer'));
+
+      if (isTopUp) {
+          // EXPRESS PATH FOR TOP-UP
+          console.log(`[payInvoice] Express path for Top-up: ${invoiceId}`);
+          await WalletService.credit(invoice.user_id, invoice.total, 'TOPUP', invoiceId, 'Top Up via Manual Admin Approval', client);
+          
+          // Send Email (Async)
+          const userRes = await client.query('SELECT name, email FROM users WHERE id = $1', [invoice.user_id]);
+          EmailService.sendTopupSuccess(userRes.rows[0], invoice, invoice.total).catch(e => console.error(e));
+      } else {
+          // DOMAIN PATH (Heavier)
+          console.log(`[payInvoice] Domain path for: ${invoiceId}`);
+          activationResult = await OrderService.activateDomain(invoiceId);
+      }
 
       await client.query('COMMIT');
 
       if (activationResult.success) {
-          res.json({ message: "Payment Accepted & Domain Activated Successfully", status: "paid" });
+          res.json({ message: "Payment Accepted & Activated Successfully", status: "paid" });
       } else {
           res.json({ 
-              message: "Payment Accepted but Domain Activation Failed: " + activationResult.message, 
+              message: "Payment Accepted but Activation Failed: " + activationResult.message, 
               status: "paid",
               warning: true 
           });
@@ -249,7 +321,11 @@ exports.payInvoice = async (req, res) => {
 exports.getAllInvoices = async (req, res) => {
   const query = `
     SELECT i.*, u.name as customer_name, u.email as customer_email,
-    (SELECT COUNT(*) FROM transfer_requests tr WHERE tr.invoice_id = i.id) > 0 as is_transfer
+    (SELECT name FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as first_item,
+    (SELECT action_type FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as action_type,
+    (SELECT COUNT(*) FROM transfer_requests tr WHERE tr.invoice_id = i.id) > 0 as is_transfer,
+    (SELECT COUNT(*) FROM payments p WHERE p.invoice_number = i.id AND p.payment_proof IS NOT NULL) > 0 as has_proof,
+    (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as item_count
     FROM invoices i
     JOIN users u ON i.user_id = u.id
     ORDER BY i.created_at DESC
@@ -257,7 +333,16 @@ exports.getAllInvoices = async (req, res) => {
 
   try {
       const results = await db.query(query);
-      res.json(results);
+      const invoices = results.map(inv => {
+          let category = 'REGISTER';
+          const at = (inv.action_type || '').toUpperCase();
+          if (at === 'TOPUP' || inv.first_item?.toLowerCase().includes('top up')) category = 'TOPUP';
+          else if (at === 'TRANSFER' || inv.is_transfer) category = 'TRANSFER';
+          else if (at === 'RENEW') category = 'RENEW';
+          else if (at === 'RESTORE') category = 'RESTORE';
+          return { ...inv, category };
+      });
+      res.json(invoices);
   } catch (err) {
       console.error("[getAllInvoices] Error:", err);
       res.status(500).json({ error: "Gagal mengambil data invoice" });
@@ -301,6 +386,7 @@ exports.getUserInvoicesAdmin = async (req, res) => {
   const query = `
     SELECT i.*, 
     (SELECT name FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as first_item,
+    (SELECT action_type FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as action_type,
     (SELECT COUNT(*) FROM transfer_requests tr WHERE tr.invoice_id = i.id) > 0 as is_transfer,
     (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as item_count
     FROM invoices i 
@@ -310,16 +396,22 @@ exports.getUserInvoicesAdmin = async (req, res) => {
   
   try {
       const results = await db.query(query, [userId]);
-      res.json(results);
+      const invoices = results.map(inv => {
+          let category = 'REGISTER';
+          const at = (inv.action_type || '').toUpperCase();
+          if (at === 'TOPUP' || inv.first_item?.toLowerCase().includes('top up')) category = 'TOPUP';
+          else if (at === 'TRANSFER' || inv.is_transfer) category = 'TRANSFER';
+          else if (at === 'RENEW') category = 'RENEW';
+          else if (at === 'RESTORE') category = 'RESTORE';
+          return { ...inv, category };
+      });
+      res.json(invoices);
   } catch (err) {
       console.error("[getUserInvoicesAdmin] Error:", err);
       res.status(500).json({ error: "Gagal mengambil data invoice user" });
   }
 };
 
-const WalletService = require("../services/WalletService");
-
-// 7. Pay Invoice with Wallet
 // 7. Pay Invoice with Wallet
 exports.payInvoiceWithWallet = async (req, res) => {
     const invoiceId = req.params.id;
@@ -380,10 +472,12 @@ exports.payInvoiceWithWallet = async (req, res) => {
 
         
         // Identify service type from invoice items
-        const itemRes = await client.query("SELECT action_type FROM invoice_items WHERE invoice_id = $1 LIMIT 1", [invoiceId]);
-        const actionType = itemRes.rows[0]?.action_type || 'register';
-        const isTransfer = actionType === 'transfer';
-        const isTopUp = actionType === 'topup';
+        const itemRes = await client.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [invoiceId]);
+        const items = itemRes.rows;
+        const actionType = items[0]?.action_type || 'register';
+        
+        const isTransfer = items.some(it => it.action_type === 'transfer' || (it.name || '').toLowerCase().includes('transfer'));
+        const isTopUp = items.some(it => it.action_type === 'topup' || (it.name || '').toLowerCase().includes('top up')) || invoiceId.startsWith('TOPUP-');
 
         let activationResult = { success: true };
 
@@ -523,16 +617,16 @@ exports.cancelInvoice = async (req, res) => {
     const userId = req.user.id;
     const { reason } = req.body;
 
-    const query = "UPDATE invoices SET status = 'cancelled', refund_reason = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 AND status = 'pending'";
+    const query = "UPDATE invoices SET status = 'cancelled', refund_reason = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3 AND status ILIKE ANY(ARRAY['pending', 'waiting'])";
     
     try {
         const result = await db.query(query, [reason, invoiceId, userId]);
 
-        if (result.rowCount === 0 || result.affectedRows === 0) {
-            return res.status(404).json({ error: "Tagihan tidak ditemukan, sudah dibayar, atau Anda tidak memiliki akses." });
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "Tagihan tidak ditemukan, sudah dibayar, atau status tidak mengizinkan pembatalan." });
         }
 
-        res.json({ message: "Invoice cancelled successfully", status: "cancelled" });
+        res.json({ success: true, message: "Invoice cancelled successfully", status: "cancelled" });
     } catch (err) {
         console.error("[cancelInvoice] Error:", err);
         res.status(500).json({ error: "Failed to cancel invoice" });
@@ -640,5 +734,138 @@ exports.recalculateInvoice = async (req, res) => {
         res.status(400).json({ error: err.message });
     } finally {
         client.release();
+    }
+};
+
+// 10. Initialize Manual Payment
+exports.initializeManualPayment = async (req, res) => {
+    const { invoice_number, payment_channel } = req.body;
+    const userId = req.user.id;
+
+    if (!invoice_number || !payment_channel) {
+        return res.status(400).json({ success: false, message: "Invoice number dan payment channel wajib diisi" });
+    }
+
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Validate Invoice
+        const invRes = await client.query('SELECT * FROM invoices WHERE id = $1 AND user_id = $2', [invoice_number, userId]);
+        const invoice = invRes.rows[0];
+
+        if (!invoice) throw new Error("Invoice tidak ditemukan");
+        if (invoice.status === 'paid') throw new Error("Invoice sudah dibayar");
+
+        // 2. Validate Manual Gateway
+        const manualId = String(payment_channel).replace('manual_', '');
+        const gatewayRes = await client.query("SELECT * FROM payment_gateways WHERE id = $1 AND provider = 'manual' AND is_active = true", [manualId]);
+        const gateway = gatewayRes.rows[0];
+
+        if (!gateway) throw new Error("Metode pembayaran manual tidak tersedia");
+
+        const merchantRef = `MAN-${invoice_number}-${Date.now()}`;
+        const transactionAmount = parseFloat(invoice.total);
+        const expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+        // 3. Create/Update Payment Record
+        await client.query(`
+            INSERT INTO payments (
+                invoice_number, 
+                transaction_id, 
+                amount, 
+                payment_method, 
+                status, 
+                raw_response, 
+                transaction_type,
+                expired_at
+            )
+            VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, $7)
+            ON CONFLICT (transaction_id) DO UPDATE SET
+                payment_method = EXCLUDED.payment_method,
+                amount = EXCLUDED.amount,
+                raw_response = EXCLUDED.raw_response,
+                expired_at = EXCLUDED.expired_at,
+                updated_at = NOW()
+        `, [
+            invoice_number, 
+            merchantRef, 
+            transactionAmount, 
+            `MANUAL_${gateway.bank_name.toUpperCase()}`, 
+            JSON.stringify({ ...gateway, provider: 'manual' }),
+            invoice_number.startsWith('TOPUP-') ? 'TOPUP' : 'DOMAIN',
+            expiredAt
+        ]);
+
+        await client.query('COMMIT');
+
+        res.json({ 
+            success: true, 
+            message: "Pembayaran manual berhasil diinisialisasi",
+            data: {
+                ...gateway,
+                merchant_ref: merchantRef,
+                amount: transactionAmount,
+                expired_at: expiredAt,
+                provider: 'manual'
+            }
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("[initializeManualPayment] Error:", err);
+        res.status(500).json({ success: false, message: err.message });
+    } finally {
+        client.release();
+    }
+};
+
+// 11. Confirm Manual Payment (Upload Proof)
+exports.confirmManualPayment = async (req, res) => {
+    const { id } = req.params; // Invoice ID
+    const { payment_proof } = req.body;
+    const userId = req.user.id;
+
+    if (!payment_proof) {
+        return res.status(400).json({ success: false, message: "Bukti pembayaran wajib diupload" });
+    }
+
+    try {
+        // 1. Validate Invoice & Ownership
+        const invRes = await db.query('SELECT status FROM invoices WHERE id = $1 AND user_id = $2', [id, userId]);
+        if (invRes.length === 0) {
+            return res.status(404).json({ success: false, message: "Invoice tidak ditemukan" });
+        }
+
+        if (invRes[0].status === 'paid') {
+            return res.status(400).json({ success: false, message: "Invoice sudah lunas" });
+        }
+
+        // 2. Update Payment Record
+        const updateQuery = `
+            UPDATE payments 
+            SET payment_proof = $1, proof_uploaded_at = NOW(), status = 'PENDING'
+            WHERE invoice_number = $2
+        `;
+        const result = await db.query(updateQuery, [payment_proof, id]);
+
+        if (result.rowCount === 0) {
+            // If no payment record exists, maybe it was never initialized
+            return res.status(400).json({ success: false, message: "Inisialisasi pembayaran tidak ditemukan. Silakan pilih metode pembayaran lagi." });
+        }
+
+        // 3. Log Activity
+        await db.query(`
+            INSERT INTO activity_logs (invoice_id, action, description, user_type)
+            VALUES ($1, $2, $3, $4)
+        `, [id, 'CONFIRM_PAYMENT', 'User mengupload bukti pembayaran manual', 'user']);
+
+        res.json({ 
+            success: true, 
+            message: "Bukti pembayaran berhasil diupload. Mohon tunggu verifikasi admin." 
+        });
+
+    } catch (err) {
+        console.error("[confirmManualPayment] Error:", err);
+        res.status(500).json({ success: false, message: "Gagal mengupload bukti pembayaran" });
     }
 };

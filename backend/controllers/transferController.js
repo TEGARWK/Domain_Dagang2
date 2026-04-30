@@ -143,6 +143,8 @@ exports.submitTransfer = async (req, res) => {
             req
         });
 
+        await client.query('COMMIT');
+
         res.status(201).json({ 
             message: "Permintaan transfer dibuat. Silakan selesaikan pembayaran.", 
             transferId: result.rows[0].id,
@@ -264,6 +266,7 @@ exports.processTransfer = async (invoiceId) => {
     
     const client = await db.pool.connect();
     try {
+        await client.query('BEGIN');
         // 1. Get Transfer Request with User Details
         const getSql = `
             SELECT t.*, u.name, u.email, u.phone, u.city, u.state as province, u.zip_code as postal_code, u.address_line1 as address_1,
@@ -273,24 +276,42 @@ exports.processTransfer = async (invoiceId) => {
             JOIN invoices i ON t.invoice_id = i.id
             WHERE t.invoice_id = $1 AND t.status = 'PENDING_PAYMENT'
         `;
+        console.log(`[Transfer] Fetching transfer request for invoice: ${invoiceId}...`);
         const resRequest = await client.query(getSql, [invoiceId]);
+        console.log(`[Transfer] Query result count: ${resRequest.rows.length}`);
 
         if (resRequest.rows.length === 0) {
             console.log(`[Transfer] No pending transfer found for invoice ${invoiceId}`);
+            await client.query('ROLLBACK');
             return;
         }
 
         const transfer = resRequest.rows[0];
 
         // 2. Update Status -> PROCESSING
+        console.log(`[Transfer] Updating status to PROCESSING for transfer ID: ${transfer.id}`);
         await client.query("UPDATE transfer_requests SET status = 'PROCESSING' WHERE id = $1", [transfer.id]);
         
         // 3. Initiate Transfer at Registrar
         try {
-            // Construct contact data from user record
-            // Mapped to Daftarnama API fields based on current users table
+            console.log(`[Transfer] Calling Registrar API for ${transfer.domain_name}...`);
+            // Check if we already have a verified handle for this user
+            const freshUserRes = await client.query("SELECT registrar_customer_id FROM users WHERE id = $1", [transfer.user_id]);
+            const existingHandle = freshUserRes.rows[0]?.registrar_customer_id;
+            
+            let username;
+            let withExisting = false;
+
+            if (existingHandle) {
+                username = existingHandle;
+                withExisting = true;
+            } else {
+                username = transfer.email.split('@')[0] + Math.floor(1000 + Math.random() * 9000);
+                withExisting = false;
+            }
+
             const contactData = {
-                username: transfer.email.split('@')[0], 
+                username: username, 
                 password: "DomainUser123!", // Default or generated
                 name: transfer.name,
                 company_name: "Individual", // Default
@@ -303,7 +324,8 @@ exports.processTransfer = async (invoiceId) => {
                 country: "ID",
                 postal_code: transfer.postal_code || "12345",
                 phone_number: formatPhoneForRegistrar(transfer.phone),
-                mobile_phone_number: formatPhoneForRegistrar(transfer.phone)
+                mobile_phone_number: formatPhoneForRegistrar(transfer.phone),
+                with_existing_customer: withExisting
             };
 
             const registrarRes = await DaftarnamaService.initiateTransfer(transfer.domain_name, transfer.epp_code, contactData);
@@ -321,10 +343,10 @@ exports.processTransfer = async (invoiceId) => {
                 INSERT INTO domains (
                     user_id, domain_name, status, registrar_name, 
                     registrar_order_id, registrar_response_raw, 
-                    auto_renew, whois_privacy,
+                    auto_renew, whois_privacy, registrant_snapshot,
                     created_at, updated_at
                 )
-                VALUES ($1, $2, $3, 'Daftarnama', $4, $5, $6, $7, NOW(), NOW())
+                VALUES ($1, $2, $3, 'Daftarnama', $4, $5, $6, $7, $8, NOW(), NOW())
                 ON CONFLICT (domain_name) 
                 DO UPDATE SET 
                     user_id = EXCLUDED.user_id,
@@ -333,6 +355,7 @@ exports.processTransfer = async (invoiceId) => {
                     registrar_response_raw = EXCLUDED.registrar_response_raw,
                     auto_renew = EXCLUDED.auto_renew,
                     whois_privacy = EXCLUDED.whois_privacy,
+                    registrant_snapshot = EXCLUDED.registrant_snapshot,
                     updated_at = NOW()
             `;
             await client.query(upsertDomainSql, [
@@ -342,7 +365,8 @@ exports.processTransfer = async (invoiceId) => {
                 registrarRes.id || 'MANUAL_ID',
                 JSON.stringify(registrarRes),
                 !!transfer.checkout_config?.autoRenew,
-                !!transfer.checkout_config?.whoisPrivacy
+                !!transfer.checkout_config?.whoisPrivacy,
+                null // Missing: registrant_snapshot
             ]);
 
             // NOTIFICATION: Transfer Initiated Successfully
@@ -352,14 +376,14 @@ exports.processTransfer = async (invoiceId) => {
                 `Transfer domain ${transfer.domain_name} telah berhasil diajukan ke registrar dan sedang dalam proses.`, 
                 'success', transfer.domain_name, 'domain_transfer');
 
+            await client.query('COMMIT');
+
         } catch (registrarErr) {
+            await client.query('ROLLBACK');
             console.error(`[Transfer] Failed at registrar for ${transfer.domain_name}:`, registrarErr.message);
-            if (registrarErr.response && registrarErr.response.data) {
-                console.error(`[Transfer] Registrar Error Body:`, JSON.stringify(registrarErr.response.data, null, 2));
-            }
             
-            // 5. Update Failure
-            await client.query(
+            // Log failure outside the transaction using db.query or a new client
+            await db.query(
                 "UPDATE transfer_requests SET status = 'FAILED_AT_REGISTRAR', failure_reason = $1, updated_at = NOW() WHERE id = $2",
                 [registrarErr.message, transfer.id]
             );

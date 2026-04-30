@@ -20,78 +20,111 @@ const Checkout = () => {
     const [pricingMap, setPricingMap] = useState({});
     const [loading, setLoading] = useState(true);
 
-    const [backendSummary, setBackendSummary] = useState(null);
-
     // Payment State
     const [gateways, setGateways] = useState([]);
     const [selectedGateway, setSelectedGateway] = useState(null);
     const [wallet, setWallet] = useState(null);
-    const [expandedMethod, setExpandedMethod] = useState(null);
     const [serviceFee, setServiceFee] = useState(0);
     const [isFetchingFee, setIsFetchingFee] = useState(false);
 
     // Voucher State
-    const [appliedVoucher, setAppliedVoucher] = useState(null); // { code, discountAmount }
-    const [voucherError, setVoucherError] = useState("");
+    const [appliedVoucher, setAppliedVoucher] = useState(null);
     const [myVouchers, setMyVouchers] = useState([]);
-    const [showVoucherPicker, setShowVoucherPicker] = useState(false);
+    const [isVoucherExpanded, setIsVoucherExpanded] = useState(false);
     const selectedVoucherId = appliedVoucher?.code || null;
 
-    // Preview State (Source of Truth)
+    // Preview State
     const [previewData, setPreviewData] = useState(null);
     const [isFetchingPreview, setIsFetchingPreview] = useState(false);
+    const [expandedCategory, setExpandedCategory] = useState(null);
+    const [showAllItems, setShowAllItems] = useState(false);
 
-
-
-    const handleRemoveItem = (index) => {
-        const updatedItems = cartItems.filter((_, i) => i !== index);
-        setCartItems(updatedItems);
-
-        if (updatedItems.length === 0) {
-            localStorage.removeItem("checkout_payload");
-            localStorage.removeItem("cart");
-            navigate("/cart"); // Go back to cart if empty
-        } else {
-            // Update both if we are in cart mode
-            const selectionData = localStorage.getItem("checkout_payload");
-            if (selectionData) {
-                localStorage.setItem("checkout_payload", JSON.stringify(updatedItems));
-            } else {
-                localStorage.setItem("cart", JSON.stringify(updatedItems));
-            }
-        }
-        window.dispatchEvent(new Event("storage"));
+    const getCategoryIcon = (key) => {
+        if (key === 'bankva') return 'account_balance';
+        if (key === 'qris') return 'qr_code_2';
+        if (key === 'manual_bank') return 'payments';
+        if (key === 'ewallet') return 'account_balance_wallet';
+        return 'payments';
     };
 
-    // --- CEK BACK LINK ---
-    const isUserLoggedIn = localStorage.getItem("user");
-    const backLink = isUserLoggedIn ? "/dashboard" : "/";
+    const isVoucherEligible = (v) => {
+        console.log("[VoucherUI] Checking:", v.code, v);
+        // 1. Min Purchase Check
+        const minPur = parseFloat(v.min_purchase || 0);
+        if (minPur > grossSubtotal) return { eligible: false, reason: `Min. Belanja ${formatRupiah(minPur)}` };
 
-    // Load Data saat halaman dibuka
+        // 2. Applicable To / TLD Check
+        console.log("[VoucherUI] Checking Eligibility for:", v.code, {
+            raw_applicable_to: v.applicable_to,
+            type: typeof v.applicable_to,
+            cart: cartItems.map(i => i.name)
+        });
+
+        let eligibleTlds = [];
+        try {
+            eligibleTlds = typeof v.applicable_to === 'string' ? JSON.parse(v.applicable_to || "[]") : (v.applicable_to || []);
+        } catch (e) {
+            console.error("[VoucherUI] JSON Parse Error for applicable_to:", e);
+            eligibleTlds = [];
+        }
+
+        console.log("[VoucherUI] Parsed Eligible TLDs:", eligibleTlds);
+
+        if (eligibleTlds.length > 0 && !eligibleTlds.includes('all')) {
+            const hasMatchingItem = cartItems.some(item => {
+                const name = (item.name || "").toLowerCase();
+                const match = eligibleTlds.some(tld => {
+                    const normTld = tld.toLowerCase().startsWith('.') ? tld.toLowerCase() : `.${tld.toLowerCase()}`;
+                    return name.endsWith(normTld);
+                });
+                console.log(`[VoucherUI] Item ${name} vs TLDs: ${match}`);
+                return match;
+            });
+            if (!hasMatchingItem) {
+                return { eligible: false, reason: `Khusus domain: ${eligibleTlds.join(', ').toUpperCase()}` };
+            }
+        }
+
+        // 3. Action Check (Register, Renew, etc)
+        let eligibleActions = [];
+        try {
+            eligibleActions = typeof v.eligible_actions === 'string' ? JSON.parse(v.eligible_actions || "[]") : (v.eligible_actions || []);
+        } catch (e) { eligibleActions = []; }
+
+        if (eligibleActions.length > 0 && !eligibleActions.includes('all')) {
+            const hasMatchingAction = cartItems.some(item => {
+                const itemAction = (item.action || 'register').toLowerCase();
+                return eligibleActions.some(act => act.toLowerCase() === itemAction);
+            });
+            if (!hasMatchingAction) {
+                return { eligible: false, reason: `Hanya untuk: ${eligibleActions.join(', ').toUpperCase()}` };
+            }
+        }
+
+        return { eligible: true };
+    };
+
+    const getCategoryName = (key) => {
+        if (key === 'bankva') return 'Virtual Account';
+        if (key === 'qris') return 'QRIS / QR Code';
+        if (key === 'manual_bank') return 'Transfer Manual';
+        if (key === 'ewallet') return 'E-Wallet';
+        return key.toUpperCase();
+    };
+
+    // --- INITIALIZATION ---
     useEffect(() => {
         const initCheckout = async () => {
             setLoading(true);
             try {
-                const safeParse = (key) => {
-                    const data = localStorage.getItem(key);
-                    try {
-                        if (!data || data === "undefined" || data === "null") return null;
-                        return JSON.parse(data);
-                    } catch (error) {
-                        localStorage.removeItem(key);
-                        return null;
-                    }
-                };
-
-
-                const storedUser = safeParse("user");
-                if (!storedUser) {
-                    warning("Silakan daftar/login untuk melanjutkan pembayaran.");
+                const storedUserRaw = localStorage.getItem("user");
+                if (!storedUserRaw) {
+                    warning("Silakan login untuk melanjutkan.");
                     navigate("/register", { state: { from: "checkout" } });
                     return;
                 }
+                const storedUser = JSON.parse(storedUserRaw);
 
-                // 1. Parallel fetch basic data
                 const [pricingRes, userRes, gwRes, walletRes, myVouchersRes] = await Promise.all([
                     api.get('/pricing/all'),
                     api.get(`/users/${storedUser.id}`).catch(() => ({ data: storedUser })),
@@ -100,7 +133,6 @@ const Checkout = () => {
                     api.get("/vouchers/my-vouchers").catch(() => ({ data: [] }))
                 ]);
 
-                // Set basic data
                 const map = {};
                 pricingRes.data.forEach(p => {
                     const key = p.tld.startsWith('.') ? p.tld : `.${p.tld}`;
@@ -110,13 +142,8 @@ const Checkout = () => {
                 setUser(userRes.data);
                 setGateways(gwRes.data);
                 setWallet(walletRes.data);
-                // Filter only claimed (unused) vouchers
-                const claimedVouchers = Array.isArray(myVouchersRes.data)
-                    ? myVouchersRes.data.filter(v => v.claim_status === 'claimed')
-                    : [];
-                setMyVouchers(claimedVouchers);
+                setMyVouchers(Array.isArray(myVouchersRes.data) ? myVouchersRes.data.filter(v => v.claim_status === 'claimed') : []);
 
-                // 2. Handle specific mode (Invoice vs Cart)
                 const queryParams = new URLSearchParams(location.search);
                 const invoiceId = queryParams.get("invoiceId");
 
@@ -125,143 +152,64 @@ const Checkout = () => {
                     const invRes = await api.get(`/billing/invoice/${invoiceId}`);
                     const inv = invRes.data;
                     setInvoiceDetails(inv);
-
-                    const mappedItems = inv.items.map(item => {
-                        const name = item.name.toLowerCase();
-                        let extension = "";
-
-                        // Improved TLD Extraction for .biz.id etc
-                        const tldRegex = /\.[a-z]{2,}(\.[a-z]{2})?$/;
-                        const match = name.match(tldRegex);
-                        if (match) {
-                            extension = match[0];
-                        } else if (name.includes('.')) {
-                            const parts = name.split('.');
-                            extension = `.${parts[parts.length - 1]}`;
-                        }
-
-                        return {
-                            name: item.name,
-                            action: item.action_type || item.action || item.type,
-                            price: item.price,
-                            duration: item.duration || item.years || 1,
-                            extension: extension
-                        };
-                    });
-                    setCartItems(mappedItems);
-
+                    setCartItems(inv.items.map(it => ({
+                        name: it.name,
+                        action: it.action_type || 'register',
+                        price: it.price,
+                        duration: it.duration || 1
+                    })));
                     if (inv.coupon_code) {
-                        setAppliedVoucher({
-                            code: inv.coupon_code,
-                            discountAmount: parseFloat(inv.discount || 0)
-                        });
+                        setAppliedVoucher({ code: inv.coupon_code, discountAmount: parseFloat(inv.discount || 0) });
                     }
                 } else {
-                    // NORMAL CART MODE
-                    const selectionData = safeParse("checkout_payload");
-                    const cartData = selectionData || safeParse("cart");
-                    let items = Array.isArray(cartData) ? cartData : (cartData ? [cartData] : []);
-
-                    // --- NEW: SENSITIVE FILTERING (Ghost Item Buster) ---
+                    const cartData = JSON.parse(localStorage.getItem("checkout_payload") || localStorage.getItem("cart") || "[]");
+                    let items = Array.isArray(cartData) ? cartData : [cartData];
                     const domainParam = queryParams.get("domain");
                     if (domainParam) {
-                        const filtered = items.filter(it => it.name.toLowerCase() === domainParam.toLowerCase());
-                        if (filtered.length > 0) {
-                            items = filtered; // Only show the requested domain if it's in our cart/payload
-                        }
+                        items = items.filter(it => it.name.toLowerCase() === domainParam.toLowerCase());
                     }
-
                     setCartItems(items);
-
-                    // Auto-apply pending voucher from "PAKAI" button in Vouchers page
-                    const pendingVoucherCode = localStorage.getItem("pending_voucher");
-                    if (pendingVoucherCode && claimedVouchers.length > 0) {
-                        const found = claimedVouchers.find(v => v.code === pendingVoucherCode);
-                        if (found) {
-                            // Local discount check for auto-apply
-                            const tempGross = items.reduce((acc, it) => acc + (it.price || 0), 0);
-                            const meetsMin = parseFloat(found.min_purchase || 0) <= tempGross;
-                            if (meetsMin) {
-                                let discountAmount = 0;
-                                if (found.type === 'percentage') {
-                                    discountAmount = Math.floor(tempGross * (parseFloat(found.value) / 100));
-                                    if (parseFloat(found.max_discount) > 0) discountAmount = Math.min(discountAmount, parseFloat(found.max_discount));
-                                } else {
-                                    discountAmount = Math.min(parseFloat(found.value), tempGross);
-                                }
-                                setAppliedVoucher({ code: found.code, discountAmount });
-                            }
-                        }
-                        localStorage.removeItem("pending_voucher");
-                    }
                 }
             } catch (err) {
-                console.error("Initialization error:", err);
-                error("Gagal memuat data checkout.");
-                const queryParams = new URLSearchParams(location.search);
-                if (queryParams.get("invoiceId")) {
-                    navigate("/dashboard/billing");
-                }
+                console.error("Init Error:", err);
+                error("Gagal memuat data.");
             } finally {
                 setLoading(false);
             }
         };
-
         initCheckout();
     }, [navigate, location.search]);
 
-    // --- NEW: PREVIEW EFFECT (Source of Truth) ---
+    // --- PREVIEW EFFECT ---
     useEffect(() => {
         if (loading || isProcessing || invoiceMode || cartItems.length === 0) return;
-
         const fetchPreview = async () => {
             setIsFetchingPreview(true);
             try {
-                const payload = {
-                    userId: user.id,
-                    items: cartItems,
-                    userVoucherCode: selectedVoucherId
-                };
-                const res = await api.post('/checkout/preview', payload);
-                if (res.data) {
-                    setPreviewData(res.data);
-                    // Sync voucher warning if any
-                    if (res.data.voucher_warning) {
-                        setVoucherError(res.data.voucher_warning);
-                    } else {
-                        setVoucherError("");
-                    }
-                }
-            } catch (err) {
-                console.error("Preview failed:", err);
-            } finally {
-                setIsFetchingPreview(false);
-            }
+                const res = await api.post('/checkout/preview', { userId: user.id, items: cartItems, userVoucherCode: selectedVoucherId });
+                if (res.data) setPreviewData(res.data);
+            } catch (err) { console.error("Preview Error:", err); }
+            finally { setIsFetchingPreview(false); }
         };
-
-        const timeoutId = setTimeout(fetchPreview, 300); // Small debounce
-        return () => clearTimeout(timeoutId);
+        const tid = setTimeout(fetchPreview, 300);
+        return () => clearTimeout(tid);
     }, [cartItems, selectedVoucherId, loading, invoiceMode]);
 
-
-
-
-
-
+    // --- DERIVED VARIABLES ---
     const isTopUpOnly = cartItems.length > 0 && cartItems.every(item => item.action === 'topup');
-    const isRenewOnly = cartItems.length > 0 && cartItems.every(item => item.action === 'renew');
-    const isTransferOnly = cartItems.length > 0 && cartItems.every(item => item.action === 'transfer');
-    const isRegisterOnly = cartItems.length > 0 && cartItems.every(item => !item.action || item.action === 'register');
-
-    const formatRupiah = (num) => {
-        return new Intl.NumberFormat("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
-        }).format(num);
-    };
+    const walletBalance = wallet?.balance || 0;
+    const formatRupiah = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
 
     const getItemLineTotal = (item) => {
+        // Ensure price is a number even if it's stored as a string with 'Rp'
+        const parsePrice = (p) => {
+            if (typeof p === 'number') return p;
+            if (!p) return 0;
+            return parseFloat(String(p).replace(/[^\d.-]/g, '')) || 0;
+        };
+
+        if (item.action === 'topup' || item.type === 'topup') return parsePrice(item.price);
+        
         let tld = "";
         if (item.extension) {
             tld = item.extension.startsWith('.') ? item.extension : `.${item.extension}`;
@@ -277,156 +225,101 @@ const Checkout = () => {
             }
         }
 
-        if (loading) return 0;
-        if (item.action === 'topup' || item.type === 'topup') {
-            return parseFloat(item.price || 0);
-        }
-
         const p = pricingMap[tld];
-        if (!p) return 0;
-
+        if (!p) return parsePrice(item.price || item.rawPrice);
         const duration = item.duration || 1;
-        const action = item.action || 'register';
-        const regPrice = parseFloat(p.price_register);
-        const renewPrice = parseFloat(p.price_renew);
-        const transferPrice = parseFloat(p.price_transfer);
+        const reg = parseFloat(p.price_register);
+        const ren = parseFloat(p.price_renew);
+        const tra = parseFloat(p.price_transfer);
+        const res = parseFloat(p.price_restore || 0);
 
-        if (action === 'renew') {
-            return renewPrice * duration;
-        } else if (action === 'transfer') {
-            return transferPrice + (renewPrice * (duration - 1));
-        } else if (action === 'restore') {
-            return parseFloat(p.price_restore || 0);
-        } else {
-            if (duration > 1) {
-                return regPrice + (renewPrice * (duration - 1));
-            }
-            return regPrice;
-        }
+        const action = (item.action || 'register').toLowerCase();
+        if (action === 'renew') return ren * duration;
+        if (action === 'transfer') return tra + (ren * (duration - 1));
+        if (action === 'restore') return res;
+        return reg + (ren * (duration - 1));
     };
 
-    const calculateTotalLine = () => {
-        if (invoiceMode && invoiceDetails) {
-            return parseFloat(invoiceDetails.total);
-        }
-        return cartItems.reduce((acc, item) => {
-            return acc + getItemLineTotal(item);
-        }, 0);
-    };
-
-    let lineTotal = calculateTotalLine();
-
-    let grandTotal = 0;
-    let grossSubtotal = 0;
-    let netAmount = 0;
-    let ppnAmount = 0;
+    let grossSubtotal = invoiceMode && invoiceDetails ? parseFloat(invoiceDetails.subtotal) : (previewData ? previewData.subtotal : cartItems.reduce((acc, it) => acc + getItemLineTotal(it), 0));
     const voucherDiscount = previewData ? (previewData.total_discount || 0) : (appliedVoucher?.discountAmount || 0);
-    const referralDiscount = previewData?.referral_discount || 0;
+    const netAmount = Math.max(0, grossSubtotal - voucherDiscount);
+    const ppnAmount = isTopUpOnly ? 0 : Math.floor(netAmount * 0.11);
+    const grandTotal = netAmount + ppnAmount;
 
-    const PPN_RATE = 0.11;
-    if (invoiceMode && invoiceDetails) {
-        // Base subtotal from invoice
-        grossSubtotal = parseFloat(invoiceDetails.subtotal || (parseFloat(invoiceDetails.total) / 1.11));
-        const discountedSubtotal = Math.max(0, grossSubtotal - voucherDiscount);
-
-        const hasDomainInInv = invoiceDetails.items?.some(it =>
-            (it.name && it.name.includes('.')) ||
-            (it.action_type && ['register', 'renew', 'transfer', 'restore'].includes(it.action_type.toLowerCase()))
-        );
-
-        if (hasDomainInInv) {
-            ppnAmount = Math.floor(discountedSubtotal * PPN_RATE);
-            grandTotal = discountedSubtotal + ppnAmount;
-        } else {
-            ppnAmount = 0;
-            grandTotal = discountedSubtotal;
-        }
-        netAmount = discountedSubtotal;
-    } else if (previewData) {
-        // Use backend provided data
-        grandTotal = previewData.total_payable;
-        netAmount = previewData.net_amount;
-        ppnAmount = previewData.tax_amount;
-        grossSubtotal = previewData.subtotal;
-    } else {
-        // Fallback / Initial Local Logic
-        grossSubtotal = lineTotal;
-        const hasDomainItem = cartItems.some(item => {
-            const act = (item.action || 'register').toLowerCase();
-            return ['register', 'renew', 'transfer', 'restore'].includes(act);
-        });
-
-        const discountedSubtotal = Math.max(0, grossSubtotal - voucherDiscount);
-
-        if (hasDomainItem) {
-            ppnAmount = Math.floor(discountedSubtotal * PPN_RATE);
-            grandTotal = discountedSubtotal + ppnAmount;
-        } else {
-            ppnAmount = 0;
-            grandTotal = discountedSubtotal;
-        }
-        netAmount = discountedSubtotal;
-    }
-
-    const getBankLogo = (code) => {
-        const bankCode = code ? code.toLowerCase() : '';
-        if (bankCode.includes('bca')) return '/image/banks/bca.png';
-        if (bankCode.includes('mandiri')) return '/image/banks/mandiri.png';
-        if (bankCode.includes('bni')) return '/image/banks/bni.png';
-        if (bankCode.includes('bri')) return '/image/banks/bri.png';
-        if (bankCode.includes('bsi')) return '/image/banks/bsi.png';
-        if (bankCode.includes('cimb')) return '/image/banks/cimb.png';
-        if (bankCode.includes('danamon')) return '/image/banks/danamon.png';
-        if (bankCode.includes('permata')) return '/image/banks/permata.png';
-        if (bankCode.includes('muamalat')) return '/image/banks/muamalat.png';
-
-        if (bankCode.includes('qris')) return '/image/banks/qris.png';
-        if (bankCode.includes('ovo')) return '/image/banks/ovo.png';
-        if (bankCode.includes('dana')) return '/image/banks/dana.png';
-        if (bankCode.includes('linkaja')) return '/image/banks/linkaja.png';
-        if (bankCode.includes('gopay')) return '/image/banks/gopay.png';
-        if (bankCode.includes('shopeepay')) return '/image/banks/shopeepay.png';
-
-        return '/image/no-image.png';
-    };
-
-    // --- SERVICE FEE CALCULATION ---
+    // --- FEE CALCULATION ---
     useEffect(() => {
         const fetchFee = async () => {
-            if (!selectedGateway || selectedGateway.id === 'WALLET') {
+            // Force zero fee for: No gateway, Wallet, Prismalink, or Manual
+            if (!selectedGateway || 
+                selectedGateway.id === 'WALLET' || 
+                selectedGateway.provider === 'prismalink' || 
+                selectedGateway.provider === 'manual' ||
+                selectedGateway.provider !== 'tripay'
+            ) {
                 setServiceFee(0);
                 return;
             }
 
             setIsFetchingFee(true);
             try {
-                // Calculate amount to be charged before payment fee
-                const baseAmount = netAmount + ppnAmount;
-                const res = await api.get(`/payment-gateways/calculate-fee?channel=${selectedGateway.code}&amount=${baseAmount}`);
+                const base = invoiceMode && invoiceDetails ? parseFloat(invoiceDetails.total) : grandTotal;
+                // Only call Tripay fee API if provider is explicitly tripay
+                const res = await api.get(`/payment-gateways/calculate-fee?channel=${selectedGateway.code || selectedGateway.id}&amount=${base}&provider=tripay`);
                 if (res.data.success) {
-                    setServiceFee(res.data.data.total_fee);
+                    setServiceFee(parseFloat(res.data.data.total_fee || 0));
+                } else {
+                    setServiceFee(0);
                 }
-            } catch (err) {
-                console.error("Failed to fetch service fee:", err);
-            } finally {
-                setIsFetchingFee(false);
+            } catch (err) { 
+                console.error("Fee calc error:", err);
+                setServiceFee(0); 
+            } finally { 
+                setIsFetchingFee(false); 
             }
         };
-
         fetchFee();
-    }, [selectedGateway, netAmount, ppnAmount]);
+    }, [selectedGateway, grandTotal, invoiceMode]);
 
     const totalToPay = grandTotal + serviceFee;
+    
+    // --- NEW HANDLERS: CART EDITING ---
+    const handleRemoveItem = (idx) => {
+        const newCart = cartItems.filter((_, i) => i !== idx);
+        setCartItems(newCart);
+        localStorage.setItem("cart", JSON.stringify(newCart));
+        window.dispatchEvent(new Event("storage"));
+        if (newCart.length === 0) {
+            navigate("/dashboard/buy");
+        }
+    };
 
+    const updateItemDuration = (idx, years) => {
+        const newCart = [...cartItems];
+        newCart[idx].duration = parseInt(years);
+        setCartItems(newCart);
+        localStorage.setItem("cart", JSON.stringify(newCart));
+        window.dispatchEvent(new Event("storage"));
+    };
+
+    // --- HANDLERS ---
     const handlePay = async () => {
         if (!user || cartItems.length === 0) return;
         if (!selectedGateway) return error("Pilih metode pembayaran terlebih dahulu.");
-        if (grandTotal <= 0) return error("Total pembayaran tidak valid.");
+        
+        // Thorough Validation for domain registration (address details)
+        if (!isTopUpOnly) {
+            const missingFields = [];
+            if (!user.phone) missingFields.push("No. HP");
+            if (!user.address_line1) missingFields.push("Alamat");
+            if (!user.city) missingFields.push("Kota");
+            if (!user.state) missingFields.push("Provinsi");
+            if (!user.zip_code) missingFields.push("Kode Pos");
 
-        if (!isTopUpOnly && (!user.address_line1 || !user.city || !user.zip_code || !user.phone)) {
-            return warning("Data profil belum lengkap! Lengkapi kontak & alamat Anda terlebih dahulu.");
+            if (missingFields.length > 0) {
+                return warning(`Profil belum lengkap! Mohon isi ${missingFields.join(", ")} di menu Pengaturan.`);
+            }
         }
-
+        
         setIsProcessing(true);
         try {
             let invoiceId;
@@ -443,22 +336,41 @@ const Checkout = () => {
                 invoiceId = checkoutRes.data.invoiceId;
             }
 
-            if (selectedGateway.type === 'WALLET') {
+            if (selectedGateway.id === 'WALLET') {
                 const payRes = await api.post(`/billing/invoice/${invoiceId}/pay-wallet`);
                 if (payRes.data.success) {
-                    localStorage.removeItem("checkout_payload");
                     localStorage.removeItem("cart");
+                    localStorage.removeItem("checkout_payload");
                     window.dispatchEvent(new Event("storage"));
                     success("Pembayaran Berhasil!");
                     setTimeout(() => navigate(`/payment/${invoiceId}`), 1000);
                 } else {
                     throw new Error(payRes.data.error || "Gagal bayar wallet");
                 }
+            } else if (selectedGateway.provider === 'manual') {
+                const payload = { invoice_number: invoiceId, payment_channel: selectedGateway.id };
+                const payRes = await api.post("/billing/invoice/pay-manual", payload);
+                if (payRes.data.success) {
+                    localStorage.removeItem("cart");
+                    window.dispatchEvent(new Event("storage"));
+                    success("Pesanan Berhasil Dibuat!");
+                    navigate(`/payment/${invoiceId}`, { state: { paymentResult: payRes.data.data } });
+                } else {
+                    throw new Error(payRes.data.message || "Gagal inisiasi pembayaran manual");
+                }
+            } else if (selectedGateway.provider === 'prismalink') {
+                const payload = { invoice_number: invoiceId, payment_channel: selectedGateway.code };
+                const payRes = await api.post("/prismalink/initialize", payload);
+                if (payRes.data.success) {
+                    localStorage.removeItem("cart");
+                    window.dispatchEvent(new Event("storage"));
+                    success("Menyiapkan Pembayaran...");
+                    navigate(`/payment/${invoiceId}`, { state: { paymentResult: { ...payRes.data.data, provider: 'prismalink' } } });
+                } else {
+                    throw new Error(payRes.data.message || "Gagal inisiasi pembayaran Prismalink");
+                }
             } else {
-                const payload = {
-                    invoice_number: invoiceId,
-                    payment_channel: selectedGateway.id
-                };
+                const payload = { invoice_number: invoiceId, payment_channel: selectedGateway.id };
                 const payRes = await api.post("/tripay/closed/create", payload);
                 if (payRes.data.success) {
                     localStorage.removeItem("cart");
@@ -477,573 +389,372 @@ const Checkout = () => {
     };
 
     const groupedGateways = {
-        'bankva': gateways.filter(g => g.type === 'VA' || g.type === 'VIRTUALACCOUNT'),
+        'bankva': gateways.filter(g => g.provider !== 'manual' && (g.type === 'VA' || g.type === 'VIRTUALACCOUNT')),
+        'manual_bank': gateways.filter(g => g.provider === 'manual' && 
+            (g.type === 'VA' || g.type === 'VIRTUALACCOUNT' || g.gateway_type === 'bank') && 
+            g.type !== 'QRIS' && g.type !== 'EWALLET'
+        ),
         'qris': gateways.filter(g => g.type === 'QRIS' || g.type === 'SCANNERQRIS'),
-        'ewallet': gateways.filter(g => g.type === 'EWALLET' || g.type === 'E-WALLET')
+        'ewallet': gateways.filter(g => g.type === 'EWALLET' || g.type === 'E-WALLET'),
     };
 
-    if (loading || !user)
-        return <div className="min-h-screen flex items-center justify-center font-bold text-slate-400">Memuat Data...</div>;
+    const getBankLogo = (gw) => {
+        if (gw.icon_url) return gw.icon_url;
+        const c = String(gw.code || "").toLowerCase();
+        const n = String(gw.name || "").toLowerCase();
+        
+        if (c.includes('bca') || c === '014' || n.includes('bca')) return 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Bank_Central_Asia.svg/1200px-Bank_Central_Asia.svg.png';
+        if (c.includes('mandiri') || c === '008' || n.includes('mandiri')) return 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Bank_Mandiri_logo_2016.svg/2560px-Bank_Mandiri_logo_2016.svg.png';
+        if (c.includes('bni') || c === '009' || n.includes('bni')) return 'https://upload.wikimedia.org/wikipedia/id/thumb/5/55/BNI_logo.svg/1200px-BNI_logo.svg.png';
+        if (c.includes('bri') || c === '002' || n.includes('bri')) return 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BRI_Logo.svg/1200px-BRI_Logo.svg.png';
+        if (c.includes('permata') || c === '013' || n.includes('permata')) return 'https://upload.wikimedia.org/wikipedia/id/thumb/e/e0/PermataBank_logo.svg/1200px-PermataBank_logo.svg.png';
+        if (c.includes('danamon') || c === '011' || n.includes('danamon')) return 'https://upload.wikimedia.org/wikipedia/id/thumb/0/0e/Danamon_Logo.svg/1200px-Danamon_Logo.svg.png';
+        if (c.includes('bsi') || c === '451' || n.includes('bsi')) return 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_Bank_Syariah_Indonesia.svg/2560px-Logo_Bank_Syariah_Indonesia.svg.png';
+        if (c.includes('qris') || n.includes('qris')) return 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_QRIS.svg/1200px-Logo_QRIS.svg.png';
+        
+        return '/image/banks/default.png';
+    };
+
+    const backLink = invoiceMode ? "/dashboard/billing" : "/dashboard";
+
+    if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-bold text-slate-400">Memuat Data...</div>;
 
     return (
-        <div className="min-h-screen bg-slate-50 pt-10 pb-20 px-4 font-sans">
-            <div className="max-w-5xl mx-auto">
-                <div className="flex items-center gap-4 mb-8">
-                    <Link to={backLink} className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:text-[#F97316] hover:border-orange-200 transition">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                    </Link>
+        <div className="min-h-screen bg-slate-50/50 py-12 px-4">
+            <div className="max-w-6xl mx-auto">
+                <div className="flex items-center gap-4 mb-10">
+                    <button onClick={() => navigate(backLink)} className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-[#FF6B00] transition-all shadow-sm">
+                        <span className="material-symbols-outlined">arrow_back_ios_new</span>
+                    </button>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">
-                            {isTopUpOnly ? "Isi Saldo Wallet" : isRenewOnly ? "Perpanjang Masa Aktif" : isTransferOnly ? "Transfer Domain Anda" : "Selesaikan Pembayaran"}
-                        </h1>
-                        <p className="text-sm text-slate-500">Satu langkah lagi untuk mengaktifkan layanan Anda.</p>
+                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Checkout</h2>
+                        <p className="text-sm text-slate-500 font-medium">Selesaikan pembayaran untuk mengaktifkan layanan.</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-8">
-                        {!isTopUpOnly && (
-                            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-full bg-[#F97316] text-white flex items-center justify-center text-xs font-bold">1</span>
-                                        Informasi Registran
-                                    </h3>
-                                    <div className="px-3 py-1 bg-slate-50 border border-slate-100 rounded-full">
-                                        <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Data Kontak</span>
+                <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2">
+                        <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+                            {/* Step 1: Registran */}
+                            <div className="p-6 border-b border-slate-50">
+                                <div className="flex items-center gap-3 mb-5">
+                                    <span className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                                    <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em]">Informasi Registran</h3>
+                                </div>
+                                <div className="grid md:grid-cols-2 gap-3">
+                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Nama Lengkap</p>
+                                        <p className="text-xs font-bold text-slate-800">{user.name}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Email</p>
+                                        <p className="text-xs font-bold text-slate-800">{user.email}</p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Nama Lengkap</p>
-                                        <p className="font-bold text-slate-800 text-xs">{user.name}</p>
-                                    </div>
-                                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Email Kontak</p>
-                                        <p className="font-bold text-slate-800 text-xs truncate">{user.email}</p>
-                                    </div>
-                                </div>
-                                {(!user.address_line1 || !user.city || !user.zip_code || !user.phone) && (
-                                    <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-4 shadow-sm animate-[fadeIn_0.5s_ease-out]">
-                                        <div className="w-10 h-10 rounded-full bg-white text-orange-600 flex items-center justify-center shrink-0 shadow-sm border border-orange-100">
-                                            <span className="material-symbols-outlined text-[20px]">warning</span>
-                                        </div>
+                                {(!user.address_line1 || !user.phone || !user.city || !user.state || !user.zip_code) && (
+                                    <div className="mt-3 p-3 bg-orange-50 border border-orange-100 rounded-xl flex items-center gap-3">
+                                        <span className="material-symbols-outlined text-orange-600 text-sm">warning</span>
                                         <div className="flex-1">
-                                            <h4 className="text-xs font-bold text-orange-900 tracking-tight">Perhatian: Data Kontak Belum Lengkap</h4>
-                                            <p className="text-[11px] text-orange-800/80 leading-relaxed mt-1 mb-3">Aturan pendaftaran domain mewajibkan pengisian <b>Alamat dan Nomor Telepon</b> yang valid sebagai bukti resmi kepemilikan Anda.</p>
-                                            <Link to="/dashboard/settings" className="inline-flex items-center gap-1.5 text-[10px] font-bold text-white bg-orange-600 hover:bg-slate-900 px-4 py-2 rounded-lg transition-colors uppercase tracking-[1px] shadow-sm active:scale-95">
-                                                Perbarui Profil Anda
-                                                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                                            </Link>
+                                            <p className="text-[10px] text-orange-800 font-bold">Profil Belum Lengkap</p>
+                                            <Link to="/dashboard/settings" className="text-[9px] text-orange-600 font-bold uppercase underline">Lengkapi Sekarang</Link>
                                         </div>
                                     </div>
                                 )}
                             </div>
-                        )}
 
-                        {/* --- ORDER SUMMARY (WHITE THEME) --- */}
-                        <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 mt-5 overflow-hidden">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-[#F97316] text-white flex items-center justify-center text-[10px] font-bold">
-                                        {isTopUpOnly ? '1' : '2'}
-                                    </span>
-                                    Ringkasan Pesanan
-                                </h3>
-                            </div>
-                            <div className="space-y-4 mb-6">
-                                {cartItems.map((item, index) => {
-                                    let originalPrice = getItemLineTotal(item);
-
-                                    return (
-                                        <div key={index} className="p-3 rounded-xl border transition-all bg-slate-50/30 border-slate-100">
-                                            <div className="flex justify-between items-start mb-1.5">
-                                                <div className="flex-1 min-w-0 pr-2">
-                                                    <p className="font-bold text-xs text-slate-800 truncate">{item.name}</p>
-                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                        <span className="text-[8px] font-black text-[#F97316] uppercase border border-orange-100 bg-white px-1 py-0.2 rounded-sm">{item.action || 'Register'}</span>
-                                                        {item.action !== 'topup' && item.type !== 'topup' && (
-                                                            <span className="text-[8px] font-bold text-slate-400 tracking-wider">• {item.duration} THN</span>
+                            {/* Step 2: Item */}
+                            <div className="p-6 border-b border-slate-50 bg-slate-50/20">
+                                <div className="flex items-center gap-3 mb-5">
+                                    <span className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                                    <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em]">Daftar Layanan</h3>
+                                </div>
+                                <div className="space-y-2">
+                                    {(showAllItems ? cartItems : cartItems.slice(0, 2)).map((item, i) => (
+                                        <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 flex justify-between items-center shadow-sm animate-in fade-in duration-300">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#FF6B00] flex items-center justify-center"><span className="material-symbols-outlined text-lg">language</span></div>
+                                                <div>
+                                                    <p className="font-bold text-slate-800 text-[10px] uppercase">{item.name}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{item.action}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-slate-200"></span>
+                                                        {invoiceMode ? (
+                                                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">{item.duration || 1} Tahun</span>
+                                                        ) : (
+                                                            <select 
+                                                                value={item.duration || 1}
+                                                                onChange={(e) => updateItemDuration(i, e.target.value)}
+                                                                className="text-[9px] font-extrabold text-[#FF6B00] bg-orange-50/50 border-none rounded-md py-0 px-1 focus:ring-0 cursor-pointer outline-none hover:bg-orange-100 transition-colors"
+                                                            >
+                                                                {[1,2,3,4,5,6,7,8,9,10].map(y => (
+                                                                    <option key={y} value={y} className="text-slate-700">{y} Tahun</option>
+                                                                ))}
+                                                            </select>
                                                         )}
                                                     </div>
                                                 </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-bold text-slate-900 text-xs">{formatRupiah(getItemLineTotal(item))}</span>
                                                 {!invoiceMode && (
-                                                    <button onClick={() => handleRemoveItem(index)} className="w-6 h-6 rounded-full flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition">
+                                                    <button 
+                                                        onClick={() => handleRemoveItem(i)}
+                                                        className="w-7 h-7 rounded-lg bg-white border border-slate-100 text-slate-300 hover:text-rose-500 hover:border-rose-100 hover:bg-rose-50 transition-all flex items-center justify-center group"
+                                                        title="Hapus item"
+                                                    >
                                                         <span className="material-symbols-outlined text-base">delete</span>
                                                     </button>
                                                 )}
                                             </div>
-                                            <div className="pt-1.5 border-t border-slate-200/40 flex justify-between items-center">
-                                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Harga Dasar</span>
-                                                <div className="text-right">
-                                                    <p className="font-black text-slate-800 text-xs">{formatRupiah(originalPrice)}</p>
+                                        </div>
+                                    ))}
+                                    
+                                    {cartItems.length > 2 && !showAllItems && (
+                                        <button 
+                                            onClick={() => setShowAllItems(true)}
+                                            className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-200 rounded-xl text-[9px] font-bold text-slate-400 uppercase tracking-widest transition-all"
+                                        >
+                                            +{cartItems.length - 2} Layanan Lainnya
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Step 3: Konfigurasi (Muncul jika ada Register) */}
+                            {cartItems.some(it => (it.action || 'register').toLowerCase() === 'register') && (
+                                <div className="p-6 border-b border-slate-50 bg-slate-50/10">
+                                    <div className="flex items-center gap-3 mb-5">
+                                        <span className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold">3</span>
+                                        <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em]">Konfigurasi Layanan</h3>
+                                    </div>
+                                    <div className="grid md:grid-cols-2 gap-3">
+                                        <div className="p-4 bg-white rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><span className="material-symbols-outlined text-lg">security</span></div>
+                                                <div>
+                                                    <p className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">WHOIS Privacy</p>
+                                                    <p className="text-[9px] text-slate-400 font-medium uppercase">Sembunyikan data pribadi</p>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => setWhoisPrivacy(!whoisPrivacy)} className={`w-10 h-5 rounded-full transition-all relative ${whoisPrivacy ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                                                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${whoisPrivacy ? 'right-0.5' : 'left-0.5'}`}></div>
+                                            </button>
+                                        </div>
+                                        <div className="p-4 bg-white rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><span className="material-symbols-outlined text-lg">autorenew</span></div>
+                                                <div>
+                                                    <p className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">Auto Renew</p>
+                                                    <p className="text-[9px] text-slate-400 font-medium uppercase">Perpanjang otomatis</p>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => setAutoRenew(!autoRenew)} className={`w-10 h-5 rounded-full transition-all relative ${autoRenew ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                                                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${autoRenew ? 'right-0.5' : 'left-0.5'}`}></div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+ 
+                             <div className="p-6">
+                                 <div className="flex items-center gap-3 mb-8">
+                                     <span className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold">{cartItems.some(it => (it.action || 'register').toLowerCase() === 'register') ? '4' : '3'}</span>
+                                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-[0.2em]">Metode Pembayaran</h3>
+                                 </div>
+
+                                <div className="space-y-3">
+                                    {/* Wallet - Special Case (Always Visible Row) */}
+                                    <div 
+                                        onClick={() => {
+                                            if (walletBalance >= totalToPay) {
+                                                setSelectedGateway({ id: 'WALLET', name: 'Wallet', type: 'WALLET' });
+                                            } else if (selectedGateway?.id === 'WALLET') {
+                                                setSelectedGateway(null);
+                                            }
+                                        }} 
+                                        className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                                            walletBalance < totalToPay 
+                                            ? 'opacity-60 cursor-not-allowed bg-slate-50 border-slate-50' 
+                                            : 'cursor-pointer hover:border-slate-200'
+                                        } ${selectedGateway?.id === 'WALLET' ? 'border-[#FF6B00] bg-orange-50/50 shadow-md' : 'border-slate-100'}`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedGateway?.id === 'WALLET' ? 'bg-[#FF6B00] text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                                                <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-900 text-[10px] uppercase tracking-wider">Saldo Akun (Wallet)</p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <p className={`text-[9px] font-bold ${walletBalance < totalToPay ? 'text-rose-500' : 'text-emerald-600'}`}>
+                                                        {formatRupiah(walletBalance)}
+                                                    </p>
+                                                    {walletBalance < totalToPay && (
+                                                        <span className="text-[8px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 animate-pulse">
+                                                            -{formatRupiah(totalToPay - walletBalance)}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                                        {selectedGateway?.id === 'WALLET' ? (
+                                            <span className="material-symbols-outlined text-[#FF6B00] text-xl">check_circle</span>
+                                        ) : walletBalance < totalToPay && (
+                                            <span className="material-symbols-outlined text-rose-400 text-xl">block</span>
+                                        )}
+                                    </div>
 
-                        {/* --- STEP 3: VOUCHER DISKON --- */}
-                        {!isTopUpOnly && (
-                            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 mt-5 relative">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 uppercase tracking-tight">
-                                        <span className="material-symbols-outlined text-[#F97316] text-xl">local_activity</span>
-                                        Voucher
-                                    </h3>
-
-                                    {!appliedVoucher && (
-                                        <button
-                                            onClick={() => setShowVoucherPicker(!showVoucherPicker)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors group"
-                                        >
-                                            <span className="text-[#F97316] text-[10px] font-black uppercase tracking-[0.15em] transition-all">
-                                                Gunakan Voucher
-                                            </span>
-                                            <span className={`material-symbols-outlined text-[#F97316] text-lg transition-transform duration-300 ${showVoucherPicker ? 'rotate-180' : ''}`}>expand_more</span>
-                                        </button>
-                                    )}
-
-                                    {voucherError && (
-                                        <div className="mt-2 px-3 py-2 bg-red-50 border border-red-100 rounded-lg animate-pulse">
-                                            <p className="text-[10px] font-bold text-red-600 flex items-center gap-1.5">
-                                                <span className="material-symbols-outlined text-sm">error</span>
-                                                {voucherError}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {appliedVoucher && !voucherError && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[9px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-[12px]">check_circle</span>
-                                                Aktif
-                                            </span>
-                                            <button
-                                                onClick={async () => {
-                                                    if (invoiceMode && invoiceDetails) {
-                                                        try {
-                                                            await api.post(`/billing/invoice/${invoiceDetails.id}/recalculate`, { voucherCode: null });
-                                                        } catch (err) {
-                                                            console.error("Failed to remove voucher from invoice:", err);
-                                                        }
-                                                    }
-                                                    setAppliedVoucher(null);
-                                                    setVoucherError("");
-                                                }}
-                                                className="w-7 h-7 rounded-full bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition"
+                                    {/* Accordion Categories */}
+                                    {Object.entries(groupedGateways).map(([key, list]) => list.length > 0 && (
+                                        <div key={key} className="border border-slate-100 rounded-2xl overflow-hidden">
+                                            <div 
+                                                onClick={() => setExpandedCategory(expandedCategory === key ? null : key)}
+                                                className={`p-4 flex items-center justify-between cursor-pointer transition-all ${expandedCategory === key ? 'bg-slate-50' : 'hover:bg-slate-50/50'}`}
                                             >
-                                                <span className="material-symbols-outlined text-[16px]">close</span>
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`material-symbols-outlined text-xl ${expandedCategory === key ? 'text-[#FF6B00]' : 'text-slate-400'}`}>{getCategoryIcon(key)}</span>
+                                                    <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">{getCategoryName(key)}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[8px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full uppercase">{list.length} Channel</span>
+                                                    <span className={`material-symbols-outlined text-slate-300 text-sm transition-transform ${expandedCategory === key ? 'rotate-180' : ''}`}>expand_more</span>
+                                                </div>
+                                            </div>
 
-                                {showVoucherPicker && !appliedVoucher && (
-                                    <div className="absolute top-14 right-5 w-[300px] md:w-[350px] bg-white border border-slate-100 rounded-2xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
-                                        <div className="p-4 border-b border-slate-50 bg-slate-50/30">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-sm">confirmation_number</span>
-                                                Voucher Saya
-                                            </p>
-                                        </div>
-                                        <div className="p-3 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                            {Array.isArray(myVouchers) && myVouchers.length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {myVouchers.map((v) => {
-                                                        const baseForDiscount = netAmount + ppnAmount;
-                                                        const minPrice = parseFloat(v.min_purchase || 0);
-                                                        const meetsMin = minPrice <= baseForDiscount;
-
-                                                        const eligibleTlds = v.eligible_tlds || [];
-                                                        const eligibleActions = v.eligible_actions || [];
-                                                        const hasConditions = eligibleTlds.length > 0 || eligibleActions.length > 0;
-
-                                                        const tldMatch = !eligibleTlds.length || cartItems.some(item => eligibleTlds.includes(item.extension || ""));
-                                                        const actionMatch = !eligibleActions.length || cartItems.some(item => eligibleActions.includes(item.action || "register"));
-                                                        const isEligible = !hasConditions || (tldMatch && actionMatch);
-
-                                                        const canApply = meetsMin && isEligible;
-
-                                                        let previewDiscount = 0;
-                                                        if (meetsMin) {
-                                                            if (v.type === 'percentage') {
-                                                                previewDiscount = Math.floor(baseForDiscount * (parseFloat(v.value || 0) / 100));
-                                                                const maxD = parseFloat(v.max_discount || 0);
-                                                                if (maxD > 0) previewDiscount = Math.min(previewDiscount, maxD);
-                                                            } else {
-                                                                previewDiscount = Math.min(parseFloat(v.value || 0), baseForDiscount);
-                                                            }
-                                                        }
-
-                                                        return (
-                                                            <div
-                                                                key={v.claim_id || v.id}
-                                                                onClick={async () => {
-                                                                    if (!canApply) return;
-
-                                                                    if (invoiceMode && invoiceDetails) {
-                                                                        try {
-                                                                            const res = await api.post(`/billing/invoice/${invoiceDetails.id}/recalculate`, { voucherCode: v.code });
-                                                                            setAppliedVoucher({
-                                                                                code: v.code,
-                                                                                discountAmount: res.data.discount || previewDiscount
-                                                                            });
-                                                                            setInvoiceDetails(res.data);
-                                                                        } catch (err) {
-                                                                            setVoucherError(err.response?.data?.error || "Gagal menerapkan voucher.");
-                                                                            return;
-                                                                        }
-                                                                    } else {
-                                                                        setAppliedVoucher({ code: v.code, discountAmount: previewDiscount });
-                                                                    }
-                                                                    setVoucherError("");
-                                                                    setShowVoucherPicker(false);
-                                                                }}
-                                                                className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all group ${canApply
-                                                                        ? 'border-emerald-50 bg-white hover:border-emerald-200 cursor-pointer hover:shadow-sm'
-                                                                        : 'border-slate-50 bg-slate-50/50 opacity-60 cursor-not-allowed'
-                                                                    }`}
+                                            {expandedCategory === key && (
+                                                <div className="p-3 bg-white border-t border-slate-50 animate-in slide-in-from-top-2 duration-300">
+                                                    <div className="max-h-[380px] overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2">
+                                                        {list.map(gw => (
+                                                            <div 
+                                                                key={gw.id} 
+                                                                onClick={() => setSelectedGateway(gw)} 
+                                                                className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${selectedGateway?.id === gw.id ? 'border-[#FF6B00] bg-orange-50/20' : 'border-slate-100 hover:border-slate-200'}`}
                                                             >
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center shrink-0 transition-colors ${canApply ? 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white' : 'bg-slate-100 text-slate-300'
-                                                                        }`}>
-                                                                        <p className="font-black text-[10px] leading-none">{v.type === 'percentage' ? `${parseFloat(v.value)}%` : `${Math.floor(parseFloat(v.value) / 1000)}K`}</p>
-                                                                        <p className="text-[6px] font-bold uppercase opacity-80 mt-0.5">OFF</p>
-                                                                    </div>
-                                                                    <div className="overflow-hidden">
-                                                                        <p className="font-bold text-slate-800 text-[11px] leading-tight truncate">{v.title || 'Promo Voucher'}</p>
-                                                                        <p className="text-[9px] text-slate-400 mt-0.5">Min. {formatRupiah(minPrice)}</p>
+                                                                    <div className="w-12 h-8 flex items-center justify-center p-1 bg-white border border-slate-100 rounded-lg shadow-sm"><img src={getBankLogo(gw)} alt={gw.name} className="max-h-full max-w-full object-contain" /></div>
+                                                                    <div>
+                                                                        <p className="font-bold text-slate-800 text-[10px] uppercase tracking-tight">{gw.name.replace('VA', '').trim()}</p>
+                                                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{key === 'bankva' ? 'Virtual Account' : 'Payment Channel'}</p>
                                                                     </div>
                                                                 </div>
-                                                                <div className="text-right shrink-0">
-                                                                    {canApply ? (
-                                                                        <p className="text-[10px] text-emerald-600 font-black">-{formatRupiah(previewDiscount)}</p>
-                                                                    ) : (
-                                                                        <div className="flex flex-col items-end gap-1">
-                                                                            <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center">
-                                                                                <span className="material-symbols-outlined text-slate-300 text-[14px]">lock</span>
-                                                                            </div>
-                                                                            {!meetsMin && (
-                                                                                <span className="text-[7px] font-bold text-orange-400 uppercase tracking-tighter">Kurang {formatRupiah(minPrice - baseForDiscount)}</span>
-                                                                            )}
-                                                                            {!tldMatch && eligibleTlds.length > 0 && (
-                                                                                <span className="text-[7px] font-bold text-red-400 uppercase tracking-tighter">Hanya {eligibleTlds.join(',')}</span>
-                                                                            )}
-                                                                            {!actionMatch && eligibleActions.length > 0 && (
-                                                                                <span className="text-[7px] font-bold text-red-400 uppercase tracking-tighter">Aksi: {eligibleActions.join(',')}</span>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
+                                                                {selectedGateway?.id === gw.id && <span className="material-symbols-outlined text-[#FF6B00] text-xl">check_circle</span>}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-1">
+                        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/40 sticky top-10">
+                            <h3 className="font-bold text-slate-900 uppercase text-[9px] tracking-[0.3em] mb-6">Ringkasan Tagihan</h3>
+                            <div className="space-y-3 mb-6">
+                                <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span className="text-slate-900 font-bold">{formatRupiah(grossSubtotal)}</span></div>
+                                {!isTopUpOnly && <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Pajak (11%)</span><span className="text-slate-900 font-bold">+{formatRupiah(ppnAmount)}</span></div>}
+                                {voucherDiscount > 0 && <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex justify-between text-[9px] font-bold text-emerald-600 uppercase"><span>Voucher Diskon</span><span>-{formatRupiah(voucherDiscount)}</span></div>}
+                                <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Layanan</span><span className="text-slate-900 font-bold">{isFetchingFee ? '...' : formatRupiah(serviceFee)}</span></div>
+                            </div>
+
+                            {!isTopUpOnly && (
+                                <div className="mb-6">
+                                    {!appliedVoucher ? (
+                                        <>
+                                            <button 
+                                                onClick={() => setIsVoucherExpanded(!isVoucherExpanded)} 
+                                                className="w-full py-3 px-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl flex items-center justify-between group hover:border-[#FF6B00] transition-all"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-slate-400 group-hover:text-[#FF6B00] text-lg">confirmation_number</span>
+                                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Punya Voucher?</span>
+                                                </div>
+                                                <span className={`material-symbols-outlined text-[#FF6B00] text-sm transition-transform ${isVoucherExpanded ? 'rotate-180' : ''}`}>expand_more</span>
+                                            </button>
+                                            
+                                            {isVoucherExpanded && (
+                                                <div className="mt-3 space-y-2 max-h-[240px] overflow-y-auto pr-1.5 custom-scrollbar animate-in slide-in-from-top-2 duration-300">
+                                                    {myVouchers.length === 0 && <p className="text-[9px] text-slate-400 text-center py-6 font-bold uppercase tracking-widest border border-dashed border-slate-100 rounded-xl">Belum ada voucher</p>}
+                                                    {myVouchers.map(v => {
+                                                        const eligibility = isVoucherEligible(v);
+                                                        const canUse = eligibility.eligible;
+                                                        return (
+                                                            <div 
+                                                                key={v.id} 
+                                                                onClick={() => { 
+                                                                    if(canUse) { 
+                                                                        setAppliedVoucher({ 
+                                                                            code: v.code, 
+                                                                            discountAmount: v.type === 'percentage' ? Math.floor(grossSubtotal * (v.value/100)) : v.value 
+                                                                        }); 
+                                                                        setIsVoucherExpanded(false); 
+                                                                        success("Voucher Dipasang!"); 
+                                                                    } else {
+                                                                        warning(eligibility.reason);
+                                                                    }
+                                                                }} 
+                                                                className={`p-3 rounded-xl border-2 transition-all group/v ${canUse ? 'border-slate-100 hover:border-[#FF6B00] cursor-pointer bg-white shadow-sm' : 'opacity-60 grayscale-[0.5] bg-slate-50 border-transparent cursor-not-allowed'}`}
+                                                            >
+                                                                <div className="flex justify-between items-start mb-1.5">
+                                                                    <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${canUse ? 'bg-orange-100 text-[#FF6B00]' : 'bg-slate-200 text-slate-400'}`}>{v.code}</span>
+                                                                    <span className="font-bold text-slate-900 text-[10px]">{v.type === 'percentage' ? `${v.value}%` : formatRupiah(v.value)}</span>
                                                                 </div>
+                                                                <p className="font-bold text-slate-800 text-[10px] truncate">{v.name || v.title}</p>
+                                                                {!canUse && (
+                                                                    <p className="text-[7px] text-rose-500 font-bold uppercase mt-1 flex items-center gap-1">
+                                                                        <span className="material-symbols-outlined text-[10px]">info</span> 
+                                                                        {eligibility.reason}
+                                                                    </p>
+                                                                )}
+                                                                {canUse && (
+                                                                    <p className="text-[7px] text-emerald-600 font-bold uppercase mt-1 flex items-center gap-1 opacity-0 group-hover/v:opacity-100 transition-opacity">
+                                                                        <span className="material-symbols-outlined text-[10px]">check_circle</span>
+                                                                        Klik untuk pasang
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         );
                                                     })}
                                                 </div>
-                                            ) : (
-                                                <div className="text-center py-8 px-4">
-                                                    <span className="material-symbols-outlined text-slate-200 text-3xl mb-2">local_activity</span>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Belum ada promo diklaim</p>
-                                                    <button onClick={() => navigate('/dashboard/promo')} className="text-[#F97316] text-[9px] font-black uppercase mt-3 hover:underline">Klaim Sekarang</button>
-                                                </div>
                                             )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {appliedVoucher && (
-                                    <div className="mt-3 animate-in zoom-in-95 duration-200">
-                                        <div className="flex items-center justify-between p-3.5 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                                        </>
+                                    ) : (
+                                        <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-center justify-between shadow-sm">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-                                                    <span className="material-symbols-outlined text-[18px]">verified</span>
-                                                </div>
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center"><span className="material-symbols-outlined text-sm">check_circle</span></div>
                                                 <div>
-                                                    <p className="font-black text-slate-900 text-[10px] tracking-wider uppercase flex items-center gap-1.5">
-                                                        {appliedVoucher.code}
-                                                        <span className="text-[8px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded-md">Voucher Terpasang</span>
-                                                    </p>
-                                                    <p className="text-[11px] font-bold text-emerald-600 mt-0.5">Berhasil dpt diskon {formatRupiah(appliedVoucher.discountAmount)}</p>
+                                                    <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Voucher Terpasang</p>
+                                                    <p className="text-[10px] font-bold text-slate-900 uppercase">{appliedVoucher.code}</p>
                                                 </div>
                                             </div>
+                                            <button onClick={() => setAppliedVoucher(null)} className="w-8 h-8 rounded-lg bg-emerald-100/50 text-emerald-600 hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-lg">close</span>
+                                            </button>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {isRegisterOnly && (
-                            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 mt-5">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-full bg-[#F97316] text-white flex items-center justify-center text-xs font-bold">4</span>
-                                        Konfigurasi Domain
-                                    </h3>
-                                    <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                                        <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Setup Tersedia</span>
-                                    </div>
+                                    )}
+                                    {previewData?.voucher_warning && (
+                                        <div className="mt-3 p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-2 animate-in fade-in duration-300">
+                                            <span className="material-symbols-outlined text-rose-500 text-sm">error</span>
+                                            <p className="text-[9px] text-rose-600 font-bold uppercase">{previewData.voucher_warning}</p>
+                                        </div>
+                                    )}
                                 </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${whoisPrivacy ? 'bg-orange-50/50 border-orange-200' : 'bg-slate-50 border-slate-100'}`} onClick={() => setWhoisPrivacy(!whoisPrivacy)}>
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${whoisPrivacy ? 'bg-white text-orange-600 shadow-sm' : 'bg-white text-slate-400'}`}>
-                                                <span className="material-symbols-outlined text-base">security</span>
-                                            </div>
-                                            <div className={`w-9 h-4.5 rounded-full relative transition-colors ${whoisPrivacy ? 'bg-orange-500' : 'bg-slate-200'}`}>
-                                                <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-all ${whoisPrivacy ? 'left-[18px]' : 'left-0.5'}`}></div>
-                                            </div>
-                                        </div>
-                                        <h4 className="font-bold text-slate-800 text-xs">ID Protection</h4>
-                                        <p className="text-[9px] text-slate-500 mt-1">Sembunyikan data kontak WHOIS.</p>
-                                        <div className="mt-3 flex items-center gap-2">
-                                            <span className="text-[9px] font-black text-green-600 bg-green-100 px-1.5 py-0.5 rounded">FREE</span>
-                                        </div>
-                                    </div>
-
-                                    <div className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${autoRenew ? 'bg-blue-50/50 border-blue-200' : 'bg-slate-50 border-slate-100'}`} onClick={() => setAutoRenew(!autoRenew)}>
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${autoRenew ? 'bg-white text-blue-600 shadow-sm' : 'bg-white text-slate-400'}`}>
-                                                <span className="material-symbols-outlined text-base">sync</span>
-                                            </div>
-                                            <div className={`w-9 h-4.5 rounded-full relative transition-colors ${autoRenew ? 'bg-blue-500' : 'bg-slate-200'}`}>
-                                                <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-all ${autoRenew ? 'left-[18px]' : 'left-0.5'}`}></div>
-                                            </div>
-                                        </div>
-                                        <h4 className="font-bold text-slate-800 text-xs">Auto Renew</h4>
-                                        <p className="text-[9px] text-slate-500 mt-1">Perpanjang otomatis masa aktif.</p>
-                                        <div className="mt-3 flex items-center gap-2">
-                                            <span className="text-[9px] font-black text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">AUTO</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* --- METODE PEMBAYARAN --- */}
-                        <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 mt-5">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-[#F97316] text-white flex items-center justify-center text-[10px] font-bold">
-                                        {isTopUpOnly ? '2' : isRegisterOnly ? '4' : '3'}
-                                    </span>
-                                    Pembayaran
-                                </h3>
-                                <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100 uppercase tracking-widest">Secured</span>
+                            )}
+                            
+                            <div className="py-5 border-y-2 border-dashed border-slate-100 mb-6 text-center bg-slate-50/50 -mx-6">
+                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.4em] mb-1.5">Total Bayar</p>
+                                <p className="text-2xl font-bold text-slate-900 tracking-tighter">{formatRupiah(totalToPay)}</p>
                             </div>
 
-                            <div className="space-y-2">
-                                {wallet && !isTopUpOnly && (
-                                    <div className={`border-2 transition-all rounded-xl overflow-hidden ${selectedGateway?.id === 'WALLET' ? 'border-[#F97316] bg-orange-50/20' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-                                        <button onClick={() => { setExpandedMethod('WALLET'); setSelectedGateway({ id: 'WALLET', code: 'WALLET', type: 'WALLET', name: 'Saldo Wallet' }); }} className="w-full flex items-center justify-between p-4 text-left">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${selectedGateway?.id === 'WALLET' ? 'bg-[#F97316] text-white' : 'bg-orange-50 text-[#F97316]'}`}>
-                                                    <span className="material-symbols-outlined text-base">account_balance_wallet</span>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800 text-xs">Saldo Wallet</h4>
-                                                    <p className="text-[9px] text-slate-500">Auto-konfirmasi</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className={`font-black text-xs ${wallet.balance >= totalToPay ? 'text-slate-800' : 'text-red-500'}`}>{formatRupiah(wallet.balance)}</p>
-                                                {wallet.balance < totalToPay && <p className="text-[8px] font-black text-red-400 uppercase tracking-tighter mt-0.5">Saldo Kurang</p>}
-                                            </div>
-                                        </button>
-                                    </div>
-                                )}
-                                {groupedGateways['bankva'].length > 0 && (
-                                    <div className="border border-slate-100 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedMethod(expandedMethod === 'bankva' ? null : 'bankva')} className="w-full flex items-center justify-between p-3.5 bg-white text-left">
-                                            <div className="flex items-center gap-3"><span className="material-symbols-outlined text-slate-500 text-base">account_balance</span><h4 className="font-bold text-slate-800 text-xs">Virtual Account</h4></div>
-                                            <span className={`material-symbols-outlined text-base transition-transform ${expandedMethod === 'bankva' ? 'rotate-180' : ''}`}>expand_more</span>
-                                        </button>
-                                        {expandedMethod === 'bankva' && (
-                                            <div className="p-3 bg-slate-50 border-t border-slate-100 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                                <div className="grid grid-cols-1 gap-2 pr-1">
-                                                    {groupedGateways['bankva'].map(gw => (
-                                                        <label key={gw.id} className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${selectedGateway?.id === gw.id ? 'border-orange-500 bg-white shadow-sm' : 'border-white bg-white hover:border-orange-100'}`}>
-                                                            <input type="radio" name="payment_method" value={gw.id} checked={selectedGateway?.id === gw.id} onChange={() => setSelectedGateway(gw)} className="sr-only" />
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-12 h-8 flex items-center justify-center bg-slate-50 rounded-lg p-1">
-                                                                    <img src={getBankLogo(gw.code)} alt={gw.name} className="max-h-full max-w-full object-contain" />
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="font-bold text-slate-800 text-xs uppercase">{gw.name.replace('Virtual Account', '').trim()}</h4>
-                                                                    <p className="text-[8px] text-slate-500 tracking-tight">Bayar via Transfer Virtual Account</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedGateway?.id === gw.id ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-200 text-transparent'}`}>
-                                                                <span className="material-symbols-outlined text-[10px]">check</span>
-                                                            </div>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {groupedGateways['qris'].length > 0 && (
-                                    <div className="border border-slate-100 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedMethod(expandedMethod === 'qris' ? null : 'qris')} className="w-full flex items-center justify-between p-3.5 bg-white text-left">
-                                            <div className="flex items-center gap-3"><span className="material-symbols-outlined text-slate-500 text-base">qr_code_2</span><h4 className="font-bold text-slate-800 text-xs">QRIS</h4></div>
-                                            <span className={`material-symbols-outlined text-base transition-transform ${expandedMethod === 'qris' ? 'rotate-180' : ''}`}>expand_more</span>
-                                        </button>
-                                        {expandedMethod === 'qris' && (
-                                            <div className="p-3 bg-slate-50 border-t border-slate-100">
-                                                {groupedGateways['qris'].map(gw => {
-                                                    let displayName = gw.name;
-                                                    if (displayName.includes('(Customizable)')) displayName = 'QRIS Dinamis';
-                                                    if (displayName === 'QRIS') displayName = 'QRIS Standard';
-                                                    if (displayName.includes('ShopeePay')) displayName = 'QRIS via ShopeePay';
-
-                                                    return (
-                                                        <label key={gw.id} className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${selectedGateway?.id === gw.id ? 'border-orange-500 bg-white' : 'border-white bg-white hover:border-orange-100'}`}>
-                                                            <input type="radio" name="payment_method" value={gw.id} checked={selectedGateway?.id === gw.id} onChange={() => setSelectedGateway(gw)} className="sr-only" />
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-12 h-8 flex items-center justify-center bg-slate-50 rounded-lg p-1 border border-slate-100">
-                                                                    <img src={gw.icon_url || getBankLogo('qris')} alt="QRIS" className="max-h-full max-w-full object-contain mix-blend-multiply" />
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="font-bold text-slate-800 text-xs">{displayName}</h4>
-                                                                    <p className="text-[8px] text-slate-500 tracking-tight">{gw.code.includes('SHOPEE') ? 'Langsung buka aplikasi Shopee' : 'Scan via OVO, GoPay, DANA, BCA, dll'}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedGateway?.id === gw.id ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-200 text-transparent'}`}><span className="material-symbols-outlined text-[10px]">check</span></div>
-                                                        </label>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {groupedGateways['ewallet'].length > 0 && (
-                                    <div className="border border-slate-100 rounded-xl overflow-hidden">
-                                        <button onClick={() => setExpandedMethod(expandedMethod === 'ewallet' ? null : 'ewallet')} className="w-full flex items-center justify-between p-3.5 bg-white text-left">
-                                            <div className="flex items-center gap-3"><span className="material-symbols-outlined text-slate-500 text-base">account_balance_wallet</span><h4 className="font-bold text-slate-800 text-xs">E-Wallet Direct</h4></div>
-                                            <span className={`material-symbols-outlined text-base transition-transform ${expandedMethod === 'ewallet' ? 'rotate-180' : ''}`}>expand_more</span>
-                                        </button>
-                                        {expandedMethod === 'ewallet' && (
-                                            <div className="p-3 bg-slate-50 border-t border-slate-100 max-h-[200px] overflow-y-auto custom-scrollbar">
-                                                <div className="grid grid-cols-1 gap-1.5 pr-1">
-                                                    {groupedGateways['ewallet'].map(gw => (
-                                                        <label key={gw.id} className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${selectedGateway?.id === gw.id ? 'border-orange-500 bg-white shadow-sm' : 'border-white bg-white hover:border-orange-100'}`}>
-                                                            <input type="radio" name="payment_method" value={gw.id} checked={selectedGateway?.id === gw.id} onChange={() => setSelectedGateway(gw)} className="sr-only" />
-                                                            <div className="flex items-center gap-3">
-                                                                <img src={getBankLogo(gw.code)} alt={gw.name} className="h-5 object-contain" />
-                                                                <div><h4 className="font-bold text-slate-800 text-xs">{gw.name}</h4><p className="text-[8px] text-slate-500 tracking-tight">Bayar langsung {gw.name}.</p></div>
-                                                            </div>
-                                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedGateway?.id === gw.id ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-200 text-transparent'}`}><span className="material-symbols-outlined text-[10px]">check</span></div>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm sticky top-5 overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#F97316] to-orange-400"></div>
-                            <h3 className="font-black text-slate-900 uppercase text-[9px] tracking-[0.2em] mb-4 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[#F97316] text-sm">assessment</span>
-                                Tagihan
-                            </h3>
-
-                            <div className="space-y-2 mb-4">
-                                <div className="flex justify-between items-center text-[11px]">
-                                    <span className="font-medium text-slate-500 text-[10px]">Subtotal Pesanan</span>
-                                    <div className="flex items-center gap-2">
-                                        {voucherDiscount > 0 && (
-                                            <span className="text-slate-400 line-through text-[11px]">{formatRupiah(grossSubtotal)}</span>
-                                        )}
-                                        <span className="font-bold text-slate-800">{formatRupiah(netAmount)}</span>
-                                    </div>
-                                </div>
-                                {!isTopUpOnly && (
-                                    <div className="flex justify-between items-center text-[11px]">
-                                        <span className="font-medium text-slate-500 text-[10px]">PPN (11%)</span>
-                                        <span className="font-bold text-slate-800">+ {formatRupiah(ppnAmount)}</span>
-                                    </div>
-                                )}
-                                {voucherDiscount > 0 && (
-                                    <div className="flex justify-between items-center text-[11px] bg-emerald-50 px-2 py-1.5 rounded-lg border border-emerald-100">
-                                        <span className="font-bold text-emerald-600 text-[10px] flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-[12px]">confirmation_number</span>
-                                            Voucher {appliedVoucher?.code}
-                                        </span>
-                                        <span className="font-black text-emerald-600">- {formatRupiah(voucherDiscount)}</span>
-                                    </div>
-                                )}
-                                {referralDiscount > 0 && (
-                                    <div className="flex justify-between items-center text-[11px] bg-orange-50 px-2 py-1.5 rounded-lg border border-orange-100 mt-2">
-                                        <span className="font-bold text-[#F97316] text-[10px] flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-[12px]">celebration</span>
-                                            Diskon Referral
-                                        </span>
-                                        <span className="font-black text-[#F97316]">- {formatRupiah(referralDiscount)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between items-center py-2 border-y border-slate-50 border-dashed text-[11px]">
-                                    <span className="font-medium text-slate-500 text-[10px]">Biaya Layanan</span>
-                                    <span className={`font-bold ${isFetchingFee ? 'animate-pulse text-slate-300' : (selectedGateway && serviceFee === 0) ? 'text-emerald-500 flex items-center gap-1' : 'text-slate-800'}`}>
-                                        {isFetchingFee ? (
-                                            "Menghitung..."
-                                        ) : !selectedGateway ? (
-                                            "—"
-                                        ) : serviceFee > 0 ? (
-                                            `+ ${formatRupiah(serviceFee)}`
-                                        ) : (
-                                            <>
-                                                <span className="material-symbols-outlined text-[12px]">task_alt</span>
-                                                Gratis Biaya Layanan
-                                            </>
-                                        )}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="mb-6 text-center">
-                                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest block mb-0.5">Total Bayar</span>
-                                <span className="text-xl font-black text-[#F97316] tracking-tight">{formatRupiah(totalToPay)}</span>
-                            </div>
-
-                            <button
-                                onClick={handlePay}
-                                disabled={isProcessing || !selectedGateway}
-                                className="w-full bg-[#F97316] text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-orange-200 hover:bg-slate-900 transition disabled:bg-slate-200 disabled:cursor-not-allowed group flex items-center justify-center gap-2"
-                            >
-                                {isProcessing ? (
-                                    <>
-                                        <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                        Wait...
-                                    </>
-                                ) : (
-                                    <>
-                                        Konfirmasi Pembayaran
-                                        <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                                    </>
-                                )}
+                            <button onClick={handlePay} disabled={isProcessing || !selectedGateway} className="w-full bg-[#FF6B00] text-white py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-orange-200 hover:bg-slate-900 transition-all disabled:opacity-50">
+                                {isProcessing ? "Memproses..." : "Bayar Sekarang"}
                             </button>
-
-                            <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-center gap-2">
-                                <span className="material-symbols-outlined text-blue-500 text-xs">verified_user</span>
-                                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Garansi Transaksi Aman & Terenkripsi</p>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-
         </div>
     );
 };

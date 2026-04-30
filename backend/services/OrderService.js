@@ -59,7 +59,6 @@ class OrderService {
             for (const item of itemsRes.rows) {
                 const domainName = item.name;
                 const actionType = item.action_type || 'register';
-                console.log(`[OrderService] Processing fulfillment for: ${domainName} (${actionType})`);
 
                 try {
                     // --- A. GET COST PRICE ---
@@ -75,8 +74,6 @@ class OrderService {
                             break;
                         }
                     }
-                    
-                console.log(`[OrderService] Identified TLD: ${tld} for ${domainName}`);
                 const pricingRes = await client.query("SELECT cost_register, cost_renew, cost_restore FROM pricing WHERE tld = $1", [tld]);
                 
                 let estimatedCost = 0;
@@ -90,8 +87,6 @@ class OrderService {
                 if (actionType !== 'restore') {
                     estimatedCost = estimatedCost * (item.years || 1);
                 }
-
-                console.log(`[OrderService] Estimated Cost for ${domainName}: ${estimatedCost}`);
 
                     // --- NEW: INITIAL UPSERT TO ENSURE VISIBILITY ---
                     if (actionType === 'register') {
@@ -257,7 +252,7 @@ class OrderService {
                         console.log(`[OrderService] Executing API Renewal for ${domainName}`);
                         
                         // Daftarnama v2 requires current_expiry_date
-                        const [domainRows] = await client.query("SELECT expiration_date FROM domains WHERE domain_name = $1", [domainName]);
+                        const { rows: domainRows } = await client.query("SELECT expiration_date FROM domains WHERE domain_name = $1", [domainName]);
                         let currentExpiryStr = null;
                         if (domainRows.length > 0 && domainRows[0].expiration_date) {
                             const d = new Date(domainRows[0].expiration_date);
@@ -329,10 +324,9 @@ class OrderService {
                         }
                     } else if (actionType === 'transfer') {
                         // --- TRANSFER LOGIC ---
-                        console.log(`[OrderService] Routing Transfer for ${domainName} to TransferController`);
-                        // TransferController.processTransfer handles the actual API call and status updates
-                        // We call it here to ensure it's triggered if activateDomain is called for a transfer item
-                        await TransferController.processTransfer(invoiceId);
+                        console.log(`[OrderService] Routing Transfer for ${domainName} to TransferController (Background)`);
+                        // Run in background to prevent slow API from hanging the payment confirmation
+                        TransferController.processTransfer(invoiceId);
                     }
 
                     // Send Success Email (Branched by Action Type)
@@ -392,6 +386,9 @@ class OrderService {
                 }
             }
 
+            // 4. FINAL STATUS UPDATE: Mark Invoice as PAID
+            await client.query("UPDATE invoices SET status = 'paid', updated_at = NOW() WHERE id = $1", [invoiceId]);
+
             await client.query('COMMIT');
             return { success: true };
 
@@ -426,6 +423,7 @@ class OrderService {
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, $9, $10, $11, $12, $13, $14, NOW(), NOW())
             ON CONFLICT (domain_name) DO UPDATE SET 
+                user_id = EXCLUDED.user_id,
                 status = EXCLUDED.status,
                 registrar_order_id = COALESCE(EXCLUDED.registrar_order_id, domains.registrar_order_id),
                 registrar_domain_id = COALESCE(EXCLUDED.registrar_domain_id, domains.registrar_domain_id),

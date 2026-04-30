@@ -184,9 +184,72 @@ const AdminPricing = () => {
         </div>
       </div>
 
-      {/* 2. Table Section */}
+      {/* 2. Table & Cards Section */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* MOBILE CARDS */}
+        <div className="block sm:hidden divide-y divide-slate-50">
+          {loading ? (
+            <div className="px-6 py-20 text-center text-slate-400 italic font-bold animate-pulse">Memuat data harga...</div>
+          ) : pricing.length === 0 ? (
+            <div className="px-6 py-20 text-center text-slate-400 italic font-bold">Belum ada data pricing.</div>
+          ) : pricing.map((p) => {
+            const cost = parseFloat(p.cost_register || 0);
+            const price = parseFloat(p.price_register || 0);
+            const margin = price - cost;
+            const marginPercent = cost > 0 ? ((margin / cost) * 100).toFixed(1) : "0";
+
+            return (
+              <div key={p.id} className="p-5 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl font-black text-slate-900 tracking-tighter">{p.tld}</span>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => openEditModal(p)}
+                      className="p-2.5 bg-slate-50 text-slate-400 rounded-lg border border-slate-100 transition shadow-sm active:scale-95"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(p.id, p.tld)}
+                      className="p-2.5 bg-slate-50 text-slate-400 rounded-lg border border-slate-100 transition shadow-sm active:scale-95"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Daftar (Register)</p>
+                    <p className="text-sm font-bold text-slate-800">{formatRupiah(price)}</p>
+                    <p className={`text-[10px] font-bold ${margin >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {margin >= 0 ? '+' : ''}{formatRupiah(margin)} ({marginPercent}%)
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Perpanjang (Renew)</p>
+                    <p className="text-sm font-bold text-slate-800">{formatRupiah(p.price_renew)}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Transfer</p>
+                    <p className="text-sm font-bold text-slate-800">{formatRupiah(p.price_transfer)}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Restore</p>
+                    <p className="text-sm font-bold text-slate-800">{formatRupiah(p.price_restore)}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* DESKTOP TABLE */}
+        <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-sm border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">

@@ -25,23 +25,32 @@ exports.getRecords = (req, res) => {
             // 2. Fetch Records from Daftarnama (Real-time)
             const response = await DaftarnamaService.getDNSRecords(domainName);
             
-            // Swagger V2 returns records in data array
-            // response is Daftarnama's response.data
-            const records = response.data || []; 
+            // Flexible extraction: handle if response is directly the array or wrapped in .data
+            const records = Array.isArray(response) ? response : (response?.data || []); 
 
             res.json(records);
         } catch (error) {
-            const errorData = error.response?.data;
             const status = error.response?.status || 500;
+            const errorData = error.response?.data;
             
-            console.error(`[DNSController] Registrar Error (${status}):`, JSON.stringify(errorData || error.message));
+            // Handle 404 (Domain not found at registrar) gracefully
+            if (status === 404) {
+                return res.status(200).json([]);
+            }
+
+            // [FIX] Handle 500/502/503 from Registrar DNS API gracefully. 
+            // Often occurs if DNS Zone is not yet initialized. Returning empty list allows user to ADD record.
+            if (status >= 500) {
+                console.warn(`[DNSController] Registrar DNS Zone might not be initialized for ${domainName} (Status ${status})`);
+                return res.status(200).json([]);
+            }
+
+            console.error(`[DNSController] Registrar GET Error (${status}):`, JSON.stringify(errorData || error.message, null, 2));
             
-            // If it's a 500 from registrar, we can return empty array with a warning
-            // instead of a hard 500 crash to the frontend
             res.status(status === 500 ? 502 : status).json({ 
                 message: "Registrar DNS API bermasalah (Status: " + status + ")",
                 error: errorData?.message || error.message,
-                records: [] // Providing fallback
+                records: [] 
             });
         }
     });
@@ -73,16 +82,25 @@ exports.createRecord = (req, res) => {
 
         try {
             // V2 Payload Mapping
+            // FIX: Ensure sub_domain is clean (some frontends might send @domain.com)
+            let finalSubDomain = name;
+            if (finalSubDomain.includes('@')) {
+                finalSubDomain = '@'; // Force to just @ if it contains @
+            }
+
             const payload = {
-                sub_domain: name,
+                sub_domain: finalSubDomain,
                 type: type,
                 ttl: parseInt(ttl) || 3600
             };
 
-            // Dynamic field mapping based on type
+            // Dynamic field mapping based on actual registrar requirements
             const typeUpper = type.toUpperCase();
-            if (typeUpper === 'A' || typeUpper === 'AAAA' || typeUpper === 'CNAME' || typeUpper === 'DNAME') {
+            if (typeUpper === 'A' || typeUpper === 'AAAA') {
                 payload.address = value;
+            } else if (typeUpper === 'CNAME') {
+                // FIX: Use 'cname' instead of 'address' as required by registrar validation
+                payload.cname = value;
             } else if (typeUpper === 'MX') {
                 payload.exchange = value;
                 payload.preference = parseInt(priority) || 10;
@@ -92,25 +110,37 @@ exports.createRecord = (req, res) => {
                 payload.ns = value;
             } else if (typeUpper === 'SRV') {
                 payload.target = value;
-                // priorities/weights/ports for SRV might need more fields in body
                 payload.priority = parseInt(req.body.priority) || 10;
                 payload.weight = parseInt(req.body.weight) || 5;
                 payload.port = parseInt(req.body.port) || 80;
             }
 
+            console.log(`[DNSController] Adding DNS Record for ${domainName}:`, JSON.stringify(payload, null, 2));
+
             // 1. Sync to Daftarnama
             const apiRes = await DaftarnamaService.addDNSRecord(domainName, payload);
 
-            if (apiRes && (apiRes.success || apiRes.code === 201)) {
+            if (apiRes && (apiRes.success || apiRes.code === 201 || apiRes.code === 200)) {
                 res.status(201).json({ success: true, message: "DNS Record created successfully" });
             } else {
-                res.status(400).json({ success: false, message: apiRes?.message || "Gagal di sisi registrar" });
+                console.error("[DNSController] Registrar Add DNS Failed:", apiRes);
+                res.status(400).json({ success: false, message: apiRes?.message || "Gagal di sisi registrar. Cek kembali format isian (Host/Value)." });
             }
         } catch (error) {
-            console.error("[DNSController] Create Error:", error.response?.data || error.message);
-            res.status(500).json({ 
-                message: "Gagal menambah record DNS", 
-                error: error.response?.data?.message || error.message 
+            const status = error.response?.status || 500;
+            const errorData = error.response?.data;
+            console.error(`[DNSController] Create Error Details (${status}):`, JSON.stringify(errorData || error.message, null, 2));
+            
+            let userMessage = "Gagal menambah record DNS di sisi registrar.";
+            if (status === 500 || status === 502) {
+                userMessage = "Registrar DNS API sedang tidak menanggapi (Server Error). Silakan coba lagi dalam beberapa menit atau hubungi support.";
+            } else if (errorData?.message) {
+                userMessage = errorData.message;
+            }
+
+            res.status(status === 500 ? 502 : status).json({ 
+                message: userMessage, 
+                error: (errorData?.message || errorData?.error || error.message) 
             });
         }
     });

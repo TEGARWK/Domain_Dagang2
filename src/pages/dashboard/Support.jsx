@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../services/api";
+import { useConfig } from "../../context/ConfigContext";
 
 const Support = () => {
+  const config = useConfig();
   const [activeTab, setActiveTab] = useState("faq"); // "faq" or "ticket"
   const [activeFaq, setActiveFaq] = useState(null);
   
@@ -343,16 +345,34 @@ const Support = () => {
               <div className="absolute right-0 bottom-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl"></div>
           </div>
           
-          <div className="bg-white p-6 rounded-lg border border-slate-100 shadow-sm">
-             <h4 className="font-bold text-slate-900 mb-4 text-sm">Hubungi via Email Spesifik</h4>
-             <a href="mailto:support@dagangdomain.id" className="flex items-center gap-4 group">
-                <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-[#F97316] transition">
-                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                </div>
-                <div>
-                   <p className="text-xs text-slate-500 font-medium">support@dagangdomain.id</p>
-                   <p className="text-[10px] text-slate-400">Technical Issue & Finance</p>
-                </div>
+          <div className="bg-white p-6 rounded-lg border border-slate-100 shadow-sm space-y-4">
+             <h4 className="font-bold text-slate-900 mb-2 text-sm">Hubungi via Jalur Spesifik</h4>
+             
+             {config.company_whatsapp && (
+               <a 
+                 href={`https://wa.me/${config.company_whatsapp.replace(/\D/g, '')}?text=Halo%20Admin%20${config.company_name},%20saya%20butuh%20bantuan.`}
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className="flex items-center gap-4 group"
+               >
+                  <div className="w-10 h-10 rounded-lg bg-[#25D366]/10 flex items-center justify-center text-[#25D366] group-hover:bg-[#25D366] group-hover:text-white transition">
+                     <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.767 5.767 0 1.267.405 2.436 1.096 3.393l-.683 2.502 2.569-.674c.889.511 1.916.804 3.011.804 3.181 0 5.767-2.586 5.767-5.767 0-3.181-2.586-5.767-5.767-5.767zm0 1.109c2.571 0 4.658 2.087 4.658 4.658 0 2.571-2.087 4.658-4.658 4.658-1.002 0-1.928-.316-2.69-.854l-.193-.135-1.503.394.401-1.464-.15-.24c-.604-.96-.952-2.102-.952-3.324 0-2.571 2.087-4.658 4.658-4.658zm-1.894 1.777c-.12 0-.312.045-.473.22-.161.176-.615.602-.615 1.467s.63 1.701.718 1.819c.088.117 1.211 1.94 3.023 2.651.432.169.768.27.103.342.431.114.823.102 1.133.056.347-.052.823-.337.939-.646.116-.31.116-.575.081-.631-.035-.056-.129-.088-.273-.161-.144-.073-.823-.406-.95-.453-.127-.047-.219-.071-.312.073-.093.144-.359.453-.44.546-.081.093-.162.104-.306.031-.144-.073-.608-.224-1.158-.716-.428-.382-.717-.853-.801-1.001-.084-.148-.009-.227.065-.3.067-.066.144-.176.216-.264.072-.088.096-.151.144-.252.048-.101.024-.189-.012-.262-.036-.073-.312-.754-.428-1.034-.113-.274-.23-.236-.312-.241l-.264-.004z"/></svg>
+                  </div>
+                  <div>
+                     <p className="text-xs text-slate-500 font-bold">WhatsApp Support</p>
+                     <p className="text-[10px] text-slate-400">Fast response via chat</p>
+                  </div>
+               </a>
+             )}
+
+             <a href={`mailto:${config.company_email}`} className="flex items-center gap-4 group">
+                 <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-[#F97316] transition">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                 </div>
+                 <div>
+                    <p className="text-xs text-slate-500 font-bold">{config.company_email}</p>
+                    <p className="text-[10px] text-slate-400">Technical Issue & Finance</p>
+                 </div>
              </a>
           </div>
         </div>

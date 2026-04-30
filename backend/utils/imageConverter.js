@@ -8,9 +8,10 @@ const fs = require('fs');
  * @param {Buffer} inputBuffer - The file buffer from memory storage
  * @param {string} originalName - Original uploaded filename
  * @param {string} uploadDir - Absolute path to save the converted file
+ * @param {string} prefix - Optional filename prefix (e.g., 'banner', 'gateway')
  * @returns {Promise<string>} - Returns the generated WebP filename
  */
-const convertToWebP = async (inputBuffer, originalName, uploadDir) => {
+const convertToWebP = async (inputBuffer, originalName, uploadDir, prefix = 'img') => {
     // Basic validation: ensure buffer holds data
     if (!inputBuffer || inputBuffer.length < 1024) {
         throw new Error("File corrupt atau ukuran terlalu kecil (< 1KB).");
@@ -24,9 +25,9 @@ const convertToWebP = async (inputBuffer, originalName, uploadDir) => {
             throw new Error("Dimensi gambar terlalu kecil.");
         }
 
-        // Generate unique filename: banner-{timestamp}-{random}.webp
+        // Generate unique filename: prefix-{timestamp}-{random}.webp
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const outputFilename = `banner-${uniqueSuffix}.webp`;
+        const outputFilename = `${prefix}-${uniqueSuffix}.webp`;
         const outputPath = path.join(uploadDir, outputFilename);
         
         // Convert, resize (max 1920) and compress

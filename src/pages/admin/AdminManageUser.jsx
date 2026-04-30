@@ -133,6 +133,17 @@ const AdminManageUser = () => {
         pendingInvoices: invoices.filter(i => i.status === 'pending').length
     };
 
+    const getCategoryBadge = (cat) => {
+        const c = (cat || 'REGISTER').toUpperCase();
+        switch(c) {
+            case 'TOPUP': return <span className="bg-purple-50 text-purple-600 border-purple-100 px-1 py-0.5 rounded-[4px] text-[7px] font-bold uppercase tracking-wider border">Topup</span>;
+            case 'RENEW': return <span className="bg-indigo-50 text-indigo-600 border-indigo-100 px-1 py-0.5 rounded-[4px] text-[7px] font-bold uppercase tracking-wider border">Renew</span>;
+            case 'TRANSFER': return <span className="bg-amber-50 text-amber-600 border-amber-100 px-1 py-0.5 rounded-[4px] text-[7px] font-bold uppercase tracking-wider border">Transfer</span>;
+            case 'RESTORE': return <span className="bg-rose-50 text-rose-600 border-rose-100 px-1 py-0.5 rounded-[4px] text-[7px] font-bold uppercase tracking-wider border">Restore</span>;
+            default: return <span className="bg-emerald-50 text-emerald-600 border-emerald-100 px-1 py-0.5 rounded-[4px] text-[7px] font-bold uppercase tracking-wider border">Register</span>;
+        }
+    };
+
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F97316]"></div>
@@ -400,7 +411,10 @@ const AdminManageUser = () => {
                                 invoices.slice(0, 10).map((inv) => (
                                     <div key={inv.id} className="p-5 hover:bg-slate-50/80 transition-all border-l-4 border-transparent hover:border-orange-400 group">
                                         <div className="flex justify-between items-start mb-2">
-                                            <Link to={`/admin/invoices/${inv.id}`} className="text-[11px] font-bold text-slate-800 hover:text-[#F97316] transition tracking-tight">#{inv.id}</Link>
+                                            <div className="flex items-center gap-2">
+                                                <Link to={`/admin/invoices/${inv.id}`} className="text-[11px] font-bold text-slate-800 hover:text-[#F97316] transition tracking-tight">#{inv.id}</Link>
+                                                {getCategoryBadge(inv.category)}
+                                            </div>
                                             <span className={`text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg border shadow-[0_2px_4px_rgba(0,0,0,0.02)] ${
                                                 inv.status === 'paid' 
                                                 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 

@@ -149,16 +149,16 @@ const AdminPromos = () => {
         <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col-reverse md:flex-row justify-between items-start md:items-center gap-6 bg-white shrink-0">
           
           {/* TABS NAVIGATION */}
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-xl w-fit">
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-xl w-full md:w-fit overflow-x-auto no-scrollbar">
               <button 
                 onClick={() => setActiveTab("voucher")}
-                className={`px-6 py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.15em] transition-all flex items-center justify-center min-w-[140px] ${activeTab === 'voucher' ? 'bg-white text-[#F97316] shadow-sm border border-slate-200/60' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/30'}`}
+                className={`px-6 py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.15em] transition-all flex items-center justify-center min-w-[140px] whitespace-nowrap ${activeTab === 'voucher' ? 'bg-white text-[#F97316] shadow-sm border border-slate-200/60' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/30'}`}
               >
                 Vocer Belanja
               </button>
               <button 
                 onClick={() => setActiveTab("referral")}
-                className={`px-6 py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.15em] transition-all flex items-center justify-center min-w-[140px] ${activeTab === 'referral' ? 'bg-white text-[#F97316] shadow-sm border border-slate-200/60' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/30'}`}
+                className={`px-6 py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.15em] transition-all flex items-center justify-center min-w-[140px] whitespace-nowrap ${activeTab === 'referral' ? 'bg-white text-[#F97316] shadow-sm border border-slate-200/60' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/30'}`}
               >
                 Sistem Referral
               </button>
@@ -200,25 +200,25 @@ const AdminPromos = () => {
               ) : activeTab === 'referral' ? (
                   <div className="flex flex-col flex-1 overflow-hidden">
                       {/* SUB-TABS REFERRAL */}
-                      <div className="px-8 flex gap-6 border-b border-slate-50 mb-6 font-bold uppercase tracking-widest text-[10px]">
+                      <div className="px-8 flex gap-6 border-b border-slate-50 mb-6 font-bold uppercase tracking-widest text-[10px] overflow-x-auto no-scrollbar">
                           <button 
                             onClick={() => setReferralSubTab("monitoring")}
-                            className={`pb-3 transition-colors ${referralSubTab === 'monitoring' ? 'text-[#F97316] border-b-2 border-[#F97316]' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`pb-3 transition-colors whitespace-nowrap ${referralSubTab === 'monitoring' ? 'text-[#F97316] border-b-2 border-[#F97316]' : 'text-slate-400 hover:text-slate-600'}`}
                           >
                             Monitoring Rewards
                           </button>
                           <button 
                             onClick={() => setReferralSubTab("config")}
-                            className={`pb-3 transition-colors ${referralSubTab === 'config' ? 'text-[#F97316] border-b-2 border-[#F97316]' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`pb-3 transition-colors whitespace-nowrap ${referralSubTab === 'config' ? 'text-[#F97316] border-b-2 border-[#F97316]' : 'text-slate-400 hover:text-slate-600'}`}
                           >
                             Konfigurasi & Tier
                           </button>
                       </div>
 
                       {referralSubTab === 'monitoring' ? (
-                        <div className="overflow-x-auto">
+                        <div>
                             {/* REFERRAL OVERVIEW CARDS */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-8 mb-8">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-6 md:px-8 mb-8">
                                 <div className="p-5 bg-orange-50 rounded-2xl border border-orange-100">
                                       <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Total Rewards</p>
                                       <p className="text-2xl font-black text-slate-900">{referralData.overview.total_rewards || 0}</p>
@@ -233,59 +233,116 @@ const AdminPromos = () => {
                                 </div>
                             </div>
 
-                            <table className="w-full text-left text-sm border-separate border-spacing-0">
-                                <thead>
-                                    <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                                        <th className="px-8 py-5">Referrer (Pengundang)</th>
-                                        <th className="px-8 py-5">Referee (Undangan)</th>
-                                        <th className="px-8 py-5">Reward</th>
-                                        <th className="px-8 py-5">Holding Hingga</th>
-                                        <th className="px-8 py-5">Status</th>
-                                        <th className="px-8 py-5 text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
-                                    {referralData.rewards.length === 0 ? (
-                                        <tr><td colSpan="6" className="text-center py-20 text-slate-400 italic">Belum ada transaksi referral</td></tr>
-                                    ) : referralData.rewards.map((r) => (
-                                        <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-8 py-5 font-bold text-slate-900">{r.referrer_name}</td>
-                                            <td className="px-8 py-5 text-slate-500">{r.referee_name}</td>
-                                            <td className="px-8 py-5 font-bold text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(r.reward_amount)}</td>
-                                            <td className="px-8 py-5 text-[10px] font-bold uppercase text-slate-400">
-                                                {new Date(r.holding_until).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </td>
-                                            <td className="px-8 py-5">
-                                                <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border ${
-                                                    r.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                                    r.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-100'
-                                                }`}>
-                                                    {r.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-5 text-right">
-                                                {r.status !== 'cancelled' && (
-                                                    <button 
-                                                        onClick={async () => {
-                                                            const reason = prompt("Alasan pembatalan:");
-                                                            if (reason) {
-                                                                try {
-                                                                    await api.post(`/admin/referral/rewards/${r.id}/cancel`, { reason });
-                                                                    success("Reward dibatalkan.");
-                                                                    fetchReferralStats();
-                                                                } catch(e) { error("Gagal membatalkan reward."); }
-                                                            }
-                                                        }}
-                                                        className="text-rose-500 hover:underline text-[10px] font-bold uppercase"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                )}
-                                            </td>
+                            {/* MOBILE REFERRAL CARDS */}
+                            <div className="block sm:hidden divide-y divide-slate-50 border-t border-slate-50">
+                                {referralData.rewards.length === 0 ? (
+                                    <div className="px-6 py-20 text-center text-slate-400 italic">Belum ada transaksi referral</div>
+                                ) : referralData.rewards.map((r) => (
+                                    <div key={r.id} className="p-6 space-y-4">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Referrer</p>
+                                                <p className="font-black text-slate-900">{r.referrer_name}</p>
+                                            </div>
+                                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border ${
+                                                r.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                                                r.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+                                            }`}>
+                                                {r.status}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Referee</p>
+                                                <p className="text-sm font-bold text-slate-700">{r.referee_name}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reward</p>
+                                                <p className="text-sm font-black text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(r.reward_amount)}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-2">
+                                            <p className="text-[10px] font-bold uppercase text-slate-400">
+                                                Holding: {new Date(r.holding_until).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </p>
+                                            {r.status !== 'cancelled' && (
+                                                <button 
+                                                    onClick={async () => {
+                                                        const reason = prompt("Alasan pembatalan:");
+                                                        if (reason) {
+                                                            try {
+                                                                await api.post(`/admin/referral/rewards/${r.id}/cancel`, { reason });
+                                                                success("Reward dibatalkan.");
+                                                                fetchReferralStats();
+                                                            } catch(e) { error("Gagal membatalkan reward."); }
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-rose-50 text-rose-500 rounded-lg text-[10px] font-bold uppercase tracking-widest"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* DESKTOP REFERRAL TABLE */}
+                            <div className="hidden sm:block overflow-x-auto">
+                                <table className="w-full text-left text-sm border-separate border-spacing-0">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                                            <th className="px-8 py-5">Referrer (Pengundang)</th>
+                                            <th className="px-8 py-5">Referee (Undangan)</th>
+                                            <th className="px-8 py-5">Reward</th>
+                                            <th className="px-8 py-5">Holding Hingga</th>
+                                            <th className="px-8 py-5">Status</th>
+                                            <th className="px-8 py-5 text-right">Aksi</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
+                                        {referralData.rewards.length === 0 ? (
+                                            <tr><td colSpan="6" className="text-center py-20 text-slate-400 italic">Belum ada transaksi referral</td></tr>
+                                        ) : referralData.rewards.map((r) => (
+                                            <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-8 py-5 font-bold text-slate-900">{r.referrer_name}</td>
+                                                <td className="px-8 py-5 text-slate-500">{r.referee_name}</td>
+                                                <td className="px-8 py-5 font-bold text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(r.reward_amount)}</td>
+                                                <td className="px-8 py-5 text-[10px] font-bold uppercase text-slate-400">
+                                                    {new Date(r.holding_until).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border ${
+                                                        r.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                                                        r.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+                                                    }`}>
+                                                        {r.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-right">
+                                                    {r.status !== 'cancelled' && (
+                                                        <button 
+                                                            onClick={async () => {
+                                                                const reason = prompt("Alasan pembatalan:");
+                                                                if (reason) {
+                                                                    try {
+                                                                        await api.post(`/admin/referral/rewards/${r.id}/cancel`, { reason });
+                                                                        success("Reward dibatalkan.");
+                                                                        fetchReferralStats();
+                                                                    } catch(e) { error("Gagal membatalkan reward."); }
+                                                                }
+                                                            }}
+                                                            className="text-rose-500 hover:underline text-[10px] font-bold uppercase"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                       ) : (
                         <div className="px-8 pb-12 overflow-y-auto">
@@ -393,100 +450,155 @@ const AdminPromos = () => {
                     </button>
                  </div>
              ) : (
-                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm border-separate border-spacing-0">
-                        <thead>
-                            <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                                <th className="px-8 py-5">Kode & Nama</th>
-                                <th className="px-8 py-5">Diskon</th>
-                                <th className="px-8 py-5">Syarat</th>
-                                <th className="px-8 py-5 text-center">Kuota</th>
-                                <th className="px-8 py-5">Berlaku</th>
-                                <th className="px-8 py-5">Status</th>
-                                <th className="px-8 py-5 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
-                            {coupons
-                                .filter(c => !c.is_automatic)
-                                .map((v) => (
-                                 <tr key={v.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-8 py-5">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center border border-orange-100 shrink-0">
-                                                <span className="material-symbols-outlined text-base">confirmation_number</span>
+                 <div>
+                    {/* MOBILE VOUCHER CARDS */}
+                    <div className="block sm:hidden divide-y divide-slate-50 border-t border-slate-50">
+                        {coupons
+                            .filter(c => !c.is_automatic)
+                            .map((v) => (
+                                <div key={v.id} className="p-6 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#F97316] flex items-center justify-center border border-orange-100 shrink-0">
+                                                <span className="material-symbols-outlined text-lg">confirmation_number</span>
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-900 leading-tight text-sm tracking-tight">{v.code}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">{v.title}</p>
+                                                <p className="font-black text-slate-900 text-base tracking-tight">{v.code}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{v.title}</p>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td className="px-8 py-5">
-                                        <div className="flex flex-col">
-                                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all w-fit ${v.discount_type === 'percentage' ? 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-100' : 'bg-green-50 text-green-600 border-green-100 group-hover:bg-green-100'}`}>
-                                                {v.discount_type === 'percentage' ? `${v.discount_value}%` : `Rp ${new Intl.NumberFormat('id-ID').format(v.discount_value)}`}
-                                            </span>
-                                            {v.type === 'percentage' && v.max_discount > 0 && (
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">
-                                                    MAX: Rp {new Intl.NumberFormat('id-ID').format(v.max_discount)}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-5">
-                                        <div className="flex flex-col gap-1.5 text-xs">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Min. Blj:</span>
-                                                <span className="text-xs font-bold text-slate-700 tracking-tight">Rp {new Intl.NumberFormat('id-ID').format(v.min_transaction || 0)}</span>
-                                            </div>
-                                            <div className="flex flex-wrap gap-1">
-                                                {v.is_new_user_only && <span className="text-[8px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded-md font-bold uppercase tracking-tighter border border-purple-100">New User</span>}
-                                                {v.is_stackable && <span className="text-[8px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold uppercase tracking-tighter border border-blue-100">Stackable</span>}
-                                                {v.is_automatic && <span className="text-[8px] px-1.5 py-0.5 bg-orange-50 text-[#F97316] rounded-md font-bold uppercase tracking-tighter border border-orange-100">Auto</span>}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-5 text-center">
-                                        <div className="flex items-center justify-center gap-1.5 font-bold">
-                                            <span className="text-xs">{v.quota > 0 ? `${v.quota}x` : '∞'}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-5">
-                                        <div className="flex items-center gap-1.5 text-slate-500 font-bold uppercase tracking-tighter text-[10px]">
-                                            <span className="material-symbols-outlined text-[14px]">event</span>
-                                            <span>{new Date(v.expired_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-5">
-                                        <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all w-fit flex items-center gap-1 ${v.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100 group-hover:bg-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                            <div className={`w-1 h-1 rounded-full ${v.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
-                                            {v.is_active ? 'Aktif' : 'Non-Aktif'}
+                                        <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all ${v.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                            {v.is_active ? 'Aktif' : 'Off'}
                                         </span>
-                                    </td>
-                                    <td className="px-8 py-5 text-right">
-                                        <div className="flex justify-end gap-1.5">
-                                            <button 
-                                                onClick={() => handleEditClick(v)}
-                                                className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:bg-orange-950 hover:text-white border border-slate-100 transition-all shadow-sm active:scale-90 flex items-center justify-center"
-                                                title="Edit / Detail"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDeleteCoupon(v.id)}
-                                                className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:bg-rose-50 hover:text-rose-500 border border-slate-100 transition-all shadow-sm active:scale-90 flex items-center justify-center"
-                                                title="Hapus"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                                            </button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Diskon</p>
+                                            <p className="text-sm font-black text-slate-800">
+                                                {v.discount_type === 'percentage' ? `${v.discount_value}%` : `Rp ${new Intl.NumberFormat('id-ID').format(v.discount_value)}`}
+                                            </p>
                                         </div>
-                                    </td>
-                                 </tr>
-                             ))}
-                        </tbody>
-                    </table>
-                </div>
+                                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Berlaku S/D</p>
+                                            <p className="text-sm font-black text-slate-800">
+                                                {new Date(v.expired_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-2">
+                                        <button 
+                                            onClick={() => handleEditClick(v)}
+                                            className="px-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">edit</span> Edit
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDeleteCoupon(v.id)}
+                                            className="px-4 py-2 bg-rose-50 text-rose-500 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">delete</span> Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+
+                    {/* DESKTOP VOUCHER TABLE */}
+                    <div className="hidden sm:block overflow-x-auto">
+                        <table className="w-full text-left text-sm border-separate border-spacing-0">
+                            <thead>
+                                <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                                    <th className="px-8 py-5">Kode & Nama</th>
+                                    <th className="px-8 py-5">Diskon</th>
+                                    <th className="px-8 py-5">Syarat</th>
+                                    <th className="px-8 py-5 text-center">Kuota</th>
+                                    <th className="px-8 py-5">Berlaku</th>
+                                    <th className="px-8 py-5">Status</th>
+                                    <th className="px-8 py-5 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
+                                {coupons
+                                    .filter(c => !c.is_automatic)
+                                    .map((v) => (
+                                    <tr key={v.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center border border-orange-100 shrink-0">
+                                                    <span className="material-symbols-outlined text-base">confirmation_number</span>
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-900 leading-tight text-sm tracking-tight">{v.code}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">{v.title}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <div className="flex flex-col">
+                                                <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all w-fit ${v.discount_type === 'percentage' ? 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-100' : 'bg-green-50 text-green-600 border-green-100 group-hover:bg-green-100'}`}>
+                                                    {v.discount_type === 'percentage' ? `${v.discount_value}%` : `Rp ${new Intl.NumberFormat('id-ID').format(v.discount_value)}`}
+                                                </span>
+                                                {v.type === 'percentage' && v.max_discount > 0 && (
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">
+                                                        MAX: Rp {new Intl.NumberFormat('id-ID').format(v.max_discount)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <div className="flex flex-col gap-1.5 text-xs">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Min. Blj:</span>
+                                                    <span className="text-xs font-bold text-slate-700 tracking-tight">Rp {new Intl.NumberFormat('id-ID').format(v.min_transaction || 0)}</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {v.is_new_user_only && <span className="text-[8px] px-1.5 py-0.5 bg-purple-50 text-purple-600 rounded-md font-bold uppercase tracking-tighter border border-purple-100">New User</span>}
+                                                    {v.is_stackable && <span className="text-[8px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold uppercase tracking-tighter border border-blue-100">Stackable</span>}
+                                                    {v.is_automatic && <span className="text-[8px] px-1.5 py-0.5 bg-orange-50 text-[#F97316] rounded-md font-bold uppercase tracking-tighter border border-orange-100">Auto</span>}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5 text-center">
+                                            <div className="flex items-center justify-center gap-1.5 font-bold">
+                                                <span className="text-xs">{v.quota > 0 ? `${v.quota}x` : '∞'}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center gap-1.5 text-slate-500 font-bold uppercase tracking-tighter text-[10px]">
+                                                <span className="material-symbols-outlined text-[14px]">event</span>
+                                                <span>{new Date(v.expired_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all w-fit flex items-center gap-1 ${v.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100 group-hover:bg-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                                <div className={`w-1 h-1 rounded-full ${v.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
+                                                {v.is_active ? 'Aktif' : 'Non-Aktif'}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <div className="flex justify-end gap-1.5">
+                                                <button 
+                                                    onClick={() => handleEditClick(v)}
+                                                    className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:bg-orange-950 hover:text-white border border-slate-100 transition-all shadow-sm active:scale-90 flex items-center justify-center"
+                                                    title="Edit / Detail"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDeleteCoupon(v.id)}
+                                                    className="w-8 h-8 rounded-lg bg-white text-slate-400 hover:bg-rose-50 hover:text-rose-500 border border-slate-100 transition-all shadow-sm active:scale-90 flex items-center justify-center"
+                                                    title="Hapus"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                 </div>
              )}
           </div>
         </div>

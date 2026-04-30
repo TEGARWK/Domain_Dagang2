@@ -5,9 +5,11 @@ import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../components/dashboard/Sidebar";
 import TopNavbar from "../components/dashboard/TopNavbar";
 import { useConfirm } from "../context/ConfirmContext";
+import { useConfig } from "../context/ConfigContext";
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
+  const config = useConfig();
 
   // State Data User & Cart
   const [user, setUser] = useState(null);

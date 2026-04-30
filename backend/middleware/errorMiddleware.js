@@ -1,15 +1,17 @@
 const errorHandler = (err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  const fs = require('fs');
+  const path = require('path');
+  const logFile = path.join(__dirname, '../emergency_error.log');
   
+  const logEntry = `[${new Date().toISOString()}] ${req.method} ${req.url} - ${statusCode}\nERROR: ${err.message}\nSTACK: ${err.stack}\n---\n`;
+  fs.appendFileSync(logFile, logEntry);
+
   // Log error (Winston or just console for now)
   console.error("🔥 Error Middleware Caught:", err.message);
   console.error(err.stack);
 
-  const fs = require('fs');
-  const path = require('path');
-  const logFile = path.join(__dirname, '../error_debug.log');
-  const logMessage = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}\nERROR: ${err.message}\nSTACK: ${err.stack}\n---\n`;
-  fs.appendFileSync(logFile, logMessage);
+  fs.appendFileSync(logFile, logEntry);
 
   res.status(statusCode).json({
     success: false,

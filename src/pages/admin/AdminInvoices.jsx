@@ -142,6 +142,17 @@ const AdminInvoices = () => {
     }).format(num);
   };
 
+  const getActionBadge = (category) => {
+    const c = (category || 'REGISTER').toUpperCase();
+    switch(c) {
+      case 'TOPUP': return <span className="bg-purple-50 text-purple-600 border-purple-100 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border">Topup</span>;
+      case 'RENEW': return <span className="bg-indigo-50 text-indigo-600 border-indigo-100 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border">Renew</span>;
+      case 'TRANSFER': return <span className="bg-amber-50 text-amber-600 border-amber-100 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border">Transfer</span>;
+      case 'RESTORE': return <span className="bg-rose-50 text-rose-600 border-rose-100 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border">Restore</span>;
+      default: return <span className="bg-emerald-50 text-emerald-600 border-emerald-100 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border">Register</span>;
+    }
+  };
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredInvoices.slice(indexOfFirstItem, indexOfLastItem);
@@ -258,7 +269,75 @@ const AdminInvoices = () => {
             )}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* MOBILE CARDS */}
+        <div className="block sm:hidden divide-y divide-slate-50">
+          {loading ? (
+            <div className="px-6 py-20 text-center text-slate-400 italic font-bold">Memuat tagihan...</div>
+          ) : currentItems.length === 0 ? (
+            <div className="px-6 py-20 text-center text-slate-400 italic font-bold">Belum ada tagihan.</div>
+          ) : currentItems.map((inv) => (
+            <div key={inv.id} className="p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-bold text-[#F97316] text-sm">#{inv.id}</p>
+                    {getActionBadge(inv.action_type)}
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    {new Date(inv.created_at).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+                <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all ${
+                  inv.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                  inv.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+                }`}>
+                  {inv.status}
+                </span>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 font-bold text-[10px]">
+                      {inv.customer_name?.charAt(0) || "?"}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">{inv.customer_name || "Unknown"}</p>
+                      <p className="text-[9px] text-slate-400 font-medium">{inv.customer_email || "-"}</p>
+                    </div>
+                  </div>
+                  <p className="font-black text-slate-900">{formatRupiah(inv.total)}</p>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Link 
+                    to={`/admin/invoices/${inv.id}`}
+                    className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest text-center shadow-sm"
+                  >
+                    Detail
+                  </Link>
+                  {inv.status === 'pending' && (
+                    <button 
+                      onClick={() => handleApprove(inv.id)}
+                      className="flex-1 py-2.5 bg-slate-900 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-sm shadow-slate-900/10"
+                    >
+                      Approve
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => handleDelete(inv.id)}
+                    className="p-2.5 bg-rose-50 text-rose-500 rounded-lg border border-rose-100"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* DESKTOP TABLE */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-sm border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
@@ -267,6 +346,9 @@ const AdminInvoices = () => {
                 </th>
                 <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('customer_name')}>
                     Customer <SortIcon column="customer_name" />
+                </th>
+                <th className="px-8 py-5">
+                    Tipe
                 </th>
                 <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('total')}>
                     Total <SortIcon column="total" />
@@ -280,28 +362,17 @@ const AdminInvoices = () => {
             <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
               {loading ? (
                 <tr>
-                   <td colSpan="5" className="px-8 py-10 text-center text-slate-400 font-bold italic">Memuat tagihan...</td>
+                   <td colSpan="6" className="px-8 py-10 text-center text-slate-400 font-bold italic">Memuat tagihan...</td>
                 </tr>
               ) : currentItems.length === 0 ? (
                 <tr>
-                   <td colSpan="5" className="px-8 py-10 text-center text-slate-400 font-bold italic">Belum ada tagihan yang cocok.</td>
+                   <td colSpan="6" className="px-8 py-10 text-center text-slate-400 font-bold italic">Belum ada tagihan yang cocok.</td>
                 </tr>
               ) : (
                 currentItems.map((inv) => (
                   <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-5">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-[#F97316] text-xs">#{inv.id}</p>
-                        {inv.is_transfer ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">
-                                Transfer
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                New
-                            </span>
-                        )}
-                      </div>
+                      <p className="font-bold text-[#F97316] text-xs">#{inv.id}</p>
                       <p className="text-[10px] text-slate-400 font-medium tracking-tight">
                         {new Date(inv.created_at).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })}
                       </p>
@@ -309,6 +380,9 @@ const AdminInvoices = () => {
                     <td className="px-8 py-5">
                       <p className="font-semibold text-slate-800 text-xs">{inv.customer_name || "Unknown"}</p>
                       <p className="text-[10px] text-slate-400">{inv.customer_email || "-"}</p>
+                    </td>
+                    <td className="px-8 py-5">
+                      {getActionBadge(inv.category)}
                     </td>
                     <td className="px-8 py-5">
                       <p className="font-bold text-slate-900">{formatRupiah(inv.total)}</p>

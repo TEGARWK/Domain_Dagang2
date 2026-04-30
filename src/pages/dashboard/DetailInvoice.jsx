@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import html2pdf from "html2pdf.js";
+import { QRCodeCanvas } from "qrcode.react";
+import { useNotification } from "../../context/NotificationContext";
 
 const DetailInvoice = () => {
   const params = useParams();
@@ -9,6 +11,7 @@ const DetailInvoice = () => {
   const id = params.id || params.invoiceId;
 
   const navigate = useNavigate();
+  const { success, error, info } = useNotification();
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,17 +40,90 @@ const DetailInvoice = () => {
     }).format(num);
   };
 
+  const getBankName = (code) => {
+    const bankCode = String(code || "").toLowerCase();
+    if (bankCode === '014' || bankCode.includes('bca')) return "BCA Virtual Account";
+    if (bankCode === '008' || bankCode.includes('mandiri')) return "Mandiri Virtual Account";
+    if (bankCode === '009' || bankCode.includes('bni')) return "BNI Virtual Account";
+    if (bankCode === '002' || bankCode.includes('bri')) return "BRI Virtual Account";
+    if (bankCode === '013' || bankCode.includes('permata')) return "Permata Virtual Account";
+    if (bankCode === '451' || bankCode.includes('bsi')) return "BSI Virtual Account";
+    if (bankCode === '011' || bankCode.includes('danamon')) return "Danamon Virtual Account";
+    return code || "Bank Transfer";
+  };
+
+  const getBankLogo = (code, iconUrl) => {
+    if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'))) return iconUrl;
+    const bankCode = code ? String(code).toLowerCase() : '';
+    const origin = window.location.origin;
+    if (bankCode === '014' || bankCode.includes('bca')) return `${origin}/image/banks/bca.png`;
+    if (bankCode === '008' || bankCode.includes('mandiri')) return `${origin}/image/banks/mandiri.png`;
+    if (bankCode === '009' || bankCode.includes('bni')) return `${origin}/image/banks/bni.png`;
+    if (bankCode === '002' || bankCode.includes('bri')) return `${origin}/image/banks/bri.png`;
+    if (bankCode === '013' || bankCode.includes('permata')) return `${origin}/image/banks/permata.png`;
+    if (bankCode === '011' || bankCode.includes('danamon')) return `${origin}/image/banks/danamon.png`;
+    if (bankCode === '451' || bankCode.includes('bsi')) return `${origin}/image/banks/bsi.png`;
+    if (bankCode.includes('qris') || bankCode === 'qr') return `${origin}/image/banks/qris.png`;
+    return iconUrl || `${origin}/image/banks/${bankCode}.png`;
+  };
+
+  const formatDeadline = (expiredAt) => {
+    if (!expiredAt) return invoice?.due_date || "-";
+    try {
+      const expiryDate = typeof expiredAt === 'number' && expiredAt < 10000000000 ? new Date(expiredAt * 1000) : new Date(expiredAt);
+      if (isNaN(expiryDate.getTime())) return invoice?.due_date || "-";
+      return new Intl.DateTimeFormat('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(expiryDate);
+    } catch (e) { return invoice?.due_date || "-"; }
+  };
+
   const handlePrint = () => {
     window.print();
   };
 
   const handleDownloadPdf = () => {
     const element = document.getElementById('invoice-print-area');
+    if (!element) return;
+
     const opt = {
       margin:       0.2,
       filename:     `Tagihan_DomainDagang_${invoice.id}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, windowWidth: 1000 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        windowWidth: 1000,
+        logging: false,
+        onclone: (clonedDoc) => {
+          // JURUS PAMUNGKAS: Cari dan ganti semua properti oklch di dokumen kloningan
+          const allElements = clonedDoc.getElementsByTagName('*');
+          for (let i = 0; i < allElements.length; i++) {
+            const el = allElements[i];
+            const style = window.getComputedStyle(el);
+            
+            // Periksa properti yang sering pakai oklch
+            ['color', 'backgroundColor', 'borderColor', 'outlineColor', 'textDecorationColor', 'fill', 'stroke'].forEach(prop => {
+              const val = el.style[prop] || style[prop];
+              if (val && val.includes('oklch')) {
+                // Paksa jadi transparan atau warna standar jika html2canvas tidak bisa handle
+                // Tapi lebih baik kita set manual ke warna yang kita mau
+                if (prop === 'color') el.style.color = '#1e293b';
+                else if (prop === 'backgroundColor') {
+                  if (val.includes('0.05') || val.includes('5%')) el.style.backgroundColor = '#f8fafc';
+                  else el.style.backgroundColor = 'transparent';
+                }
+                else el.style[prop] = 'transparent';
+              }
+            });
+          }
+        }
+      },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
     html2pdf().set(opt).from(element).save();
@@ -85,6 +161,17 @@ const DetailInvoice = () => {
     );
   }
 
+  const getCategoryBadge = (cat) => {
+    const c = (cat || 'REGISTER').toUpperCase();
+    switch(c) {
+        case 'TOPUP': return <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-md text-[10px] font-bold border border-purple-200 uppercase tracking-widest shadow-sm">Top-up Saldo</span>;
+        case 'RENEW': return <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-[10px] font-bold border border-indigo-200 uppercase tracking-widest shadow-sm">Perpanjang Domain</span>;
+        case 'TRANSFER': return <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-md text-[10px] font-bold border border-amber-200 uppercase tracking-widest shadow-sm">Transfer Domain</span>;
+        case 'RESTORE': return <span className="bg-rose-100 text-rose-700 px-3 py-1 rounded-md text-[10px] font-bold border border-rose-200 uppercase tracking-widest shadow-sm">Restore Domain</span>;
+        default: return <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md text-[10px] font-bold border border-emerald-200 uppercase tracking-widest shadow-sm">Registrasi Domain</span>;
+    }
+  };
+
   return (
     <div className="pb-20">
       {/* --- ACTION BAR (Tombol Balik & Print) --- */}
@@ -109,12 +196,19 @@ const DetailInvoice = () => {
         </button>
         <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
           {invoice.status === "pending" && (
-            <button
-              onClick={() => navigate(`/payment/${invoice.id}`)}
-              className="flex-1 md:flex-none justify-center bg-[#F97316] text-white px-4 sm:px-5 py-2.5 rounded-lg font-bold text-xs sm:text-sm hover:bg-[#ea580c] transition classic-shadow flex items-center gap-2"
-            >
-              Bayar Sekarang
-            </button>
+            invoice.has_proof ? (
+              <div className="flex-1 md:flex-none bg-slate-100 text-slate-500 px-5 py-2.5 rounded-lg font-bold text-xs flex items-center gap-2 border border-slate-200">
+                <span className="material-symbols-outlined text-lg">verified_user</span>
+                Pembayaran Dalam Proses Verifikasi
+              </div>
+            ) : (
+              <button
+                onClick={() => navigate(`/payment/${invoice.id}`)}
+                className="flex-1 md:flex-none justify-center bg-[#F97316] text-white px-4 sm:px-5 py-2.5 rounded-lg font-bold text-xs sm:text-sm hover:bg-[#ea580c] transition classic-shadow flex items-center gap-2"
+              >
+                Bayar Sekarang
+              </button>
+            )
           )}
           <button
             onClick={handleDownloadPdf}
@@ -139,6 +233,41 @@ const DetailInvoice = () => {
       </div>
 
       {/* --- KERTAS INVOICE (Area yang akan di-print) --- */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        #invoice-print-area {
+          color-scheme: light !important;
+        }
+        /* Override Tailwind v4 oklch for html2canvas compatibility */
+        #invoice-print-area, #invoice-print-area * {
+          --color-orange-50: #fff7ed !important;
+          --color-orange-100: #ffedd5 !important;
+          --color-orange-500: #f97316 !important;
+          --color-orange-600: #ea580c !important;
+          --color-slate-50: #f8fafc !important;
+          --color-slate-100: #f1f5f9 !important;
+          --color-slate-200: #e2e8f0 !important;
+          --color-slate-300: #cbd5e1 !important;
+          --color-slate-400: #94a3b8 !important;
+          --color-slate-500: #64748b !important;
+          --color-slate-600: #475569 !important;
+          --color-slate-700: #334155 !important;
+          --color-slate-800: #1e293b !important;
+          --color-slate-900: #0f172a !important;
+          --color-emerald-50: #ecfdf5 !important;
+          --color-emerald-100: #d1fae5 !important;
+          --color-emerald-500: #10b981 !important;
+          --color-emerald-600: #059669 !important;
+          --color-emerald-700: #047857 !important;
+          --color-purple-100: #f3e8ff !important;
+          --color-purple-700: #7e22ce !important;
+          --color-indigo-100: #e0e7ff !important;
+          --color-indigo-700: #4338ca !important;
+          --color-amber-100: #fef3c7 !important;
+          --color-amber-700: #b45309 !important;
+          --color-rose-100: #ffe4e6 !important;
+          --color-rose-700: #be123c !important;
+        }
+      ` }} />
       <div className="max-w-3xl mx-auto classic-shadow-lg rounded-lg bg-white print:shadow-none sm:mx-4 md:mx-auto">
         <div id="invoice-print-area" className="bg-white p-5 sm:p-8 rounded-lg border border-[#f1f5f9] print:border-none print:p-0 relative overflow-hidden">
         
@@ -176,19 +305,22 @@ const DetailInvoice = () => {
               </div>
             </div>
           </div>
-          <div className="text-left md:text-right w-full md:w-auto">
-            <h1 className="text-lg md:text-xl font-bold text-[#1e293b] mb-2 break-all">
+          <div className="text-left md:text-right w-full md:w-auto flex flex-col items-start md:items-end gap-2">
+            <h1 className="text-lg md:text-xl font-bold text-[#1e293b] break-all leading-none">
               #{invoice.id}
             </h1>
-            {invoice.status === "paid" ? (
-              <span className="bg-[#dcfce7] text-[#15803d] px-3 py-1 rounded-md text-xs font-bold border border-[#bbf7d0] uppercase tracking-widest">
-                LUNAS
-              </span>
-            ) : (
-              <span className="bg-[#ffedd5] text-[#c2410c] px-3 py-1 rounded-md text-xs font-bold border border-[#fed7aa] uppercase tracking-widest">
-                PENDING
-              </span>
-            )}
+            <div className="flex flex-wrap gap-2 justify-start md:justify-end">
+              {getCategoryBadge(invoice.category)}
+              {invoice.status === "paid" ? (
+                <span className="bg-[#dcfce7] text-[#15803d] px-3 py-1 rounded-md text-[10px] font-bold border border-[#bbf7d0] uppercase tracking-widest">
+                  LUNAS
+                </span>
+              ) : (
+                <span className="bg-[#ffedd5] text-[#c2410c] px-3 py-1 rounded-md text-[10px] font-bold border border-[#fed7aa] uppercase tracking-widest">
+                  PENDING
+                </span>
+              )}
+            </div>
           </div>
         </div>
  
@@ -230,13 +362,25 @@ const DetailInvoice = () => {
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-1">
               Jatuh Tempo
             </p>
-            <p className="font-semibold text-white">{invoice.due_date || "-"}</p>
+            <p className="font-bold text-white text-[11px] tracking-tight">{formatDeadline(invoice.payment_instructions?.expired_at || invoice.expired_at)}</p>
           </div>
-          <div>
+          <div className="flex flex-col">
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-1">
               Metode Pembayaran
             </p>
-            <p className="font-bold text-[#f97316] uppercase">{invoice.payment_method || "N/A"}</p>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-white rounded p-1 flex items-center justify-center border border-slate-700/50">
+                <img 
+                  src={getBankLogo(invoice.payment_instructions?.bank_code, invoice.payment_instructions?.manual_details?.logo_url)} 
+                  alt="Logo Bank" 
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => e.target.style.display = 'none'}
+                />
+              </div>
+              <p className="font-bold text-[#f97316] text-[11px] uppercase tracking-wider">
+                {getBankName(invoice.payment_instructions?.bank_code || invoice.payment_method)}
+              </p>
+            </div>
           </div>
           <div className="text-left md:text-right sm:col-span-2 md:col-span-1">
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-1">
@@ -275,8 +419,9 @@ const DetailInvoice = () => {
           </table>
         </div>
 
+
         {/* SUMMARY & SIGNATURE */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 relative z-10 px-2">
           <div>
              <p className="text-[9px] text-[#94a3b8] font-semibold uppercase tracking-widest leading-relaxed mb-4">
                 * Tagihan ini sah tanpa tanda tangan basah.<br/>
@@ -284,7 +429,7 @@ const DetailInvoice = () => {
                 * Seluruh pembayaran bersifat final (No Refund Policy).
              </p>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             <div className="flex justify-between text-xs">
               <span className="text-[#64748b] font-semibold uppercase tracking-wider">Subtotal (Bruto)</span>
               <span className="font-bold text-[#1e293b]">
@@ -325,8 +470,8 @@ const DetailInvoice = () => {
               </div>
             )}
             <div className="border-t-2 border-[#1e293b] pt-3 flex justify-between items-center">
-              <span className="text-[#1e293b] font-bold text-xs uppercase tracking-widest">Total Bayar</span>
-              <span className="text-[#F97316] font-bold text-xl tracking-tighter">{formatRupiah(invoice.total)}</span>
+              <span className="text-[#1e293b] font-bold text-[10px] uppercase tracking-[0.2em]">Total Bayar</span>
+              <span className="text-[#F97316] font-bold text-2xl tracking-tighter">{formatRupiah(invoice.total)}</span>
             </div>
           </div>
         </div>
@@ -387,6 +532,7 @@ const DetailInvoice = () => {
           </p>
         </div>
       </div>
+
     </div>
   </div>
   );

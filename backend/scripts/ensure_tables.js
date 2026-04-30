@@ -108,7 +108,65 @@ async function run() {
         try { await pool.query("ALTER TABLE promo_events ADD COLUMN IF NOT EXISTS valid_until TIMESTAMP WITH TIME ZONE"); } catch(e){}
         try { await pool.query("ALTER TABLE promo_events ADD COLUMN IF NOT EXISTS is_automatic BOOLEAN DEFAULT TRUE"); } catch(e){}
 
+        // --- site_settings: key-value store untuk konfigurasi global ---
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS site_settings (
+                id SERIAL PRIMARY KEY,
+                setting_key VARCHAR(100) NOT NULL UNIQUE,
+                setting_value TEXT,
+                setting_group VARCHAR(50) DEFAULT 'general',
+                label VARCHAR(255),
+                description TEXT,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        `);
+
+        // Seed data default untuk footer jika belum ada
+        const defaultSettings = [
+            { key: 'footer_company_name',  value: 'PT. Aplikasi Dagang Teknologi', group: 'footer', label: 'Nama Perusahaan' },
+            { key: 'footer_address',       value: 'Jl. Cigadung Raya Tengah No.52, RT.2, Cigadung, Kec. Cibeunying Kaler, Kota Bandung, Jawa Barat 40191', group: 'footer', label: 'Alamat Kantor' },
+            { key: 'footer_support_email', value: 'support@domaindagang.com', group: 'footer', label: 'Email Support (Internal)' },
+            { key: 'footer_whatsapp',      value: '081384868040', group: 'footer', label: 'WhatsApp CS (Internal)' },
+            { key: 'footer_copyright',     value: '© 2026 PT. Aplikasi Dagang Teknologi. All rights reserved.', group: 'footer', label: 'Teks Copyright' },
+            { key: 'footer_instagram',     value: 'https://instagram.com/Jasaweb_pro', group: 'social', label: 'Instagram URL' },
+            { key: 'footer_youtube',       value: 'https://youtube.com/@aplikasidagang', group: 'social', label: 'YouTube URL' },
+            { key: 'footer_facebook',      value: 'https://facebook.com/aplikasidagang', group: 'social', label: 'Facebook URL' },
+            { key: 'footer_tiktok',        value: 'https://tiktok.com/@aplikasidagang', group: 'social', label: 'TikTok URL' },
+            { key: 'footer_x',             value: 'https://x.com/aplikasidagang', group: 'social', label: 'X (Twitter) URL' },
+        ];
+
+        // Konversi setting_value dari JSONB ke TEXT jika perlu (untuk kompatibilitas)
+        try {
+            await pool.query(`
+                DO $$
+                BEGIN
+                  IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'site_settings'
+                      AND column_name = 'setting_value'
+                      AND data_type = 'jsonb'
+                  ) THEN
+                    ALTER TABLE site_settings ALTER COLUMN setting_value TYPE TEXT USING setting_value::TEXT;
+                  END IF;
+                END
+                $$
+            `);
+        } catch(e) { console.warn("⚠️  setting_value conversion skipped:", e.message); }
+
+        // Seed data default untuk footer jika belum ada
+        for (const s of defaultSettings) {
+            try {
+                await pool.query(
+                    `INSERT INTO site_settings (setting_key, setting_value, setting_group, label)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT (setting_key) DO NOTHING`,
+                    [s.key, s.value, s.group, s.label]
+                );
+            } catch(e) { console.warn(`⚠️  Seed skip [${s.key}]:`, e.message); }
+        }
+
         console.log("💎 Schema verification complete!");
+
     } catch (err) {
         console.error("❌ Fatal Error during schema fix:", err.message);
     } finally {

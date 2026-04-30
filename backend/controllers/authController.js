@@ -108,7 +108,7 @@ exports.verifyEmail = async (req, res) => {
     // Generate Token
     const payload = { id: user.id, role: user.role || 'user' };
     const jwtToken = jwt.sign(payload, process.env.JWT_SECRET || 'secretkey', {
-        expiresIn: '24h'
+        expiresIn: '7d'
     });
 
     const { password, ...other } = user;
@@ -156,19 +156,23 @@ exports.login = async (req, res) => {
     // Generate Token
     const payload = { id: user.id, role: user.role || 'user' };
     const token = jwt.sign(payload, process.env.JWT_SECRET || 'secretkey', {
-        expiresIn: '24h'
+        expiresIn: '7d'
     });
     
     console.log(`[Auth] Token Generated for ID ${payload.id}. Token: ${token.substring(0, 20)}...`);
 
-    // Audit Log for Login
-    createLog({
-        user_id: user.id,
-        action: 'LOGIN_SUCCESS',
-        entity_type: 'user',
-        entity_id: user.id,
-        req
-    });
+    // Audit Log for Login (Wrapped in try-catch to prevent 500 error if logging fails)
+    try {
+        createLog({
+            user_id: user.id,
+            action: 'LOGIN_SUCCESS',
+            entity_type: 'user',
+            entity_id: user.id,
+            req
+        });
+    } catch (logErr) {
+        console.error("[Auth] Logging failed:", logErr.message);
+    }
 
     return res.status(200).json({ ...other, token });
   } catch (err) {
@@ -247,13 +251,17 @@ exports.googleAuth = async (req, res) => {
   try {
     const { credential } = req.body;
     
-    if (!process.env.GOOGLE_CLIENT_ID) {
+    // Fetch dynamic Google Client ID from DB
+    const settingsRes = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'google_client_id'");
+    const dynamicClientId = settingsRes.rows.length > 0 ? settingsRes.rows[0].setting_value : null;
+
+    if (!dynamicClientId) {
         return res.status(500).json("Google Client ID is not configured on the server.");
     }
 
     const ticket = await client.verifyIdToken({
       idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: dynamicClientId,
     });
     
     const payload = ticket.getPayload();
@@ -296,18 +304,22 @@ exports.googleAuth = async (req, res) => {
     // 3. Generate JWT
     const jwtPayload = { id: user.id, role: user.role || 'user' };
     const token = jwt.sign(jwtPayload, process.env.JWT_SECRET || 'secretkey', {
-      expiresIn: '24h'
+      expiresIn: '7d'
     });
 
     const { password, ...other } = user;
     
-    createLog({
-      user_id: user.id,
-      action: 'LOGIN_GOOGLE',
-      entity_type: 'user',
-      entity_id: user.id,
-      req
-    });
+    try {
+        createLog({
+          user_id: user.id,
+          action: 'LOGIN_GOOGLE',
+          entity_type: 'user',
+          entity_id: user.id,
+          req
+        });
+    } catch (logErr) {
+        console.error("[Auth] Google Logging failed:", logErr.message);
+    }
 
     return res.status(200).json({ ...other, token });
   } catch (err) {

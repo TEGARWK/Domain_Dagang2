@@ -11,12 +11,6 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api/domain-availability': {
-        target: 'http://127.0.0.1:3009',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
       '/api': {
         target: 'http://127.0.0.1:3009',
         changeOrigin: true,

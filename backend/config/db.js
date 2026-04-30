@@ -46,13 +46,23 @@ const query = (text, params, callback) => {
   let paramIndex = 1;
   const translatedText = text.replace(/\?/g, () => `$${paramIndex++}`);
 
+  const fs = require('fs');
+  const path = require('path');
+  const logFile = path.join(__dirname, '../db_queries.log');
+  
+  // Log the query for debugging
+  const logEntry = `[${new Date().toISOString()}] QUERY: ${translatedText} | PARAMS: ${JSON.stringify(params)}\n`;
+  fs.appendFileSync(logFile, logEntry);
+
   // PROMISE SUPPORT: If no callback provided, return a promise
   if (!callback) {
     return new Promise((resolve, reject) => {
       pool.query(translatedText, params, (err, res) => {
         if (err) {
+          const sanitizedErr = { message: err.message, code: err.code, detail: err.detail };
+          fs.appendFileSync(logFile, `[${new Date().toISOString()}] ❌ ERROR: ${err.message}\n`);
           console.error("❌ SQL Error:", err.message);
-          return reject(err);
+          return reject(sanitizedErr);
         }
         const results = res.rows || [];
         results.affectedRows = res.rowCount;
@@ -64,10 +74,12 @@ const query = (text, params, callback) => {
   // CALLBACK SUPPORT
   return pool.query(translatedText, params, (err, res) => {
     if (err) {
+      const sanitizedErr = { message: err.message, code: err.code, detail: err.detail };
+      fs.appendFileSync(logFile, `[${new Date().toISOString()}] ❌ ERROR: ${err.message}\n`);
       console.error("❌ SQL Error:", err.message);
       console.error("   Query:", translatedText);
       console.error("   Params:", params);
-      if (callback) callback(err, null);
+      if (callback) callback(sanitizedErr, null);
       return;
     }
     const results = res.rows || [];

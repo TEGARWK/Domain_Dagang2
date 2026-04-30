@@ -1,21 +1,58 @@
 const axios = require("axios");
+const db = require("../config/db");
 require("dotenv").config();
 
 class DaftarnamaService {
     constructor() {
-        // Log key presence for debugging (don't log the full key for security)
-        const key = process.env.DAFTARNAMA_API_KEY;
-        if (!key) {
-            console.error("[DaftarnamaService] CRITICAL: DAFTARNAMA_API_KEY is missing in .env!");
-        } else {
-            console.log(`[DaftarnamaService] Initialized with API Key: ${key.substring(0, 5)}...`);
+        this.config = null;
+    }
+
+    /**
+     * Ambil konfigurasi terbaru dari database.
+     * Jika di database kosong, gunakan .env sebagai fallback.
+     */
+    async getDynamicConfig() {
+        try {
+            const query = "SELECT setting_key, setting_value FROM site_settings WHERE setting_key LIKE 'domain_api_%'";
+            const results = await db.pool.query(query);
+            
+            const dbSettings = {};
+            results.rows.forEach(row => {
+                dbSettings[row.setting_key] = row.setting_value;
+            });
+
+            return {
+                baseURL: dbSettings.domain_api_url,
+                apiKey: dbSettings.domain_api_key,
+                user: dbSettings.domain_api_user,
+                mode: dbSettings.domain_api_mode || "sandbox"
+            };
+        } catch (err) {
+            console.error("[DaftarnamaService] Gagal ambil config dari DB:", err.message);
+            return {
+                baseURL: null,
+                apiKey: null,
+                user: null,
+                mode: "sandbox"
+            };
         }
+    }
+
+    /**
+     * Helper untuk membuat axios client dengan config terbaru
+     */
+    async getClient() {
+        const config = await this.getDynamicConfig();
         
-        this.client = axios.create({
-            baseURL: process.env.DAFTARNAMA_BASE_URL,
+        if (!config.apiKey) {
+            console.error("[DaftarnamaService] CRITICAL: API Key tidak ditemukan!");
+        }
+
+        return axios.create({
+            baseURL: config.baseURL,
             headers: {
-                "X-API-Key": key, 
-                Accept: "application/json",
+                "X-API-Key": config.apiKey,
+                "Accept": "application/json",
                 "Content-Type": "application/json",
             },
         });
@@ -32,7 +69,8 @@ class DaftarnamaService {
 
     async getMyBalance() {
         try {
-            const response = await this.client.get("/my/balance");
+            const client = await this.getClient();
+            const response = await client.get("/my/balance");
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error getting balance:", error.response?.data || error.message);
@@ -45,10 +83,9 @@ class DaftarnamaService {
     }
 
     async checkAvailability(domain) {
-
-
         try {
-            const response = await this.client.get("/domain-availability", {
+            const client = await this.getClient();
+            const response = await client.get("/domain-availability", {
                 params: { domain_name: domain }, 
             });
             return response.data;
@@ -59,10 +96,9 @@ class DaftarnamaService {
     }
 
     async getTLDPricings() {
-
-
         try {
-            const response = await this.client.get("/customer-tld-pricings");
+            const client = await this.getClient();
+            const response = await client.get("/customer-tld-pricings");
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error getting pricings:", error.response?.data || error.message);
@@ -72,7 +108,8 @@ class DaftarnamaService {
 
     async createCustomer(userData) {
         try {
-            const response = await this.client.post("customers", userData);
+            const client = await this.getClient();
+            const response = await client.post("customers", userData);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error creating customer:", error.response?.data || error.message);
@@ -81,10 +118,9 @@ class DaftarnamaService {
     }
 
     async registerDomain(domainData) {
-
-
         try {
-            const response = await this.client.post("domains", domainData);
+            const client = await this.getClient();
+            const response = await client.post("domains", domainData);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error registering domain:", error.response?.data || error.message);
@@ -94,7 +130,8 @@ class DaftarnamaService {
 
     async getDNSRecords(domainName) {
         try {
-            const response = await this.client.get(`/domains/${domainName}/dns-records`);
+            const client = await this.getClient();
+            const response = await client.get(`/domains/${domainName}/dns-records`);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error getting DNS records:", error.response?.data || error.message);
@@ -104,7 +141,8 @@ class DaftarnamaService {
 
     async addDNSRecord(domainName, recordData) {
         try {
-            const response = await this.client.post(`/domains/${domainName}/dns-records`, recordData);
+            const client = await this.getClient();
+            const response = await client.post(`/domains/${domainName}/dns-records`, recordData);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error adding DNS record:", error.response?.data || error.message);
@@ -114,7 +152,8 @@ class DaftarnamaService {
 
     async deleteDNSRecord(domainName, recordId) {
         try {
-            const response = await this.client.delete(`/domains/${domainName}/dns-records/${recordId}`);
+            const client = await this.getClient();
+            const response = await client.delete(`/domains/${domainName}/dns-records/${recordId}`);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error deleting DNS record:", error.response?.data || error.message);
@@ -124,8 +163,8 @@ class DaftarnamaService {
 
     async updateNameservers(domainName, nameservers) {
         try {
-            // API expects array of strings
-            const response = await this.client.put(`/domains/${domainName}/nameservers`, { nameservers });
+            const client = await this.getClient();
+            const response = await client.put(`/domains/${domainName}/nameservers`, { nameservers });
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error updating nameservers:", error.response?.data || error.message);
@@ -135,8 +174,8 @@ class DaftarnamaService {
 
     async setRegistrarLock(domainName, isLocked) {
         try {
-            // User requested PUT /domains/{domain_name}/is_enable_transfer_protection
-            const response = await this.client.put(`/domains/${domainName}/is_enable_transfer_protection`, { 
+            const client = await this.getClient();
+            const response = await client.put(`/domains/${domainName}/is_enable_transfer_protection`, { 
                 is_enable_transfer_protection: isLocked 
             });
             return response.data;
@@ -148,13 +187,14 @@ class DaftarnamaService {
 
     async getDomainInfo(domainName) {
         try {
-            const response = await this.client.get(`/domains/${domainName}`);
+            const client = await this.getClient();
+            const response = await client.get(`/domains/${domainName}`);
             return response.data;
         } catch (error) {
-             console.error("[DaftarnamaService] Error getting domain info:", error.response?.data || error.message);
-             // Return null if not found instead of throwing to allow sync to continue for others
-            // Return null if not found instead of throwing to allow sync to continue for others
+             // Suppress noise for 404 (Not Found) during background sync
              if (error.response?.status === 404) return null;
+             
+             console.error("[DaftarnamaService] Error getting domain info:", error.response?.data || error.message);
              throw error;
         }
     }
@@ -187,18 +227,14 @@ class DaftarnamaService {
 
     async initiateTransfer(domainName, eppCode, contactData = {}) {
         try {
-            // POST /domains/transfer
-            // Payload: { domain_name, epp_code, ...contactData }
+            const client = await this.getClient();
             const payload = {
                 domain_name: domainName,
                 epp_code: eppCode,
-                duration: 1, // Default duration
+                duration: 1,
                 ...contactData
             };
-            
-
-
-            const response = await this.client.post("/domain/transfer", payload); // URL changed to /domain/transfer based on screenshot
+            const response = await client.post("/domain/transfer", payload);
             return response.data; 
         } catch (error) {
              console.error("[DaftarnamaService] Error initiating transfer:", error.response?.data || error.message);
@@ -208,12 +244,11 @@ class DaftarnamaService {
 
     async getTransferStatus(domainName) {
         try {
-            // GET /domains/{domain_name}/transfer
-            const response = await this.client.get(`/domains/${domainName}/transfer`);
-            return response.data; // Expected: { status: "client_transfer_prohibited" | "pending" | "success" }
+            const client = await this.getClient();
+            const response = await client.get(`/domains/${domainName}/transfer`);
+            return response.data;
         } catch (error) {
              console.error("[DaftarnamaService] Error getting transfer status:", error.response?.data || error.message);
-             // If 404, maybe no transfer in progress
              if (error.response?.status === 404) return null;
              throw error;
         }
@@ -221,12 +256,12 @@ class DaftarnamaService {
 
     async renewDomain(domainName, period = 1, currentExpiryDate) {
         try {
-             // Daftarnama v2 requires duration instead of period
+             const client = await this.getClient();
              const payload = { duration: period };
              if (currentExpiryDate) {
                  payload.current_expiry_date = currentExpiryDate;
              }
-             const response = await this.client.post(`/domains/${domainName}/renew`, payload);
+             const response = await client.post(`/domains/${domainName}/renew`, payload);
              return response.data;
         } catch (error) {
              console.error("[DaftarnamaService] Error renewing domain:", error.response?.data || error.message);
@@ -236,7 +271,8 @@ class DaftarnamaService {
 
     async getDocumentUrl(domainName) {
         try {
-            const response = await this.client.get(`/domains/${domainName}/upload_document_url`);
+            const client = await this.getClient();
+            const response = await client.get(`/domains/${domainName}/upload_document_url`);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error getting document upload URL:", error.response?.data || error.message);
@@ -246,9 +282,8 @@ class DaftarnamaService {
 
     async restoreDomain(domainName) {
         try {
-
-
-            const response = await this.client.post(`/domains/${domainName}/restore`);
+            const client = await this.getClient();
+            const response = await client.post(`/domains/${domainName}/restore`);
             return response.data;
         } catch (error) {
             console.error("[DaftarnamaService] Error restoring domain:", error.response?.data || error.message);

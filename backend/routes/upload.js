@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { verifyAdmin } = require('../middleware/adminMiddleware'); // Keep uploads restricted to Admins if it's for banners
+const { verifyAdmin } = require('../middleware/adminMiddleware');
+const { verifyToken } = require('../middleware/authMiddleware');
 const fs = require('fs');
 const { convertToWebP, removeOldImage } = require('../utils/imageConverter');
 
@@ -66,6 +67,53 @@ router.post('/banner', verifyAdmin, upload.single('image'), async (req, res) => 
     } catch (error) {
         console.error("Upload Error:", error);
         res.status(500).json({ success: false, message: error.message || 'Gagal mengunggah file' });
+    }
+});
+
+// Route for uploading gateway logos or QRIS images
+router.post('/gateway', verifyAdmin, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Tidak ada file yang diunggah.' });
+        }
+
+        // Hapus file lama jika ada
+        if (req.body.oldImageUrl) {
+            removeOldImage(req.body.oldImageUrl, uploadDir);
+        }
+
+        // Konversi ke WebP dengan prefix 'gateway'
+        const webpFilename = await convertToWebP(req.file.buffer, req.file.originalname, uploadDir, 'gateway');
+
+        res.json({
+            success: true,
+            message: 'Gambar berhasil diunggah',
+            imageUrl: `/uploads/${webpFilename}`
+        });
+    } catch (error) {
+        console.error("Gateway Upload Error:", error);
+        res.status(500).json({ success: false, message: error.message || 'Gagal mengunggah gambar' });
+    }
+});
+
+// Route for uploading payment proof (Accessible by Users)
+router.post('/proof', verifyToken, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Tidak ada file yang diunggah.' });
+        }
+
+        // Konversi ke WebP dengan prefix 'proof'
+        const webpFilename = await convertToWebP(req.file.buffer, req.file.originalname, uploadDir, 'proof');
+
+        res.json({
+            success: true,
+            message: 'Bukti pembayaran berhasil diunggah',
+            imageUrl: `/uploads/${webpFilename}`
+        });
+    } catch (error) {
+        console.error("Proof Upload Error:", error);
+        res.status(500).json({ success: false, message: error.message || 'Gagal mengunggah bukti pembayaran' });
     }
 });
 

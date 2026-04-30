@@ -234,22 +234,22 @@ const Promo = () => {
           <div className="bg-slate-900 rounded-[3rem] p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-orange-500/20 via-transparent to-transparent"></div>
             <div className="relative z-10">
-              <span className="text-[#F97316] font-bold uppercase tracking-[0.3em] text-[10px] mb-6 block">Stay Updated</span>
-              <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight leading-[1.1]">
-                Jangan Lewatkan <br className="md:hidden"/> <span className="text-[#F97316]">Promo Gila!</span>
+              <span className="text-[#F97316] font-bold uppercase tracking-[0.4em] text-[10px] mb-6 block opacity-80">Stay Updated</span>
+              <h2 className="text-3xl md:text-5xl font-black mb-6 tracking-tight leading-[1.1] text-white">
+                Dapatkan <span className="text-[#F97316]">Penawaran Eksklusif.</span>
               </h2>
-              <p className="text-slate-400 mb-12 font-medium max-w-xl mx-auto text-[16px]">
-                Bergabung dengan 10.000+ pemburu diskon domain lainnya. Dapatkan info promo eksklusif langsung di inbox Anda.
+              <p className="text-slate-400 mb-12 font-medium max-w-xl mx-auto text-[17px] leading-relaxed">
+                Jadilah yang pertama tahu tentang promo terbaru, tips manajemen domain, dan penawaran spesial langsung di inbox Anda. Tanpa spam, hanya informasi yang Anda butuhkan.
               </p>
 
-              <div className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto bg-white/5 p-2 rounded-xl backdrop-blur-md border border-white/10 shadow-2xl">
+              <div className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto bg-white/5 p-2.5 rounded-2xl backdrop-blur-xl border border-white/10 shadow-2xl">
                 <input
                   type="email"
-                  placeholder="Tulis alamat emailmu..."
-                  className="flex-1 px-8 py-4 rounded-lg text-white font-bold placeholder:text-slate-500 bg-white/5 outline-none focus:bg-white/10 transition w-full border border-transparent focus:border-orange-500/30"
+                  placeholder="Alamat email Anda..."
+                  className="flex-1 px-8 py-4 rounded-xl text-white font-bold placeholder:text-slate-500 bg-white/5 outline-none focus:bg-white/10 transition w-full border border-transparent focus:border-orange-500/30"
                 />
-                <button className="bg-[#F97316] text-white px-10 py-4 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-orange-600 transition shadow-xl shadow-orange-500/20 w-full md:w-auto active:scale-95">
-                  Langganan
+                <button className="bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-10 py-4 rounded-xl font-bold text-xs uppercase tracking-widest hover:shadow-[0_10px_40px_-10px_rgba(249,115,22,0.5)] transition-all duration-300 w-full md:w-auto active:scale-95">
+                  Bergabung
                 </button>
               </div>
             </div>

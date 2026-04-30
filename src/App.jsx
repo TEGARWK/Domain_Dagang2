@@ -15,6 +15,8 @@ import ScrollToTop from "./components/ScrollToTop";
 import DashboardLayout from "./layouts/DashboardLayout";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
+import { ConfigProvider, useConfig } from "./context/ConfigContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 // --- 3. PAGES: PUBLIC (LANDING & AUTH) ---
 import Home from "./pages/Home";
@@ -228,12 +230,24 @@ const Layout = () => {
   );
 };
 
+function AppContent() {
+  const config = useConfig();
+  
+  return (
+    <GoogleOAuthProvider clientId={config.google_client_id}>
+      <Router>
+        <ScrollToTop />
+        <Layout />
+      </Router>
+    </GoogleOAuthProvider>
+  );
+}
+
 function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <Layout />
-    </Router>
+    <ConfigProvider>
+      <AppContent />
+    </ConfigProvider>
   );
 }
 

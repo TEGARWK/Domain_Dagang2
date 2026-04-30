@@ -3,7 +3,7 @@ const TripayService = require('../services/TripayService');
 const WalletService = require('../services/WalletService');
 const { getIPv4 } = require('../utils/ipHelper');
 const referralService = require('../services/referralService');
-const voucherService = require('../services/voucherService');
+const VoucherService = require('../services/VoucherService');
 const OrderService = require('../services/OrderService');
 
 
@@ -45,7 +45,15 @@ exports.createClosedTransaction = async (req, res) => {
         const channelGroup = getChannelGroup(payment_channel);
         const isGroupAllowed = enabledMethods.includes(channelGroup);
         
-        const banksInGroup = (enabledBanks[channelGroup] || []).map(b => b.toUpperCase());
+        // Sekarang enabledBanks adalah FLAT ARRAY dari baris 32 (jika format baru)
+        // Kita dukung dua format (Objek lama & Flat Array baru) untuk transisi yang mulus
+        let banksInGroup = [];
+        if (Array.isArray(enabledBanks)) {
+            banksInGroup = enabledBanks.map(b => b.toUpperCase());
+        } else {
+            banksInGroup = (enabledBanks[channelGroup] || []).map(b => b.toUpperCase());
+        }
+
         const chCode = payment_channel.toUpperCase();
         const cleanChCode = chCode.replace('VA', '');
 
@@ -57,7 +65,7 @@ exports.createClosedTransaction = async (req, res) => {
         );
 
         if (!isGroupAllowed || !isBankAllowed) {
-            console.warn(`[Tripay] 🚫 Security Check Failed: ${payment_channel} (Group: ${channelGroup}). Allowed Groups: ${enabledMethods.join(',')}, Allowed Banks in Group: ${banksInGroup.join(',')}`);
+            console.warn(`[Tripay] 🚫 Security Check Failed: ${payment_channel} (Group: ${channelGroup}). Allowed Groups: ${enabledMethods.join(',')}, Allowed Banks in DB: ${banksInGroup.join(',')}`);
             return res.status(400).json({ 
                 success: false, 
                 message: `Metode pembayaran ${payment_channel} sedang tidak tersedia di gateway Tripay Anda. Silakan cek konfigurasi Admin.` 
@@ -405,7 +413,11 @@ exports.handleWebhook = async (req, res) => {
                     );
 
                     // 4. Handle Topup logic via WalletService
-                    if (invoice.type === 'TOPUP' || invoice.id.startsWith('TOPUP-')) {
+                    const itemRes = await db.pool.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [invoice.id]);
+                    const items = itemRes.rows;
+                    const isTopUp = invoice.type === 'TOPUP' || invoice.id.startsWith('TOPUP-') || items.some(it => it.action_type === 'topup' || (it.name || '').toLowerCase().includes('top up'));
+
+                    if (isTopUp) {
                         console.log(`💰 [Tripay Webhook] Topup detected. Crediting ${invoice.total} to UserID: ${invoice.user_id}`);
                         await WalletService.credit(
                             invoice.user_id, 
@@ -428,7 +440,7 @@ exports.handleWebhook = async (req, res) => {
                         .catch(err => console.error("Referral Reward Error:", err));
 
                     // Finalize Coupon Usage (Success)
-                    await voucherService.finalizeVoucherUsage(invoice.id, db.pool);
+                    await VoucherService.finalizeVoucherUsage(invoice.id, db.pool);
 
                     // Trigger Domain Activation (Async)
                     if (invoice.type !== 'TOPUP' && !invoice.id.startsWith('TOPUP-')) {
@@ -494,7 +506,11 @@ exports.checkStatus = async (req, res) => {
                         await db.pool.query('UPDATE payments SET status = $1, updated_at = NOW() WHERE id = $2', ['PAID', payment.id]);
                         await db.pool.query('UPDATE invoices SET status = $1, updated_at = NOW() WHERE id = $2', ['paid', invoice.id]);
                         
-                        if (invoice.type === 'TOPUP' || invoice.id.startsWith('TOPUP-')) {
+                        const itemRes = await db.pool.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [invoice.id]);
+                        const items = itemRes.rows;
+                        const isTopUp = invoice.type === 'TOPUP' || invoice.id.startsWith('TOPUP-') || items.some(it => it.action_type === 'topup' || (it.name || '').toLowerCase().includes('top up'));
+
+                        if (isTopUp) {
                             console.log(`💰 [Tripay StatusCheck] Sync Topup. Crediting ${invoice.total} to UserID: ${invoice.user_id}`);
                             await WalletService.credit(
                                 invoice.user_id, 
@@ -508,7 +524,7 @@ exports.checkStatus = async (req, res) => {
                         console.log(`💎 [Tripay StatusCheck] Database sync completed for: ${invoice.id}`);
 
                         // Finalize Coupon Usage (Success)
-                        await voucherService.finalizeVoucherUsage(invoice.id, db.pool);
+                        await VoucherService.finalizeVoucherUsage(invoice.id, db.pool);
 
                         // Trigger Domain Activation (Async)
                         if (invoice.type !== 'TOPUP' && !invoice.id.startsWith('TOPUP-')) {

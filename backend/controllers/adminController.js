@@ -79,8 +79,8 @@ exports.getDashboardStats = async (req, res) => {
 
     // Execute all queries in parallel gracefully
     const [
-      users, domains, invoices, revenue, troubled, 
-      daily, monthly, yearly
+      usersRes, domainsRes, invoicesRes, revenueRes, troubledRes, 
+      dailyRes, monthlyRes, yearlyRes
     ] = await Promise.all([
       db.query("SELECT COUNT(*) as count FROM users"),
       db.query("SELECT COUNT(*) as count FROM domains WHERE status = 'active'"),
@@ -90,54 +90,59 @@ exports.getDashboardStats = async (req, res) => {
       db.query(`
           WITH date_series AS (
               SELECT generate_series(
-                  CURRENT_DATE - INTERVAL '${dailyOffsetEnd - 1} days',
-                  CURRENT_DATE - INTERVAL '${dailyOffsetStart} days',
+                  CURRENT_DATE - (INTERVAL '1 day' * ${dailyOffsetEnd - 1}),
+                  CURRENT_DATE - (INTERVAL '1 day' * ${dailyOffsetStart}),
                   '1 day'::interval
               )::DATE AS date
           )
           SELECT TO_CHAR(ds.date, 'Dy') as label, COALESCE(SUM(i.total), 0) as value
           FROM date_series ds
           LEFT JOIN invoices i ON i.date::DATE = ds.date AND i.status = 'paid'
-          GROUP BY ds.date ORDER BY ds.date ASC
+          GROUP BY ds.date, ds.date ORDER BY ds.date ASC
       `),
       db.query(`
           WITH month_series AS (
               SELECT generate_series(
-                  date_trunc('month', CURRENT_DATE) - INTERVAL '${monthlyOffsetEnd - 1} months',
-                  date_trunc('month', CURRENT_DATE) - INTERVAL '${monthlyOffsetStart} months',
+                  date_trunc('month', CURRENT_DATE) - (INTERVAL '1 month' * ${monthlyOffsetEnd - 1}),
+                  date_trunc('month', CURRENT_DATE) - (INTERVAL '1 month' * ${monthlyOffsetStart}),
                   '1 month'::interval
               )::DATE AS month
           )
           SELECT TO_CHAR(ms.month, 'Mon') as label, COALESCE(SUM(i.total), 0) as value
           FROM month_series ms
           LEFT JOIN invoices i ON date_trunc('month', i.date::DATE) = ms.month AND i.status = 'paid'
-          GROUP BY ms.month ORDER BY ms.month ASC
+          GROUP BY ms.month, ms.month ORDER BY ms.month ASC
       `),
       db.query(`
           WITH year_series AS (
               SELECT generate_series(
-                  date_trunc('year', CURRENT_DATE) - INTERVAL '${yearlyOffsetEnd - 1} years',
-                  date_trunc('year', CURRENT_DATE) - INTERVAL '${yearlyOffsetStart} years',
+                  date_trunc('year', CURRENT_DATE) - (INTERVAL '1 year' * ${yearlyOffsetEnd - 1}),
+                  date_trunc('year', CURRENT_DATE) - (INTERVAL '1 year' * ${yearlyOffsetStart}),
                   '1 year'::interval
               )::DATE AS year
           )
           SELECT TO_CHAR(ys.year, 'YYYY') as label, COALESCE(SUM(i.total), 0) as value
           FROM year_series ys
           LEFT JOIN invoices i ON date_trunc('year', i.date::DATE) = ys.year AND i.status = 'paid'
-          GROUP BY ys.year ORDER BY ys.year ASC
+          GROUP BY ys.year, ys.year ORDER BY ys.year ASC
       `)
     ]);
 
+    // Robust extraction (handling both array and object responses if db wrapper differs)
+    const getCount = (res) => (Array.isArray(res) ? res[0]?.count : res?.rows?.[0]?.count) || 0;
+    const getSum = (res) => (Array.isArray(res) ? res[0]?.total : res?.rows?.[0]?.total) || 0;
+    const getRows = (res) => (Array.isArray(res) ? res : res?.rows || []);
+
     res.json({
-        totalUsers: users?.[0]?.count || 0,
-        activeDomains: domains?.[0]?.count || 0,
-        pendingInvoices: invoices?.[0]?.count || 0,
-        totalRevenue: revenue?.[0]?.total || 0,
-        troubledDomains: troubled?.[0]?.count || 0,
+        totalUsers: getCount(usersRes),
+        activeDomains: getCount(domainsRes),
+        pendingInvoices: getCount(invoicesRes),
+        totalRevenue: getSum(revenueRes),
+        troubledDomains: getCount(troubledRes),
         analytics: {
-            Daily: daily || [],
-            Monthly: monthly || [],
-            Yearly: yearly || []
+            Daily: getRows(dailyRes),
+            Monthly: getRows(monthlyRes),
+            Yearly: getRows(yearlyRes)
         }
     });
   } catch (err) {

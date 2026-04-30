@@ -11,12 +11,13 @@ const verifyToken = (req, res, next) => {
 
     jwt.verify(token, secret, (err, user) => {
       if (err) {
+        const fs = require('fs');
+        const path = require('path');
+        const logFile = path.join(__dirname, '../emergency_error.log');
+        fs.appendFileSync(logFile, `[${new Date().toISOString()}] ❌ AUTH ERROR: ${err.message}\n`);
         console.error("[AuthMiddleware] Token Verification Failed:", err.message);
-        console.error("[AuthMiddleware] Token being verified:", token.substring(0, 15) + "...");
         return res.status(403).json("Token is not valid!");
       }
-      // Clean log for production/dev without mangling
-      console.log(`[AuthMiddleware] User Authenticated. ID: ${user.id}, Role: ${user.role}`);
       req.user = user;
       next();
     });

@@ -63,7 +63,9 @@ class VoucherService {
      */
     async getMyVouchers(userId) {
         const query = `
-            SELECT vc.*, v.title, v.code, v.discount_type as type, v.discount_value as value, v.description, v.banner_image, v.subtitle, v.max_discount
+            SELECT vc.*, v.title, v.code, v.discount_type as type, v.discount_value as value, v.description, v.banner_image, v.subtitle, v.max_discount,
+                   v.applicable_to, v.eligible_actions, v.min_transaction as min_purchase,
+                   v.expired_at as valid_until, v.is_new_user_only as first_purchase_only, v.is_active
             FROM voucher_claims vc
             JOIN vouchers v ON vc.voucher_id = v.id
             WHERE vc.user_id = $1 AND vc.status = 'claimed'
@@ -71,6 +73,7 @@ class VoucherService {
         `;
         try {
             const { rows } = await db.pool.query(query, [userId]);
+            console.log(`[VoucherDebug] getMyVouchers for User ${userId}:`, JSON.stringify(rows, null, 2));
             return rows;
         } catch (error) {
             console.error("VoucherService.getMyVouchers Error:", error);
@@ -237,6 +240,7 @@ class VoucherService {
      * Validate Voucher for Cart
      */
     async validateVoucherForCart(userId, voucherCode, cartItems, targetInvoiceId = null) {
+        console.log("!!! VOUCHER VALIDATION CALLED !!! Code:", voucherCode);
         if (!voucherCode) return { eligible: false, discountAmount: 0, message: "No voucher code provided." };
 
         // 1. Fetch Voucher
@@ -273,22 +277,57 @@ class VoucherService {
         }
 
         // 5. Item-Level Validation
-        const eligibleTlds = voucher.applicable_to; 
-        const eligibleActions = voucher.eligible_actions; 
+        let eligibleTlds = [];
+        let eligibleActions = [];
 
-        const hasCondition = (eligibleTlds && eligibleTlds.length > 0) || (eligibleActions && eligibleActions.length > 0);
+        try {
+            // Ensure we handle both JSONB (object/array) and JSON string from DB
+            eligibleTlds = typeof voucher.applicable_to === 'string' ? JSON.parse(voucher.applicable_to || "[]") : (voucher.applicable_to || []);
+            eligibleActions = typeof voucher.eligible_actions === 'string' ? JSON.parse(voucher.eligible_actions || "[]") : (voucher.eligible_actions || []);
+        } catch (e) {
+            console.error("[VoucherService] Error parsing voucher criteria JSON:", e.message);
+            // Fallback to empty arrays if parsing fails
+            eligibleTlds = Array.isArray(voucher.applicable_to) ? voucher.applicable_to : [];
+            eligibleActions = Array.isArray(voucher.eligible_actions) ? voucher.eligible_actions : [];
+        }
+
+        const hasCondition = eligibleTlds.length > 0 || (eligibleActions.length > 0 && !eligibleActions.includes('all'));
         let passesItemValidation = !hasCondition;
 
         if (hasCondition) {
+            console.log(`[VoucherDebug] Validating Voucher: ${voucher.code}`);
+            console.log(`[VoucherDebug] Eligible TLDs:`, eligibleTlds);
+            console.log(`[VoucherDebug] Eligible Actions:`, eligibleActions);
+
             passesItemValidation = cartItems.some(item => {
-                const tldMatch = !eligibleTlds || eligibleTlds.length === 0 || eligibleTlds.includes(item.tld) || eligibleTlds.includes('all');
-                const actionMatch = !eligibleActions || eligibleActions.length === 0 || eligibleActions.includes(item.action) || eligibleActions.includes('all');
+                // Normalize TLD comparison (ensure leading dots match)
+                const itemTld = (item.tld || "").toLowerCase().startsWith('.') ? item.tld.toLowerCase() : `.${(item.tld || "").toLowerCase()}`;
+                
+                const tldMatch = eligibleTlds.length === 0 || eligibleTlds.some(vTld => {
+                    if (vTld.toLowerCase() === 'all') return true;
+                    const normVTld = vTld.toLowerCase().startsWith('.') ? vTld.toLowerCase() : `.${vTld.toLowerCase()}`;
+                    return normVTld === itemTld;
+                });
+
+                const actionMatch = eligibleActions.length === 0 || eligibleActions.some(act => 
+                    act.toLowerCase() === 'all' || act.toLowerCase() === (item.action || "").toLowerCase()
+                );
+
+                console.log(`[VoucherDebug] Item: ${item.name}, TLD: ${itemTld}, Action: ${item.action}`);
+                console.log(`[VoucherDebug] -> TLD Match: ${tldMatch}, Action Match: ${actionMatch}`);
+
                 return tldMatch && actionMatch;
             });
+            console.log(`[VoucherDebug] Final Validation Result: ${passesItemValidation}`);
         }
 
         if (!passesItemValidation) {
-            return { eligible: false, discountAmount: 0, message: "Voucher tidak berlaku untuk item pilihan Anda." };
+            const tldList = eligibleTlds.length > 0 ? eligibleTlds.join(', ').toUpperCase() : '';
+            return { 
+                eligible: false, 
+                discountAmount: 0, 
+                message: tldList ? `Voucher ini hanya berlaku untuk domain: ${tldList}` : "Voucher tidak berlaku untuk item pilihan Anda." 
+            };
         }
 
         // 6. Subtotal

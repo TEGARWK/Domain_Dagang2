@@ -1,38 +1,5 @@
 const crypto = require('crypto');
 const axios = require('axios');
-require('dotenv').config();
-
-// ─────────────────────────────────────────────
-//  KONFIGURASI — dibaca dari .env
-//  Variabel yang wajib ada:
-//    TRIPAY_MERCHANT_CODE
-//    TRIPAY_API_KEY
-//    TRIPAY_PRIVATE_KEY
-//    TRIPAY_BASE_URL  (atau fallback TRIPAY_URL untuk backward compat)
-// ─────────────────────────────────────────────
-
-/**
- * Normalisasi base URL agar selalu diakhiri dengan "/"
- * sehingga concat dengan path tidak menghasilkan double-slash atau missing-slash.
- */
-const normalizeBaseUrl = (rawUrl) => {
-    const url = (rawUrl || '').trim();
-    return url.endsWith('/') ? url : `${url}/`;
-};
-
-const CONFIG = {
-    merchant_code: (process.env.TRIPAY_MERCHANT_CODE || '').trim(),
-    api_key:       (process.env.TRIPAY_API_KEY       || '').trim(),
-    private_key:   (process.env.TRIPAY_PRIVATE_KEY   || '').trim(),
-    // Dukung TRIPAY_BASE_URL (baru) maupun TRIPAY_URL (lama) agar tidak breaking
-    base_url: normalizeBaseUrl(
-        process.env.TRIPAY_BASE_URL ||
-        process.env.TRIPAY_URL      ||
-        'https://tripay.co.id/api-sandbox/'
-    ),
-    mode: (process.env.TRIPAY_MODE || 'sandbox').trim(),
-};
-
 // --- DB ACCESS HELPER ---
 const getDbConfig = async () => {
     try {
@@ -41,18 +8,18 @@ const getDbConfig = async () => {
         if (res.rows.length > 0) {
             const row = res.rows[0];
             return {
-                merchant_code: (row.merchant_code || CONFIG.merchant_code).trim(),
-                api_key:       (row.api_key       || CONFIG.api_key).trim(),
-                private_key:   (row.private_key   || CONFIG.private_key).trim(),
+                merchant_code: (row.merchant_code || "").trim(),
+                api_key:       (row.api_key       || "").trim(),
+                private_key:   (row.private_key   || "").trim(),
                 base_url:      row.mode === 'production' 
                     ? 'https://tripay.co.id/api/' 
                     : 'https://tripay.co.id/api-sandbox/'
             };
         }
     } catch (err) {
-        console.error('[TripayService] Failed to fetch DB config, using environment variables:', err.message);
+        console.error('[TripayService] Failed to fetch DB config:', err.message);
     }
-    return CONFIG; // Fallback to .env config
+    return null; 
 };
 
 /**
@@ -260,7 +227,6 @@ const getMerchantBalance = async () => {
 //  EXPORTS
 // ─────────────────────────────────────────────
 module.exports = {
-    CONFIG,
     generateCallbackSignature,
     getPaymentChannels,
     createClosedTransaction,

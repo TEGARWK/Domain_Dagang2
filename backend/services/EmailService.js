@@ -10,40 +10,53 @@ class EmailService {
     }
 
     async initTransporter() {
-        if (process.env.NODE_ENV === 'development' && !process.env.SMTP_HOST) {
+        try {
+            // Ambil config dari DB
+            const query = "SELECT setting_key, setting_value FROM site_settings WHERE setting_key LIKE 'smtp_%'";
+            const results = await db.pool.query(query);
+            const dbSettings = {};
+            results.rows.forEach(row => {
+                dbSettings[row.setting_key] = row.setting_value;
+            });
 
-            try {
+            const host = dbSettings.smtp_host;
+            const port = dbSettings.smtp_port;
+            const user = dbSettings.smtp_user;
+            const pass = dbSettings.smtp_pass;
+            const fromName = dbSettings.smtp_from_name || "Domain Dagang System";
+            const fromEmail = dbSettings.smtp_from_email || "no-reply@dagangdomain.com";
+            const encryption = dbSettings.smtp_encryption || "tls";
+
+            if (host && user && pass) {
+                this.transporter = nodemailer.createTransport({
+                    host: host,
+                    port: parseInt(port),
+                    secure: encryption === 'ssl' || port == 465,
+                    auth: { user, pass }
+                });
+                this.from = `"${fromName}" <${fromEmail}>`;
+                console.log("📧 [EmailService] Using Database SMTP Config:", host);
+            } else {
+                // Fallback ke Ethereal untuk testing jika tidak ada config asli
                 const testAccount = await nodemailer.createTestAccount();
                 this.transporter = nodemailer.createTransport({
                     host: testAccount.smtp.host,
                     port: testAccount.smtp.port,
                     secure: testAccount.smtp.secure,
-                    auth: {
-                        user: testAccount.user,
-                        pass: testAccount.pass
-                    }
+                    auth: { user: testAccount.user, pass: testAccount.pass }
                 });
-                console.log("📧 [EmailService] Ethereal Ready:", testAccount.user);
-            } catch (e) {
-                console.error("📧 [EmailService] Failed to create Ethereal account:", e);
+                this.from = '"DagangDomain System" <no-reply@dagangdomain.com>';
+                console.log("📧 [EmailService] Ethereal Ready (Fallback):", testAccount.user);
             }
-        } else {
-            console.log("📧 [EmailService] Using SMTP Config...");
-            this.transporter = nodemailer.createTransport({
-                host: process.env.SMTP_HOST,
-                port: process.env.SMTP_PORT, // 587 or 465
-                secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
-                auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASS
-                }
-            });
+        } catch (e) {
+            console.error("📧 [EmailService] Failed to init transporter:", e);
         }
     }
 
     async send(type, payload) {
         if (!this.transporter) await this.initTransporter();
-
+        
+        // ... (templateMap logic remains same)
         const templateMap = {
             'VERIFY_EMAIL': { subject: 'Verifikasi Alamat Email Anda - DagangDomain', template: 'verify_email.ejs' },
             'WELCOME': { subject: 'Selamat Datang di DagangDomain!', template: 'welcome.ejs' },
@@ -63,18 +76,11 @@ class EmailService {
         };
 
         const config = templateMap[type];
-        if (!config) {
-            console.error(`📧 [EmailService] Unknown template type: ${type}`);
-            return;
-        }
+        if (!config) return;
 
         const { to, user } = payload;
         const recipient = to || (user ? user.email : null);
-
-        if (!recipient) {
-            console.error("📧 [EmailService] No recipient defined.");
-            return;
-        }
+        if (!recipient) return;
 
         let htmlContent = '';
         try {
@@ -82,13 +88,12 @@ class EmailService {
             htmlContent = await ejs.renderFile(templatePath, payload);
         } catch (renderErr) {
             console.error("📧 [EmailService] Template Render Error:", renderErr);
-            this.logEmail(recipient, config.subject, type, 'failed', renderErr.message);
             return;
         }
 
         try {
             const info = await this.transporter.sendMail({
-                from: process.env.SMTP_FROM || '"DagangDomain System" <no-reply@dagangdomain.com>',
+                from: this.from,
                 to: recipient,
                 subject: config.subject,
                 html: htmlContent
@@ -133,12 +138,20 @@ class EmailService {
     }
 
     async sendVerificationEmail(user, token) {
-        const verificationUrl = `${process.env.CLIENT_URL}/verify?token=${token}`;
+        // Fetch dynamic config from DB
+        const result = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'app_client_url'");
+        const clientUrl = result.rows.length > 0 ? result.rows[0].setting_value : "http://localhost:5173";
+
+        const verificationUrl = `${clientUrl}/verify?token=${token}`;
         return this.send('VERIFY_EMAIL', { user, token, verificationUrl });
     }
 
     async sendResetPasswordEmail(user, token) {
-        const resetUrl = `${process.env.CLIENT_URL}/reset-password/${token}`;
+        // Fetch dynamic config from DB
+        const result = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'app_client_url'");
+        const clientUrl = result.rows.length > 0 ? result.rows[0].setting_value : "http://localhost:5173";
+
+        const resetUrl = `${clientUrl}/reset-password/${token}`;
         return this.send('RESET_PASSWORD', { user, token, resetUrl });
     }
 

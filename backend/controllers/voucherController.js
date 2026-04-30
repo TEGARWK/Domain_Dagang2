@@ -74,32 +74,8 @@ exports.applyVoucher = async (req, res) => {
 exports.getMyVouchers = async (req, res) => {
     try {
         const userId = req.user.id;
-        const query = `
-            SELECT 
-                vc.id as claim_id,
-                vc.status as claim_status,
-                v.id,
-                v.title,
-                v.code, 
-                v.discount_type as type, 
-                v.discount_value as value,
-                v.max_discount,
-                v.expired_at as valid_until, 
-                v.min_transaction as min_purchase,
-                v.applicable_to as eligible_tlds,
-                v.is_new_user_only as first_purchase_only,
-                v.is_active,
-                (v.expired_at IS NULL OR v.expired_at > NOW()) as is_valid
-            FROM voucher_claims vc
-            JOIN vouchers v ON vc.voucher_id = v.id
-            WHERE vc.user_id = $1
-              AND v.is_active = true
-              AND (v.expired_at IS NULL OR v.expired_at > NOW())
-            ORDER BY vc.claimed_at DESC
-        `;
-        const result = await db.pool.query(query, [userId]);
-        
-        return res.status(200).json(result.rows);
+        const vouchers = await voucherService.getMyVouchers(userId);
+        return res.status(200).json(vouchers);
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }

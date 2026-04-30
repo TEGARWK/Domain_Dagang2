@@ -226,6 +226,10 @@ CREATE TABLE IF NOT EXISTS payment_gateways (
     
     -- Tripay / Advanced Columns
     mode VARCHAR(20) DEFAULT 'sandbox',
+    api_key TEXT,
+    private_key TEXT,
+    merchant_code VARCHAR(100),
+    webhook_url TEXT,
     enabled_methods JSONB DEFAULT '[]',
     enabled_banks JSONB DEFAULT '[]',
 

@@ -214,55 +214,66 @@ const Cart = () => {
               <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
                 {cartItems.map((item, index) => (
                   <div key={index} className={`group hover:bg-slate-50/50 transition-colors ${index !== cartItems.length - 1 ? 'border-b border-slate-50' : ''}`}>
-                    <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                      <div className="flex items-center gap-5">
+                    <div className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+                      <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto">
                         {/* Checkbox */}
-                        <label className="relative flex items-center cursor-pointer group/check">
+                        <label className="relative flex items-center cursor-pointer group/check shrink-0">
                           <input 
                             type="checkbox" 
                             className="hidden"
                             checked={selectedIndices.includes(index)}
                             onChange={() => toggleSelect(index)}
                           />
-                          <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedIndices.includes(index) ? 'bg-[#F97316] border-[#F97316] shadow-lg shadow-orange-100' : 'border-slate-100 bg-slate-50 group-hover/check:border-orange-100'}`}>
+                          <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedIndices.includes(index) ? 'bg-[#F97316] border-[#F97316] shadow-lg shadow-orange-100' : 'border-slate-100 bg-slate-50 group-hover/check:border-orange-100'}`}>
                             {selectedIndices.includes(index) && (
-                              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" />
                               </svg>
                             )}
                           </div>
                         </label>
 
-                        <div className="w-14 h-14 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-400 uppercase tracking-widest shadow-sm group-hover:border-orange-100 transition-colors">
+                        <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shadow-sm group-hover:border-orange-100 transition-colors shrink-0">
                           {item.name.split(".").pop()}
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-slate-900 leading-none mb-2">{item.name}</h3>
-                          <div className="flex items-center gap-3">
-                            <span className="text-[9px] font-bold text-[#F97316] bg-orange-50 px-2 py-0.5 rounded-md border border-orange-100 uppercase tracking-wider">{getActionLabel(item)}</span>
-                            <span className="inline-flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 uppercase tracking-wider">
-                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm sm:text-lg font-bold text-slate-900 leading-tight mb-1 sm:mb-2 truncate">{item.name}</h3>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <span className="text-[7px] sm:text-[9px] font-bold text-[#F97316] bg-orange-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-orange-100 uppercase tracking-wider">{getActionLabel(item)}</span>
+                            <span className="inline-flex items-center gap-1 sm:gap-1.5 text-[7px] sm:text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100 uppercase tracking-wider">
+                              <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                               Available
                             </span>
                           </div>
                         </div>
+                        
+                        {/* Remove Button for Mobile (shown next to title) */}
+                        <button
+                          onClick={() => handleRemove(index)}
+                          className="sm:hidden w-8 h-8 flex items-center justify-center text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all active:scale-95 shrink-0"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
 
-                      <div className="flex items-center gap-4 w-full sm:w-auto">
-                        <div className="w-32">
+                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto pt-3 sm:pt-0 border-t border-slate-50 sm:border-0">
+                        <div className="w-28 sm:w-32">
                           <CustomSelect
                             value={item.duration || 1}
                             onChange={(val) => updateDuration(index, val)}
                             options={[1, 2, 3, 5, 10].map(y => ({ value: y, label: `${y} Tahun` }))}
                           />
                         </div>
-                        <div className="text-right hidden sm:block min-w-[120px]">
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Subtotal</p>
-                          <p className="text-sm font-bold text-slate-700">{formatRupiah(getItemSubtotal(item))}</p>
+                        <div className="text-right min-w-[100px] sm:min-w-[120px]">
+                          <p className="text-[8px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5 sm:mb-1">Subtotal</p>
+                          <p className="text-xs sm:text-sm font-bold text-slate-700">{formatRupiah(getItemSubtotal(item))}</p>
                         </div>
+                        {/* Remove Button for Desktop */}
                         <button
                           onClick={() => handleRemove(index)}
-                          className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all active:scale-95"
+                          className="hidden sm:flex w-10 h-10 items-center justify-center text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all active:scale-95 shrink-0"
                           title="Hapus"
                         >
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

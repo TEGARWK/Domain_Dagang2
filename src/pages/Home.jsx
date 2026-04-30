@@ -362,7 +362,7 @@ function Home() {
       {cartCount > 0 && (
         <div
           onClick={() => navigate("/cart")}
-          className="fixed bottom-8 right-8 z-[60] bg-neutral-900 text-white p-4 rounded-lg shadow-2xl cursor-pointer hover:scale-105 transition transform flex items-center gap-3 border border-neutral-800 animate-bounce-in group"
+          className="fixed bottom-8 right-8 z-40 bg-neutral-900 text-white p-4 rounded-lg shadow-2xl cursor-pointer hover:scale-105 transition transform flex items-center gap-3 border border-neutral-800 animate-bounce-in group"
         >
           <div className="relative">
             <svg

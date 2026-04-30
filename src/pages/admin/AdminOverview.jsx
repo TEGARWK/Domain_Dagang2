@@ -142,6 +142,17 @@ const AdminOverview = () => {
     }).format(num);
   };
 
+  const getCategoryBadge = (cat) => {
+    const c = (cat || 'REGISTER').toUpperCase();
+    switch(c) {
+        case 'TOPUP': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100 shadow-sm">Top-up</span>;
+        case 'RENEW': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border-indigo-100 shadow-sm">Renew</span>;
+        case 'TRANSFER': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border-amber-100 shadow-sm">Transfer</span>;
+        case 'RESTORE': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-50 text-rose-600 border-rose-100 shadow-sm">Restore</span>;
+        default: return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm">Register</span>;
+    }
+  };
+
   const cards = [
     {
       title: "Saldo Registrar",
@@ -420,9 +431,10 @@ const AdminOverview = () => {
                       <h3 className="font-black text-slate-800 uppercase tracking-widest text-[11px]">Invoice Terbaru</h3>
                   </div>
                   <Link to="/admin/invoices" className="text-[10px] font-black text-[#f97316] uppercase tracking-[0.2em] px-4 py-2 bg-orange-50 rounded-lg hover:bg-orange-100 transition-all">Lihat Semua</Link>
-              </div>
-              <div className="overflow-x-auto flex-1">
-                   <table className="w-full text-left border-separate border-spacing-0">
+            </div>
+            <div className="overflow-x-auto flex-1">
+                   {/* DESKTOP TABLE */}
+                   <table className="w-full text-left border-separate border-spacing-0 hidden md:table">
                        <thead>
                            <tr className="text-[10px] text-slate-400 uppercase tracking-[0.15em] bg-slate-50/30">
                                <th 
@@ -465,7 +477,10 @@ const AdminOverview = () => {
                                    <tr key={i} className="hover:bg-slate-50/50 transition-all group">
                                        <td className="px-8 py-5">
                                            <Link to={`/admin/invoices`} className="block">
-                                              <p className="text-sm font-black text-[#f97316] group-hover:underline">#{inv.id}</p>
+                                              <div className="flex items-center gap-2">
+                                                  <p className="text-sm font-black text-[#f97316] group-hover:underline">#{inv.id}</p>
+                                                  {getCategoryBadge(inv.category)}
+                                              </div>
                                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Digital Billing</p>
                                            </Link>
                                        </td>
@@ -490,8 +505,45 @@ const AdminOverview = () => {
                            )}
                        </tbody>
                    </table>
-                 </div>
-            </div>
+
+                   {/* MOBILE CARDS */}
+                   <div className="md:hidden divide-y divide-slate-100">
+                        {loading ? (
+                             <div className="py-12 text-center text-slate-300 font-bold text-xs uppercase animate-pulse">Loading Invoices...</div>
+                        ) : recentInvoices.length === 0 ? (
+                             <div className="py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest italic">Belum ada data</div>
+                        ) : (
+                            recentInvoices.slice(0, 6).map((inv, i) => (
+                                <div key={i} className="p-5 flex flex-col gap-4 hover:bg-slate-50 transition-all">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-xs font-black text-[#f97316]">#{inv.id}</p>
+                                                {getCategoryBadge(inv.category)}
+                                            </div>
+                                            <p className="text-sm font-black text-slate-800 mt-1">{inv.customer_name || "Guest"}</p>
+                                            <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{inv.customer_email || "-"}</p>
+                                        </div>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                                               inv.status === 'paid' 
+                                               ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                               : inv.status === 'cancelled'
+                                               ? 'bg-rose-50 text-rose-500 border-rose-100'
+                                               : 'bg-amber-50 text-amber-600 border-amber-100'
+                                           }`}>
+                                               {inv.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-3 border-t border-slate-50">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Tagihan</span>
+                                        <span className="text-sm font-black text-slate-900">{formatRupiah(inv.total)}</span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                   </div>
+          </div>
+        </div>
       </div>
 
       {/* 4. HIDDEN PRINT REPORT AREA */}

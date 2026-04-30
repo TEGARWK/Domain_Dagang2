@@ -8,7 +8,6 @@ const expressLayouts = require('express-ejs-layouts');
 const app = express();
 app.set('trust proxy', 1); // Enable trusting proxy headers (Nginx/Localtunnel)
 
-// --- MIDDLEWARES ---
 app.use(express.json({ 
   limit: '10mb',
   verify: (req, res, buf) => {
@@ -18,6 +17,8 @@ app.use(express.json({
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cors());
 app.use(cookieParser());
+const morgan = require('morgan');
+app.use(morgan('dev'));
 
 // --- VIEW ENGINE SETUP ---
 app.set('view engine', 'ejs');
@@ -33,6 +34,7 @@ const checkoutRoutes = require("./routes/checkout");
 const billingRoutes = require("./routes/billing");
 const daftarnamaRoutes = require("./routes/daftarnama");
 const transferRoutes = require("./routes/transferRoutes");
+const prismalinkRoutes = require("./routes/prismalink");
 
 
 // --- USE ROUTES ---
@@ -41,6 +43,7 @@ app.use("/api/domains", domainRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/tripay", require("./routes/tripay"));
+app.use("/api/prismalink", prismalinkRoutes);
 app.use("/api/daftarnama", daftarnamaRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/users", require("./routes/users"));
@@ -67,7 +70,7 @@ const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 
 // Health Check
 app.get("/", (req, res) => {
-  res.json("Backend Server Version 2.1 (Domain Availability Fix) 🚀");
+  res.json("Backend Server Version 2.2 (Stability Update) 🚀");
 });
 
 

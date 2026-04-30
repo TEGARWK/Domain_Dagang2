@@ -150,10 +150,10 @@ const BuyDomain = () => {
   const saveToCart = (item) => {
     const cartItem = {
       name: item.domain,
-      price: formatRupiah(item.currentPrice),
+      price: item.currentPrice, // Store as number
       duration: item.duration,
       rawPrice: item.currentPrice,
-      action: 'register' // Action type for registration
+      action: 'register' 
     };
 
     const savedCart = localStorage.getItem("cart");
@@ -415,8 +415,14 @@ const BuyDomain = () => {
                             {item.domain}
                           </p>
                           {!item.available && (
-                            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100 uppercase tracking-tighter">
-                              Terpakai
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-tighter ${
+                                item.error?.includes('422') || item.error?.toLowerCase().includes('not supported')
+                                ? "text-orange-600 bg-orange-50 border-orange-100"
+                                : "text-red-600 bg-red-50 border-red-100"
+                            }`}>
+                              {item.error?.includes('422') || item.error?.toLowerCase().includes('not supported') 
+                               ? "Belum Aktif" 
+                               : "Terpakai"}
                             </span>
                           )}
                         </div>

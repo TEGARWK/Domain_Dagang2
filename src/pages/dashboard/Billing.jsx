@@ -134,6 +134,17 @@ const Billing = () => {
     });
   };
 
+  const getCategoryBadge = (cat) => {
+    const c = (cat || 'REGISTER').toUpperCase();
+    switch(c) {
+        case 'TOPUP': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100 shadow-sm">Top-up</span>;
+        case 'RENEW': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm">Perpanjang</span>;
+        case 'TRANSFER': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-100 shadow-sm">Transfer</span>;
+        case 'RESTORE': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-100 shadow-sm">Restore</span>;
+        default: return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">Registrasi</span>;
+    }
+  };
+
   const handleDetail = (id) => navigate(`/dashboard/billing/${id}`);
   const handleDownload = (id) => {
       // Kita manfaatkan localstorage atau sekadar navigate lalu trigger di DetailInvoice
@@ -156,8 +167,18 @@ const Billing = () => {
       "Lainnya"
   ];
 
-  const handleCancelClick = (id) => {
-      setCancelModal({ show: true, invoiceId: id });
+  const handleCancelClick = async (id) => {
+      const isConfirmed = await confirm({
+          title: "Batalkan Tagihan?",
+          message: "Apakah Anda yakin ingin membatalkan tagihan ini? Tindakan ini tidak dapat dibatalkan.",
+          type: "warning",
+          confirmText: "Ya, Batalkan",
+          cancelText: "Kembali"
+      });
+
+      if (isConfirmed) {
+          setCancelModal({ show: true, invoiceId: id });
+      }
   };
 
   const handleConfirmCancel = async () => {
@@ -286,15 +307,7 @@ const Billing = () => {
                     <td className="px-8 py-5">
                       <p className="font-semibold text-slate-800 text-xs truncate max-w-[200px]">
                         {inv.first_item} {inv.item_count > 1 && <span className="text-[#f97316]">+{inv.item_count - 1}</span>}
-                        {inv.is_transfer ? (
-                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">
-                                Transfer
-                            </span>
-                        ) : (
-                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                Register
-                            </span>
-                        )}
+                        {getCategoryBadge(inv.category)}
                       </p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{inv.payment_method || "N/A"}</p>
                     </td>
@@ -331,9 +344,11 @@ const Billing = () => {
                           ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
                           : inv.status?.toLowerCase() === "cancelled"
                           ? "bg-rose-50 text-rose-600 border-rose-100"
+                          : inv.has_proof
+                          ? "bg-blue-50 text-blue-600 border-blue-100"
                           : "bg-amber-50 text-amber-600 border-amber-100"
                       }`}>
-                        {inv.status?.toLowerCase() === "paid" ? "Lunas" : inv.status?.toLowerCase() === "cancelled" ? "Dibatalkan" : "Pending"}
+                        {inv.status?.toLowerCase() === "paid" ? "Lunas" : inv.status?.toLowerCase() === "cancelled" ? "Dibatalkan" : inv.has_proof ? "Verifikasi" : "Pending"}
                       </span>
                     </td>
                     <td className="px-8 py-5 text-center">
@@ -342,12 +357,18 @@ const Billing = () => {
                                 <span className="material-symbols-outlined text-lg">visibility</span>
                              </button>
                              {inv.status?.toLowerCase() === "pending" ? (
-                                <>
-                                    <button onClick={() => handlePay(inv.id)} className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10">Bayar</button>
-                                    <button onClick={() => handleCancelClick(inv.id)} className="p-2 bg-white text-slate-400 rounded-lg border border-slate-100 hover:bg-rose-50 hover:text-rose-500 transition-all">
-                                        <span className="material-symbols-outlined text-lg">close</span>
-                                    </button>
-                                </>
+                                 <>
+                                     {inv.has_proof ? (
+                                         <span className="px-3 py-1.5 bg-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-widest rounded-lg border border-slate-200">Menunggu Verifikasi</span>
+                                     ) : (
+                                         <>
+                                             <button onClick={() => handlePay(inv.id)} className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10">Bayar</button>
+                                             <button onClick={() => handleCancelClick(inv.id)} className="p-2 bg-white text-slate-400 rounded-lg border border-slate-100 hover:bg-rose-50 hover:text-rose-500 transition-all">
+                                                 <span className="material-symbols-outlined text-lg">close</span>
+                                             </button>
+                                         </>
+                                     )}
+                                 </>
                              ) : (
                                 <button onClick={() => handleDownload(inv.id)} className="p-2 bg-white text-slate-400 rounded-lg border border-slate-100 hover:bg-emerald-50 hover:text-emerald-500 transition-all shadow-sm">
                                     <span className="material-symbols-outlined text-lg">download</span>

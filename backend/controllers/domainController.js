@@ -110,6 +110,7 @@ exports.checkDomainAvailability = async (req, res) => {
 // --- GET DOMAINS BY USER ID ---
 exports.getUserDomains = (req, res) => {
   const userId = req.params.userId;
+  console.log(`[DomainController] Fetching domains for User ID: ${userId}`);
   const sql = `
     SELECT d.id, d.user_id, d.domain_name AS name, d.status, d.auto_renew, d.is_locked, 
     d.nameservers, d.registration_date, d.expiration_date, d.last_registration_error, d.created_at, d.updated_at,
@@ -139,10 +140,22 @@ exports.getDomainDetail = (req, res) => {
             d.auto_renew, d.is_locked, d.nameservers, d.registration_date, d.expiration_date, 
             d.registrar_name, d.registrar_order_id, d.registrar_domain_id,
             d.registrar_response_raw, d.last_registration_error, d.last_document_sync_at, d.last_document_upload_attempt_at, 
+            d.registrant_snapshot,
             d.created_at, d.updated_at,
-            u.name AS user_name
+            u.name AS user_name, u.email as user_email, u.phone as user_phone,
+            inv.id as invoice_id, inv.status as invoice_status, inv.total as invoice_total,
+            ii.price as purchase_price
         FROM domains d
         JOIN users u ON d.user_id = u.id
+        LEFT JOIN LATERAL (
+            SELECT i.id, i.status, i.total, i.created_at
+            FROM invoice_items ii_inner
+            JOIN invoices i ON ii_inner.invoice_id = i.id
+            WHERE ii_inner.name = d.domain_name AND i.user_id = d.user_id
+            ORDER BY i.created_at DESC
+            LIMIT 1
+        ) inv ON true
+        LEFT JOIN invoice_items ii ON ii.invoice_id = inv.id AND ii.name = d.domain_name
         WHERE d.id = ?
     `;
     const params = [domainId];
@@ -197,10 +210,11 @@ exports.updateDomain = async (req, res) => {
 
       if (nameservers !== undefined) {
           try {
-              if (domain.status !== 'active') {
+              const currentStatus = (domain.status || "").toLowerCase();
+              if (currentStatus !== 'active' && currentStatus !== 'provisioned') {
                   return res.status(400).json({ 
                       success: false, 
-                      message: `Update Nameserver hanya diizinkan untuk domain berstatus ACTIVE. Status saat ini: ${domain.status.toUpperCase()}`
+                      message: `Update Nameserver hanya diizinkan untuk domain berstatus ACTIVE atau PROVISIONED. Status saat ini: ${currentStatus.toUpperCase()}`
                   });
               }
 
@@ -260,6 +274,17 @@ exports.updateDomain = async (req, res) => {
       }
 
       if (auto_renew !== undefined) {
+          // --- 🛡️ BACKEND VALIDASI SALDO UNTUK AUTO RENEW ---
+          if (auto_renew === true && req.user.role !== 'admin') {
+              const WalletService = require('../services/WalletService');
+              const balance = await WalletService.getBalance(userId);
+              if (balance <= 0) {
+                  return res.status(400).json({ 
+                      success: false, 
+                      message: "Saldo Anda Kosong. Silakan isi saldo terlebih dahulu untuk mengaktifkan perpanjangan otomatis." 
+                  });
+              }
+          }
           fields.push("auto_renew = ?");
           values.push(auto_renew);
       }
@@ -303,9 +328,10 @@ exports.syncDomain = async (req, res) => {
         // 2. Fetch from Registrar
         const info = await DaftarnamaService.getDomainInfo(domainName);
         if (!info) {
-            return res.status(400).json({ 
+            return res.json({ 
                 success: false, 
-                message: "Domain belum terdaftar atau tidak ditemukan di sistem Registrar (Daftarnama). Ini wajar jika domain berstatus FAILED." 
+                message: "Domain belum terdaftar atau tidak ditemukan di sistem Registrar (Daftarnama). Silakan tunggu atau hubungi dukungan jika pembayaran sudah sukses.",
+                is_not_registered: true
             });
         }
 
@@ -336,9 +362,9 @@ exports.syncDomain = async (req, res) => {
         const ns = info.nameservers ? JSON.stringify(info.nameservers) : null;
         const locked = info.transfer_protection !== undefined ? info.transfer_protection : info.is_locked;
         
-        // Extract Registrar IDs
-        const orderId = info.order_id || regData.order_id || null;
-        const regDomainId = regData.domain_id || info.domain_id || null;
+        // Extract Registrar IDs with more robust mapping
+        const orderId = regData.order_id || info.order_id || regData.registration_id || null;
+        const regDomainId = regData.domain_id || info.domain_id || regData.id || info.id || null;
 
         let sql = "UPDATE domains SET status = ?, document_status = ?, registrar_response_raw = ?, last_document_sync_at = NOW(), updated_at = NOW()";
         let params = [internalStatus, mappedDocStatus, JSON.stringify(info)];
@@ -517,8 +543,9 @@ exports.updateRegistrarLock = async (req, res) => {
         if (rows.length === 0) return res.status(404).json("Domain not found or unauthorized");
         const domain = rows[0];
 
-        if (domain.status.toLowerCase() !== 'active') {
-            return res.status(400).json("Registrar Lock can only be updated for ACTIVE domains.");
+        const currentStatus = (domain.status || "").toLowerCase();
+        if (currentStatus !== 'active' && currentStatus !== 'provisioned') {
+            return res.status(400).json("Registrar Lock can only be updated for ACTIVE or PROVISIONED domains.");
         }
 
         // 2. Idempotency Check
@@ -583,8 +610,9 @@ exports.getEPPCode = async (req, res) => {
         if (rows.length === 0) return res.status(404).json("Domain not found or unauthorized");
         const domain = rows[0];
 
-        if (domain.status.toLowerCase() !== 'active') {
-            return res.status(400).json("EPP Code retrieval only available for ACTIVE domains.");
+        const currentStatus = (domain.status || "").toLowerCase();
+        if (currentStatus !== 'active' && currentStatus !== 'provisioned') {
+            return res.status(400).json("EPP Code retrieval only available for ACTIVE or PROVISIONED domains.");
         }
 
         // 3. Set Rate Limit
