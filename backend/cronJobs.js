@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const referralService = require('./services/referralService');
-const voucherService = require('./services/voucherService');
+const voucherService = require('./services/VoucherService');
 
 /**
  * CRON JOBS SYSTEM
