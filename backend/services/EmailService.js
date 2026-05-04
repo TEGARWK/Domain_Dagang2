@@ -72,7 +72,10 @@ class EmailService {
             'WITHDRAWAL_APPROVED': { subject: 'Penarikan Dana Disetujui', template: 'withdrawal_approved.ejs' },
             'WITHDRAWAL_REJECTED': { subject: 'Permintaan Penarikan Dana Ditolak', template: 'withdrawal_rejected.ejs' },
             'WITHDRAWAL_COMPLETED': { subject: 'Dana Penarikan Berhasil Dikirim', template: 'withdrawal_completed.ejs' },
-            'RESET_PASSWORD': { subject: 'Atur Ulang Kata Sandi Anda - DagangDomain', template: 'reset_password.ejs' }
+            'RESET_PASSWORD': { subject: 'Atur Ulang Kata Sandi Anda - DagangDomain', template: 'reset_password.ejs' },
+            'MANUAL_WAITING': { subject: 'Bukti Pembayaran Diterima - Menunggu Verifikasi', template: 'manual_payment_waiting.ejs' },
+            'MANUAL_SUCCESS': { subject: 'Pembayaran Diverifikasi - DagangDomain', template: 'manual_payment_success.ejs' },
+            'MANUAL_REJECTED': { subject: 'Pembayaran Tidak Terverifikasi - DagangDomain', template: 'manual_payment_rejected.ejs' }
         };
 
         const config = templateMap[type];
@@ -153,6 +156,24 @@ class EmailService {
 
         const resetUrl = `${clientUrl}/reset-password/${token}`;
         return this.send('RESET_PASSWORD', { user, token, resetUrl });
+    }
+
+    async sendManualPaymentWaiting(user, invoice) {
+        const result = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'app_client_url'");
+        const clientUrl = result.rows.length > 0 ? result.rows[0].setting_value : "http://localhost:5173";
+        return this.send('MANUAL_WAITING', { user, invoice, clientUrl });
+    }
+
+    async sendManualPaymentSuccess(user, invoice) {
+        const result = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'app_client_url'");
+        const clientUrl = result.rows.length > 0 ? result.rows[0].setting_value : "http://localhost:5173";
+        return this.send('MANUAL_SUCCESS', { user, invoice, clientUrl });
+    }
+
+    async sendManualPaymentRejected(user, invoice, reason) {
+        const result = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'app_client_url'");
+        const clientUrl = result.rows.length > 0 ? result.rows[0].setting_value : "http://localhost:5173";
+        return this.send('MANUAL_REJECTED', { user, invoice, reason, clientUrl });
     }
 
     async logEmail(recipient, subject, type, status, error = null, messageId = null) {

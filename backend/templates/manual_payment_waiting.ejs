@@ -1,0 +1,34 @@
+<%- include('header') %>
+    <h3 class="text-orange font-bold text-center" style="font-size: 20px; border-bottom: 2px solid #fdba74; padding-bottom: 10px; margin-top: 0;">Konfirmasi Pembayaran Diterima</h3>
+    
+    <p>Halo <strong class="font-bold"><%= user.name %></strong>,</p>
+    
+    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; color: #1e40af;">
+        <strong class="font-bold">⏳ Sedang Diverifikasi!</strong> Bukti pembayaran Anda telah kami terima dan sedang dalam antrian verifikasi oleh tim Admin kami.
+    </div>
+
+    <p>Proses verifikasi manual biasanya memakan waktu 15-60 menit pada jam kerja. Mohon menunggu kabar selanjutnya dari kami.</p>
+
+    <table class="table-wrap">
+        <tr>
+            <td style="font-weight: 600; width: 140px;">No. Invoice</td>
+            <td><strong class="text-orange">#<%= invoice.id %></strong></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Total Tagihan</td>
+            <td class="font-bold">Rp <%= parseInt(invoice.total).toLocaleString('id-ID') %></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600;">Status</td>
+            <td><span style="background-color: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">MENUNGGU VERIFIKASI</span></td>
+        </tr>
+    </table>
+
+    <div class="text-center">
+        <a href="<%= clientUrl %>/dashboard/billing" class="btn">Cek Status Tagihan</a>
+    </div>
+
+    <p style="margin-top: 30px; font-size: 14px; color: #64748b;">
+        Jika dalam 1x24 jam pembayaran Anda belum terverifikasi, silakan hubungi tim support kami dengan melampirkan nomor invoice Anda.
+    </p>
+<%- include('footer') %>

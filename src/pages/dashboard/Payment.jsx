@@ -58,6 +58,7 @@ const Payment = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [activeInstruction, setActiveInstruction] = useState(0); // For instructions accordion
   const [isCopied, setIsCopied] = useState(false); // For VA copy feedback
+  const [redirectCount, setRedirectCount] = useState(5); // Countdown for auto-redirect
 
   // Proof Upload State
   const [selectedFile, setSelectedFile] = useState(null);
@@ -179,18 +180,13 @@ const Payment = () => {
           const isPaid = ['PAID', 'SETTLEMENT', 'SUCCESS', 'SETTLED', 'SETLD'].includes(status);
 
           if (isPaid) {
-            if (paymentState !== 'PAID') { // Only trigger once
-              setPaymentState('PAID');
-              setShowSuccessPopup(true);
-              clearInterval(interval);
-              success("Pembayaran berhasil diterima!");
-
-              // Auto-redirect based on content
-              setTimeout(() => {
-                navigate(getSuccessRedirectPath());
-              }, 3000);
+              if (paymentState !== 'PAID') { // Only trigger once
+                setPaymentState('PAID');
+                setShowSuccessPopup(true);
+                clearInterval(interval);
+                success("Pembayaran berhasil diterima!");
+              }
             }
-          }
         } catch (err) {
           console.error("Polling error", err);
         }
@@ -233,6 +229,19 @@ const Payment = () => {
 
     return () => clearInterval(timer);
   }, [paymentResult, invoice]);
+
+  // Redirect Countdown Logic
+  useEffect(() => {
+    let timer;
+    if (showSuccessPopup && redirectCount > 0) {
+      timer = setInterval(() => {
+        setRedirectCount(prev => prev - 1);
+      }, 1000);
+    } else if (showSuccessPopup && redirectCount === 0) {
+      navigate(getSuccessRedirectPath());
+    }
+    return () => clearInterval(timer);
+  }, [showSuccessPopup, redirectCount, navigate, invoice]);
 
   // --- FETCH INVOICE ---
   useEffect(() => {
@@ -325,7 +334,9 @@ const Payment = () => {
     btn.disabled = true;
 
     try {
-      const provider = paymentResult?.provider || 'tripay';
+      const provider = paymentResult?.provider ||
+            (paymentResult?.plink_ref_no || paymentResult?.va_number_list ? 'prismalink' : 'tripay');
+            
       if (provider === 'manual') {
         info("Pembayaran manual sedang menunggu konfirmasi admin. Silakan kirim bukti transfer jika diperlukan.", "Status Pending");
         return;
@@ -341,6 +352,7 @@ const Payment = () => {
       if (isPaid) {
         setPaymentState('PAID');
         setShowSuccessPopup(true);
+        setRedirectCount(5); // Reset countdown to ensure full 5 seconds
         success("Tagihan Anda telah dilunasi.", "Pembayaran Lunas");
       } else {
         // Masih pending
@@ -352,7 +364,7 @@ const Payment = () => {
     } finally {
       const btn = document.getElementById('btn-check-status');
       if (btn) {
-        btn.innerText = originalText;
+        btn.innerHTML = `<span class="material-symbols-outlined text-sm">sync</span> ${originalText.replace('sync', '').trim()}`;
         btn.disabled = false;
       }
     }
@@ -412,9 +424,8 @@ const Payment = () => {
 
   const getSuccessMessage = () => {
     const path = getSuccessRedirectPath();
-    return path === "/dashboard/wallet"
-      ? "Mengalihkan ke halaman saldo saya dalam 3 detik..."
-      : "Mengalihkan ke halaman domain dalam 3 detik...";
+    const targetName = path === "/dashboard/wallet" ? "Halaman Saldo" : "Halaman Domain";
+    return `Mengalihkan ke ${targetName} dalam ${redirectCount} detik...`;
   };
 
   const getSuccessButtonLabel = () => {

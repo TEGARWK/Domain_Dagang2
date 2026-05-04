@@ -249,7 +249,7 @@ exports.resetPassword = async (req, res) => {
 // --- GOOGLE AUTH ---
 exports.googleAuth = async (req, res) => {
   try {
-    const { credential } = req.body;
+    const { credential, referralCode } = req.body;
     
     // Fetch dynamic Google Client ID from DB
     const settingsRes = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'google_client_id'");
@@ -283,8 +283,14 @@ exports.googleAuth = async (req, res) => {
         INSERT INTO users (name, email, password, is_verified, role) 
         VALUES ($1, $2, $3, TRUE, 'user') 
         RETURNING *`;
-      const newUser = await db.query(insertSql, [name, email, hashedPassword]);
-      user = newUser[0];
+      const newUserRows = await db.query(insertSql, [name, email, hashedPassword]);
+      user = newUserRows[0];
+
+      // --- REFERRAL INTEGRATION FOR GOOGLE SIGNUP ---
+      if (referralCode) {
+          await referralService.applyReferralOnRegister(user.id, referralCode);
+      }
+      // ----------------------------------------------
       
       createLog({
         user_id: user.id,

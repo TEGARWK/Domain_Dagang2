@@ -252,6 +252,7 @@ const Footer = () => {
                       if (bankCode === '451' || bankCode.includes('bsi')) return '/image/banks/bsi.png';
                       if (bankCode.includes('qris') || bankCode === 'qr' || bankCode === 'qris') return '/image/banks/qris.png';
                       if (bankCode === 'cc' || bankCode === 'credit_card') return '/image/banks/visa_master.png';
+                      if (!bankCode) return '/image/banks/generic.png'; // Fallback jika kode kosong
                       return `/image/banks/${bankCode}.png`;
                   };
                   return (

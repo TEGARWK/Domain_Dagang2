@@ -88,45 +88,223 @@ const DetailInvoice = () => {
   };
 
   const handleDownloadPdf = () => {
-    const element = document.getElementById('invoice-print-area');
-    if (!element) return;
+    // 1. SUSUN HTML MENTAH DENGAN LAYOUT YANG LEBIH LUANG & RAPI
+    const pdfHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          /* CSS Reset & Basic Setup */
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+          body { font-family: 'Helvetica', 'Arial', sans-serif; color: #000; padding: 0; margin: 0; background: #fff; }
+          
+          /* Container Utama - Simulasi Kertas A4 */
+          .paper { 
+            width: 800px; 
+            margin: 0 auto; 
+            padding: 50px; 
+            background: #fff;
+          }
+
+          /* Header Layout */
+          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+          .logo-img { width: 80px; height: 80px; object-fit: contain; }
+          .company-name { font-size: 22px; font-weight: bold; margin: 5px 0 0 0; color: #1a1a1a; }
+          .gray-text { color: #666; font-size: 13px; margin: 2px 0; }
+          
+          .invoice-label { font-size: 36px; font-weight: bold; margin: 0; color: #000; letter-spacing: 2px; }
+          .invoice-id { font-size: 18px; font-weight: bold; margin: 5px 0; color: #333; }
+
+          /* Info Section */
+          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+          .section-title { 
+            font-size: 11px; 
+            font-weight: bold; 
+            color: #888; 
+            text-transform: uppercase; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+          }
+          .info-content { font-size: 14px; line-height: 1.5; padding-top: 10px; }
+
+          /* Items Table */
+          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+          .items-table th { 
+            background: #f8f9fa; 
+            border-top: 2px solid #333; 
+            border-bottom: 1px solid #ccc; 
+            padding: 12px 10px; 
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+          }
+          .items-table td { 
+            padding: 15px 10px; 
+            border-bottom: 1px solid #eee; 
+            font-size: 14px; 
+            vertical-align: top;
+          }
+
+          /* Summary & Totals */
+          .summary-container { width: 100%; margin-top: 20px; }
+          .summary-table { width: 300px; float: right; border-collapse: collapse; }
+          .summary-table td { padding: 8px 0; font-size: 14px; }
+          .total-row td { 
+            border-top: 2px solid #000; 
+            padding-top: 15px; 
+            font-size: 20px; 
+            font-weight: bold; 
+          }
+
+          /* Stamp & Footer */
+          .stamp-container { clear: both; text-align: left; padding-top: 20px; }
+          .paid-stamp { 
+            border: 5px solid #000; 
+            color: #000; 
+            padding: 10px 25px; 
+            display: inline-block; 
+            font-size: 28px; 
+            font-weight: bold; 
+            transform: rotate(-12deg);
+            margin: 40px 0;
+            opacity: 0.8;
+          }
+          .footer { 
+            margin-top: 100px; 
+            text-align: center; 
+            font-size: 12px; 
+            color: #999; 
+            border-top: 1px solid #eee; 
+            padding-top: 30px; 
+          }
+          .text-right { text-align: right; }
+        </style>
+      </head>
+      <body>
+        <div class="paper">
+          <!-- HEADER -->
+          <table class="header-table">
+            <tr>
+              <td width="60%" valign="top">
+                <img src="${window.location.origin}/image/logo/ADTLogo.png" class="logo-img" />
+                <p class="company-name">PT Aplikasi Dagang Teknologi</p>
+                <p class="gray-text">Technology Solution Provider</p>
+              </td>
+              <td width="40%" class="text-right" valign="top">
+                <p class="invoice-label">INVOICE</p>
+                <p class="invoice-id">#${invoice.id}</p>
+                <p class="gray-text">Tanggal: ${invoice.date}</p>
+              </td>
+            </tr>
+          </table>
+
+          <div style="height: 2px; background: #000; margin-bottom: 40px;"></div>
+
+          <!-- INFO -->
+          <table class="info-table">
+            <tr>
+              <td width="50%" valign="top" style="padding-right: 40px;">
+                <div class="section-title">Diterbitkan Oleh:</div>
+                <div class="info-content">
+                  <strong>PT Aplikasi Dagang Teknologi</strong><br/>
+                  Jl. Cigadung Raya Tengah No.52, RT.2,<br/>
+                  Cigadung, Kec. Cibeunying Kaler, Kota Bandung,<br/>
+                  Jawa Barat 40191<br/>
+                  Email: admin@aplikasidagang.co.id
+                </div>
+              </td>
+              <td width="50%" valign="top" class="text-right">
+                <div class="section-title">Ditujukan Kepada:</div>
+                <div class="info-content">
+                  <strong>${invoice.customer.name}</strong><br/>
+                  ${invoice.customer.email}<br/>
+                  ${invoice.customer.phone || "-"}<br/>
+                  Metode: ${invoice.payment_method || "Transfer Bank"}
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <!-- ITEMS -->
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th width="70%">Deskripsi Layanan</th>
+                <th width="30%" class="text-right">Total (IDR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${invoice.items.map(item => `
+                <tr>
+                  <td>
+                    <strong>${item.name}</strong><br/>
+                    <span class="gray-text">${item.description}</span>
+                  </td>
+                  <td class="text-right">Rp ${item.price.toLocaleString('id-ID')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <!-- SUMMARY -->
+          <div class="summary-container">
+            <table class="summary-table">
+              <tr>
+                <td>Subtotal</td>
+                <td class="text-right">Rp ${invoice.subtotal.toLocaleString('id-ID')}</td>
+              </tr>
+              ${invoice.discount > 0 ? `
+                <tr>
+                  <td>Diskon</td>
+                  <td class="text-right" style="color: #d00;">- Rp ${invoice.discount.toLocaleString('id-ID')}</td>
+                </tr>
+              ` : ''}
+              ${invoice.tax > 0 ? `
+                <tr>
+                  <td>Pajak (PPN 11%)</td>
+                  <td class="text-right">+ Rp ${invoice.tax.toLocaleString('id-ID')}</td>
+                </tr>
+              ` : ''}
+              <tr class="total-row">
+                <td>TOTAL</td>
+                <td class="text-right">Rp ${invoice.total.toLocaleString('id-ID')}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- STAMP -->
+          <div class="stamp-container">
+            ${invoice.status === 'paid' ? '<div class="paid-stamp">LUNAS / PAID</div>' : ''}
+          </div>
+
+          <!-- FOOTER -->
+          <div class="footer">
+            <p>Terima kasih telah menggunakan layanan dari <strong>DomainDagang</strong>.</p>
+            <p>Invoice ini diterbitkan secara otomatis dan sah tanpa tanda tangan basah.</p>
+            <p>&copy; ${new Date().getFullYear()} PT Aplikasi Dagang Teknologi</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
     const opt = {
-      margin:       0.2,
-      filename:     `Tagihan_DomainDagang_${invoice.id}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
+      margin:       0,
+      filename:     `Invoice_DomainDagang_${invoice.id}.pdf`,
+      image:        { type: 'jpeg', quality: 1 },
       html2canvas:  { 
         scale: 2, 
         useCORS: true, 
-        windowWidth: 1000,
         logging: false,
-        onclone: (clonedDoc) => {
-          // JURUS PAMUNGKAS: Cari dan ganti semua properti oklch di dokumen kloningan
-          const allElements = clonedDoc.getElementsByTagName('*');
-          for (let i = 0; i < allElements.length; i++) {
-            const el = allElements[i];
-            const style = window.getComputedStyle(el);
-            
-            // Periksa properti yang sering pakai oklch
-            ['color', 'backgroundColor', 'borderColor', 'outlineColor', 'textDecorationColor', 'fill', 'stroke'].forEach(prop => {
-              const val = el.style[prop] || style[prop];
-              if (val && val.includes('oklch')) {
-                // Paksa jadi transparan atau warna standar jika html2canvas tidak bisa handle
-                // Tapi lebih baik kita set manual ke warna yang kita mau
-                if (prop === 'color') el.style.color = '#1e293b';
-                else if (prop === 'backgroundColor') {
-                  if (val.includes('0.05') || val.includes('5%')) el.style.backgroundColor = '#f8fafc';
-                  else el.style.backgroundColor = 'transparent';
-                }
-                else el.style[prop] = 'transparent';
-              }
-            });
-          }
-        }
+        letterRendering: true,
+        scrollX: 0,
+        scrollY: 0
       },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
-    html2pdf().set(opt).from(element).save();
+
+    html2pdf().set(opt).from(pdfHtml).save();
   };
 
   // Tampilan Loading
@@ -195,8 +373,8 @@ const DetailInvoice = () => {
           Kembali
         </button>
         <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
-          {invoice.status === "pending" && (
-            invoice.has_proof ? (
+          {(invoice.status === "pending" || invoice.status === "failed") && (
+            (invoice.status === "pending" && invoice.has_proof) ? (
               <div className="flex-1 md:flex-none bg-slate-100 text-slate-500 px-5 py-2.5 rounded-lg font-bold text-xs flex items-center gap-2 border border-slate-200">
                 <span className="material-symbols-outlined text-lg">verified_user</span>
                 Pembayaran Dalam Proses Verifikasi
@@ -315,6 +493,14 @@ const DetailInvoice = () => {
                 <span className="bg-[#dcfce7] text-[#15803d] px-3 py-1 rounded-md text-[10px] font-bold border border-[#bbf7d0] uppercase tracking-widest">
                   LUNAS
                 </span>
+              ) : invoice.status === "failed" ? (
+                <span className="bg-rose-100 text-rose-700 px-3 py-1 rounded-md text-[10px] font-bold border border-rose-200 uppercase tracking-widest">
+                  DITOLAK
+                </span>
+              ) : invoice.status === "cancelled" ? (
+                <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-md text-[10px] font-bold border border-slate-200 uppercase tracking-widest">
+                  DIBATALKAN
+                </span>
               ) : (
                 <span className="bg-[#ffedd5] text-[#c2410c] px-3 py-1 rounded-md text-[10px] font-bold border border-[#fed7aa] uppercase tracking-widest">
                   PENDING
@@ -323,7 +509,19 @@ const DetailInvoice = () => {
             </div>
           </div>
         </div>
- 
+        {/* ALASAN PENOLAKAN (Jika Ada) */}
+        {invoice.status === 'failed' && invoice.refund_reason && (
+          <div className="mx-5 sm:mx-8 mb-8 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-4 animate-[fadeIn_0.5s_ease-out]">
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-rose-600 shadow-sm shrink-0">
+              <span className="material-symbols-outlined font-bold text-lg">error</span>
+            </div>
+            <div>
+              <h4 className="text-[11px] font-bold text-rose-600 uppercase tracking-widest mb-1">Pembayaran Ditolak Admin</h4>
+              <p className="text-sm font-bold text-rose-700 italic">"{invoice.refund_reason}"</p>
+            </div>
+          </div>
+        )}
+
         {/* INFO PENGIRIM & PENERIMA */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-10">
           <div className="relative z-10">
@@ -422,8 +620,17 @@ const DetailInvoice = () => {
 
         {/* SUMMARY & SIGNATURE */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 relative z-10 px-2">
-          <div>
-             <p className="text-[9px] text-[#94a3b8] font-semibold uppercase tracking-widest leading-relaxed mb-4">
+          <div className="space-y-4">
+             {invoice.status === 'failed' && invoice.refund_reason && (
+                <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 mb-4 animate-[fadeIn_0.5s_ease-out]">
+                    <div className="flex items-center gap-2 mb-2 text-rose-600">
+                        <span className="material-symbols-outlined text-lg">error</span>
+                        <h4 className="text-[11px] font-bold uppercase tracking-widest">Alasan Penolakan:</h4>
+                    </div>
+                    <p className="text-xs font-bold text-rose-700 italic">"{invoice.refund_reason}"</p>
+                </div>
+             )}
+             <p className="text-[9px] text-[#94a3b8] font-semibold uppercase tracking-widest leading-relaxed">
                 * Tagihan ini sah tanpa tanda tangan basah.<br/>
                 * Harap simpan bukti pembayaran dengan baik.<br/>
                 * Seluruh pembayaran bersifat final (No Refund Policy).

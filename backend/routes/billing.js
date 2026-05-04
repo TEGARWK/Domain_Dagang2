@@ -12,6 +12,7 @@ router.get("/invoice/:id", verifyToken, controller.getInvoiceById);
 // Admin Actions
 router.get("/admin/user/:userId/invoices", verifyAdmin, controller.getUserInvoicesAdmin);
 router.post("/invoice/:id/pay", verifyAdmin, controller.payInvoice);
+router.post("/invoice/:id/reject", verifyAdmin, controller.rejectInvoice);
 router.post("/invoice/:id/pay-wallet", verifyToken, controller.payInvoiceWithWallet);
 router.post("/invoice/pay-manual", verifyToken, controller.initializeManualPayment);
 router.post("/invoice/:id/confirm-payment", verifyToken, controller.confirmManualPayment);

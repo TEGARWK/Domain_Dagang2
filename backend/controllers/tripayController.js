@@ -353,8 +353,9 @@ exports.createOpenTransaction = async (req, res) => {
  * Handle Webhook Notification from Tripay
  */
 exports.handleWebhook = async (req, res) => {
+    const client = await db.pool.connect();
     try {
-        // Validation Callback Signature
+        // 1. Validation Callback Signature
         const incomingSignature = req.headers['x-callback-signature'];
         const validSignature = await TripayService.generateCallbackSignature(req.rawBody || req.body);
         
@@ -364,17 +365,19 @@ exports.handleWebhook = async (req, res) => {
         }
 
         const data = req.body;
-        console.log("🔔 [Tripay Webhook] Received:", data);
+        console.log("🔔 [Tripay Webhook] Received Event:", req.headers['x-callback-event'], "for Merchant Ref:", data.merchant_ref);
 
-        // Check Event
+        // 2. Check Event
         if (req.headers['x-callback-event'] === 'payment_status') {
             const status = data.status; // PAID, EXPIRED, FAILED
             const reference = data.reference;
             const merchantRef = data.merchant_ref;
 
             if (status === 'PAID') {
-                // 1. Ambil data payment & invoice (LOCK FOR UPDATE)
-                const payRes = await db.pool.query(
+                await client.query('BEGIN');
+
+                // A. Ambil data payment & invoice (LOCK FOR UPDATE)
+                const payRes = await client.query(
                     'SELECT * FROM payments WHERE transaction_id = $1 OR tripay_reference = $2 FOR UPDATE', 
                     [merchantRef, reference]
                 );
@@ -382,104 +385,99 @@ exports.handleWebhook = async (req, res) => {
 
                 if (!payment) {
                     console.warn(`⚠️ [Tripay Webhook] Payment not found: Ref ${reference}`);
+                    await client.query('ROLLBACK');
                     return res.status(200).json({ success: true });
                 }
 
                 if (payment.status === 'PAID') {
                     console.log(`ℹ️ [Tripay Webhook] Payment ${reference} already processed as PAID.`);
+                    await client.query('ROLLBACK');
                     return res.status(200).json({ success: true });
                 }
 
-                // 2. Fetch Invoice
-                const invRes = await db.pool.query('SELECT * FROM invoices WHERE id = $1', [payment.invoice_number]);
+                // B. Fetch Invoice
+                const invRes = await client.query('SELECT * FROM invoices WHERE id = $1 FOR UPDATE', [payment.invoice_number]);
                 const invoice = invRes.rows[0];
 
                 if (!invoice) {
                     console.error(`❌ [Tripay Webhook] Invoice ${payment.invoice_number} not found!`);
+                    await client.query('ROLLBACK');
                     return res.status(200).json({ success: true });
                 }
 
-                await db.pool.query('BEGIN');
+                // C. Process updates within TRANSACTION
+                console.log(`✅ [Tripay Webhook] Processing Success Payment for ${invoice.id}`);
+                
+                await client.query(
+                    'UPDATE payments SET status = $1, updated_at = NOW() WHERE id = $2',
+                    ['PAID', payment.id]
+                );
+
+                await client.query(
+                    'UPDATE invoices SET status = $1, updated_at = NOW() WHERE id = $2',
+                    ['paid', invoice.id]
+                );
+
+                // D. Handle Action Type
+                const itemRes = await client.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [invoice.id]);
+                const items = itemRes.rows;
+                const isTopUp = invoice.type === 'TOPUP' || invoice.id.startsWith('TOPUP-') || items.some(it => it.action_type === 'topup' || (it.name || '').toLowerCase().includes('top up'));
+
+                if (isTopUp) {
+                    console.log(`💰 [Tripay Webhook] Topup detected. Crediting ${invoice.total} to UserID: ${invoice.user_id}`);
+                    await WalletService.credit(
+                        invoice.user_id, 
+                        parseFloat(invoice.total), 
+                        'TOPUP', 
+                        invoice.id, 
+                        'Top Up Wallet via Tripay Webhook',
+                        client
+                    );
+                } else {
+                    console.log(`🚀 [Tripay Webhook] Triggering Domain Activation for: ${invoice.id}`);
+                    // AWAIT activation to ensure atomicity
+                    const activationResult = await OrderService.activateDomain(invoice.id, client);
+                    if (!activationResult.success) {
+                        console.warn(`⚠️ [Tripay Webhook] Activation partial/failed for ${invoice.id}:`, activationResult.message);
+                    }
+                }
+
+                // E. Referral Process
                 try {
-                    // 3. Update Status Payment & Invoice
-                    await db.pool.query(
-                        'UPDATE payments SET status = $1, updated_at = NOW() WHERE id = $2',
-                        ['PAID', payment.id]
-                    );
-
-                    await db.pool.query(
-                        'UPDATE invoices SET status = $1, updated_at = NOW() WHERE id = $2',
-                        ['paid', invoice.id]
-                    );
-
-                    // 4. Handle Topup logic via WalletService
-                    const itemRes = await db.pool.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [invoice.id]);
-                    const items = itemRes.rows;
-                    const isTopUp = invoice.type === 'TOPUP' || invoice.id.startsWith('TOPUP-') || items.some(it => it.action_type === 'topup' || (it.name || '').toLowerCase().includes('top up'));
-
-                    if (isTopUp) {
-                        console.log(`💰 [Tripay Webhook] Topup detected. Crediting ${invoice.total} to UserID: ${invoice.user_id}`);
-                        await WalletService.credit(
-                            invoice.user_id, 
-                            parseFloat(invoice.total), 
-                            'TOPUP', 
-                            invoice.id, 
-                            'Top Up Wallet via Tripay'
-                        );
-                    } else {
-                        console.log(`✅ [Tripay Webhook] Service Payment processed: ${invoice.id}`);
-                        // Future: Add domain activation triggering if needed here 
-                        // (Usually handled via callback or service layer separately)
-                    }
-
-                    await db.pool.query('COMMIT');
-                    console.log(`✅ [Tripay Webhook] Success Payment for Invoice: ${invoice.id}`);
-
-                    // Trigger Referral Reward (Async)
-                    referralService.processReferralReward(invoice.id)
-                        .catch(err => console.error("Referral Reward Error:", err));
-
-                    // Finalize Coupon Usage (Success)
-                    await VoucherService.finalizeVoucherUsage(invoice.id, db.pool);
-
-                    // Trigger Domain Activation (Async)
-                    if (invoice.type !== 'TOPUP' && !invoice.id.startsWith('TOPUP-')) {
-                        console.log(`🚀 [Tripay Webhook] Triggering Domain Activation for: ${invoice.id}`);
-                        OrderService.activateDomain(invoice.id)
-                            .then(res => console.log(`[Tripay Webhook] Domain Activation Result for ${invoice.id}:`, res))
-                            .catch(err => console.error(`[Tripay Webhook] Domain Activation Error for ${invoice.id}:`, err));
-                    }
-
-
-                    return res.status(200).json({ success: true });
-
-                } catch (innerErr) {
-                    await db.pool.query('ROLLBACK');
-                    console.error("❌ [Tripay Webhook] DB Update Error:", innerErr);
-                    return res.status(500).json({ success: false, message: "Database Error" });
+                    const referralService = require('../services/referralService');
+                    await referralService.processReferralReward(invoice.id, client);
+                } catch (refErr) {
+                    console.error("❌ [Tripay Webhook] Referral Reward Error:", refErr.message);
                 }
+
+                // F. Finalize Voucher Usage
+                await VoucherService.finalizeVoucherUsage(invoice.id, client);
+
+                await client.query('COMMIT');
+                console.log(`🎉 [Tripay Webhook] Completed transaction for Invoice: ${invoice.id}`);
             } else if (status === 'EXPIRED' || status === 'FAILED') {
-                const payRes = await db.pool.query('SELECT * FROM payments WHERE transaction_id = $1 OR tripay_reference = $2', [merchantRef, reference]);
+                await client.query('BEGIN');
+                const payRes = await client.query('SELECT * FROM payments WHERE transaction_id = $1 OR tripay_reference = $2 FOR UPDATE', [merchantRef, reference]);
                 const payment = payRes.rows[0];
                 if (payment) {
-                    await db.pool.query(
+                    await client.query(
                         'UPDATE payments SET status = $1, updated_at = NOW() WHERE id = $2',
                         [status, payment.id]
                     );
-
-                    // Finalize Coupon Usage (Expired / Failed)
-                    // (REMOVED: Coupon Finalization - System reset)
+                    await client.query("UPDATE invoices SET status = 'failed', updated_at = NOW() WHERE id = $1", [payment.invoice_number]);
                 }
-                return res.status(200).json({ success: true });
+                await client.query('COMMIT');
             }
         }
         
-        // Return 200 OK for any other events handled
         return res.status(200).json({ success: true });
 
     } catch (err) {
-        console.error("❌ Tripay Webhook Error:", err.message);
-        return res.status(500).json({ success: false, message: err.message });
+        if (client) await client.query('ROLLBACK');
+        console.error('❌ [Tripay Webhook] Fatal Error:', err.message);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    } finally {
+        if (client) client.release();
     }
 };
 

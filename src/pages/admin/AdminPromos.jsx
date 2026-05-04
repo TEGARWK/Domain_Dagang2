@@ -240,9 +240,12 @@ const AdminPromos = () => {
                                 ) : referralData.rewards.map((r) => (
                                     <div key={r.id} className="p-6 space-y-4">
                                         <div className="flex justify-between items-start">
-                                            <div>
+                                            <div 
+                                                onClick={() => navigate(`/admin/users?search=${r.referrer_name}`)}
+                                                className="cursor-pointer group/ref"
+                                            >
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Referrer</p>
-                                                <p className="font-black text-slate-900">{r.referrer_name}</p>
+                                                <p className="font-black text-slate-900 group-hover/ref:text-[#F97316] transition-colors underline decoration-dotted underline-offset-4">{r.referrer_name}</p>
                                             </div>
                                             <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border ${
                                                 r.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
@@ -252,9 +255,12 @@ const AdminPromos = () => {
                                             </span>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div>
+                                            <div 
+                                                onClick={() => navigate(`/admin/users?search=${r.referee_name}`)}
+                                                className="cursor-pointer group/ref"
+                                            >
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Referee</p>
-                                                <p className="text-sm font-bold text-slate-700">{r.referee_name}</p>
+                                                <p className="text-sm font-bold text-slate-700 group-hover/ref:text-[#F97316] transition-colors underline decoration-dotted underline-offset-4">{r.referee_name}</p>
                                             </div>
                                             <div>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reward</p>
@@ -305,8 +311,22 @@ const AdminPromos = () => {
                                             <tr><td colSpan="6" className="text-center py-20 text-slate-400 italic">Belum ada transaksi referral</td></tr>
                                         ) : referralData.rewards.map((r) => (
                                             <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-8 py-5 font-bold text-slate-900">{r.referrer_name}</td>
-                                                <td className="px-8 py-5 text-slate-500">{r.referee_name}</td>
+                                                <td className="px-8 py-5">
+                                                    <div 
+                                                        onClick={() => navigate(`/admin/users?search=${r.referrer_name}`)}
+                                                        className="font-bold text-slate-900 cursor-pointer hover:text-[#F97316] transition-colors underline decoration-dotted decoration-slate-300 underline-offset-4 w-fit"
+                                                    >
+                                                        {r.referrer_name}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <div 
+                                                        onClick={() => navigate(`/admin/users?search=${r.referee_name}`)}
+                                                        className="text-slate-500 cursor-pointer hover:text-[#F97316] transition-colors underline decoration-dotted decoration-slate-200 underline-offset-4 w-fit"
+                                                    >
+                                                        {r.referee_name}
+                                                    </div>
+                                                </td>
                                                 <td className="px-8 py-5 font-bold text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(r.reward_amount)}</td>
                                                 <td className="px-8 py-5 text-[10px] font-bold uppercase text-slate-400">
                                                     {new Date(r.holding_until).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -467,9 +487,21 @@ const AdminPromos = () => {
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{v.title}</p>
                                             </div>
                                         </div>
-                                        <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all ${v.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                            {v.is_active ? 'Aktif' : 'Off'}
-                                        </span>
+                                        {(() => {
+                                            const isExpired = new Date(v.expired_at) < new Date();
+                                            if (isExpired) {
+                                                return (
+                                                    <span className="px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border bg-rose-50 text-rose-600 border-rose-100 flex items-center gap-1 w-fit">
+                                                        Kadaluwarsa
+                                                    </span>
+                                                );
+                                            }
+                                            return (
+                                                <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all ${v.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                                    {v.is_active ? 'Aktif' : 'Off'}
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -570,10 +602,26 @@ const AdminPromos = () => {
                                             </div>
                                         </td>
                                         <td className="px-8 py-5">
-                                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all w-fit flex items-center gap-1 ${v.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100 group-hover:bg-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                                <div className={`w-1 h-1 rounded-full ${v.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
-                                                {v.is_active ? 'Aktif' : 'Non-Aktif'}
-                                            </span>
+                                            {(() => {
+                                                const isExpired = new Date(v.expired_at) < new Date();
+                                                const isActive = v.is_active && !isExpired;
+                                                
+                                                if (isExpired) {
+                                                    return (
+                                                        <span className="px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border bg-rose-50 text-rose-600 border-rose-100 flex items-center gap-1 w-fit">
+                                                            <div className="w-1 h-1 rounded-full bg-rose-500"></div>
+                                                            Kadaluwarsa
+                                                        </span>
+                                                    );
+                                                }
+                                                
+                                                return (
+                                                    <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all w-fit flex items-center gap-1 ${v.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100 group-hover:bg-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                                        <div className={`w-1 h-1 rounded-full ${v.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
+                                                        {v.is_active ? 'Aktif' : 'Non-Aktif'}
+                                                    </span>
+                                                );
+                                            })()}
                                         </td>
                                         <td className="px-8 py-5 text-right">
                                             <div className="flex justify-end gap-1.5">

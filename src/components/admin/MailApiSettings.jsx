@@ -14,6 +14,7 @@ const MailApiSettings = () => {
     smtp_from_email: "no-reply@domaindagang.com", // Tambahkan ini
     smtp_encryption: "tls",
   });
+  const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -82,8 +83,23 @@ const MailApiSettings = () => {
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">SMTP Password / App Password</label>
-            <input type="password" value={settings.smtp_pass} onChange={e => setSettings({...settings, smtp_pass: e.target.value})}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 outline-none transition-all" />
+            <div className="relative">
+              <input 
+                type={showPass ? "text" : "password"} 
+                value={settings.smtp_pass} 
+                onChange={e => setSettings({...settings, smtp_pass: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-12 text-sm font-bold text-slate-800 focus:border-orange-500 outline-none transition-all" 
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">
+                  {showPass ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nama Pengirim (Display Name)</label>

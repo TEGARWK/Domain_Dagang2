@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -11,6 +11,7 @@ const AdminDomains = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [activeTab, setActiveTab] = useState("all_domains"); // all_domains, transfer_requests
+    const navigate = useNavigate();
     const confirm = useConfirm();
     
     // Pagination & Sorting State
@@ -354,11 +355,14 @@ const AdminDomains = () => {
                                             </div>
                                         </td>
                                         <td className="px-8 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-7 h-7 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center text-[10px] font-bold uppercase">
+                                            <div 
+                                                onClick={() => navigate(`/admin/users?search=${dom.user}`)}
+                                                className="flex items-center gap-3 cursor-pointer group/owner"
+                                            >
+                                                <div className="w-7 h-7 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center text-[10px] font-bold uppercase group-hover/owner:bg-indigo-500 group-hover/owner:text-white transition-colors">
                                                     {getInitial(dom.user)}
                                                 </div>
-                                                <p className="text-xs font-bold text-slate-600 tracking-tight">{dom.user}</p>
+                                                <p className="text-xs font-bold text-slate-600 tracking-tight group-hover/owner:text-indigo-600 transition-colors underline decoration-dotted decoration-slate-300 underline-offset-4">{dom.user}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-center">
@@ -387,6 +391,13 @@ const AdminDomains = () => {
                                         </td>
                                         <td className="px-8 py-5">
                                             <div className="flex justify-center gap-2">
+                                                <button 
+                                                    onClick={() => navigate(`/admin/invoices?search=${dom.name}`)}
+                                                    title="Lihat Invoices Domain"
+                                                    className="w-10 h-10 flex items-center justify-center bg-white text-slate-400 border border-slate-100 rounded-lg hover:bg-emerald-50 hover:text-emerald-500 hover:border-emerald-100 transition-all shadow-sm active:scale-95"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg">receipt_long</span>
+                                                </button>
                                                 <button 
                                                     onClick={() => handleSyncSingle(dom.id, dom.name)}
                                                     disabled={loading}

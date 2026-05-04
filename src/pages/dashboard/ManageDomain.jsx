@@ -101,7 +101,10 @@ const ManageDomain = ({ isAdmin = false }) => {
 
   // --- TLD CHECK ---
   const idExtensions = ['.id', '.co.id', '.biz.id', '.my.id', '.web.id', '.ac.id', '.sch.id', '.or.id', '.ponpes.id', '.desa.id'];
+  const docsRequiredExtensions = ['.co.id', '.ac.id', '.sch.id', '.or.id', '.ponpes.id', '.desa.id']; // Extensions that actually need manual verification
+  
   const isIdDomain = domainData?.name ? idExtensions.some(ext => domainData.name.toLowerCase().endsWith(ext)) : false;
+  const needsDocuments = domainData?.name ? docsRequiredExtensions.some(ext => domainData.name.toLowerCase().endsWith(ext)) : false;
 
   // --- DERIVED DATA ---
   const getDocumentInfo = () => {
@@ -122,24 +125,10 @@ const ManageDomain = ({ isAdmin = false }) => {
         color: "amber",
         badge: "bg-amber-100 text-amber-700 border-amber-200"
       },
-      upload_required: {
-        status: 'upload_required',
-        title: "Verifikasi Diperlukan",
-        desc: "Lengkapi dokumen identitas untuk mengaktifkan domain ID Anda.",
-        color: "blue",
-        badge: "bg-blue-100 text-blue-700 border-blue-200"
-      },
       rejected: {
         status: 'rejected',
-        title: "Dokumen Ditolak",
-        desc: "Verifikasi gagal. Silakan periksa kembali kelengkapan dokumen sesuai panduan.",
-        color: "rose",
-        badge: "bg-rose-100 text-rose-700 border-rose-200"
-      },
-      expired_needs_verification: {
-        status: 'expired_needs_verification',
-        title: "Butuh Verifikasi Ulang",
-        desc: "Domain expired dan membutuhkan verifikasi dokumen baru untuk pengaktifan kembali.",
+        title: "Dokumen Diperlukan / Ditolak",
+        desc: "Lengkapi dokumen identitas atau perbaiki dokumen yang ditolak untuk mengaktifkan domain.",
         color: "rose",
         badge: "bg-rose-100 text-rose-700 border-rose-200"
       },
@@ -576,7 +565,7 @@ const ManageDomain = ({ isAdmin = false }) => {
     return (
     <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
       {/* 1. Action Banners (Critical/Verification) */}
-      {isCritical && isIdDomain && (
+      {isCritical && needsDocuments && (
           <div className="bg-rose-600 text-white p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shadow-rose-100 animate-pulse">
               <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
@@ -614,7 +603,7 @@ const ManageDomain = ({ isAdmin = false }) => {
       )}
 
       {/* Success Banner (If approved) */}
-      {docInfo.status === 'approved' && isIdDomain && (
+      {docInfo.status === 'approved' && needsDocuments && (
           <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-lg flex items-center gap-4 shadow-sm">
             <div className="w-8 h-8 bg-emerald-500 text-white rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -631,10 +620,14 @@ const ManageDomain = ({ isAdmin = false }) => {
         <div className="p-6 bg-slate-50 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 group-hover:text-emerald-500 transition-colors">Status Domain</p>
           <div className="flex items-center gap-3">
-            <h3 className="text-3xl font-bold text-slate-900 capitalize">{domainData.status}</h3>
-             <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${domainData.status === 'active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-              {domainData.status === 'active' ? '● Live' : '● Status'}
-            </span>
+            <h3 className="text-3xl font-bold text-slate-900 capitalize">{domainData.status?.replace(/_/g, ' ') || ''}</h3>
+              <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${
+                domainData.status === 'active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 
+                domainData.status === 'pending_transfer' ? 'bg-blue-100 text-blue-700 border-blue-200 animate-pulse' :
+                'bg-slate-100 text-slate-600 border-slate-200'
+              }`}>
+                {domainData.status === 'active' ? '● Live' : domainData.status === 'pending_transfer' ? '● Transfer' : '● Status'}
+              </span>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-200/60 flex justify-between items-center">
             <p className="text-[10px] text-slate-500 font-bold uppercase">Kadaluarsa</p>
@@ -1196,7 +1189,7 @@ const ManageDomain = ({ isAdmin = false }) => {
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs font-bold mt-1.5">
               <span className={`px-2 py-0.5 border flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest rounded-md ${domainData.status === 'active' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : (domainData.status === 'provisioned' || domainData.status === 'registering') ? 'text-blue-600 bg-blue-50 border-blue-100' : domainData.status === 'paid' ? 'text-orange-600 bg-orange-50 border-orange-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
                 <span className={`w-1 h-1 rounded-full ${domainData.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`}></span>
-                {domainData.status === 'registering' ? 'REGISTERING' : domainData.status === 'provisioned' ? 'PROVISIONING' : domainData.status === 'paid' ? 'AWAITING' : (domainData.status || "").toUpperCase()}
+                {domainData.status === 'registering' ? 'REGISTERING' : domainData.status === 'provisioned' ? 'MENUNGGU DOKUMEN' : domainData.status === 'paid' ? 'AWAITING' : (domainData.status || "").toUpperCase()}
               </span>
               <span className="text-slate-300 hidden sm:inline">•</span>
               <span className="text-slate-500 font-medium">Registrar: <span className="text-slate-900 font-bold uppercase">{domainData.registrar_name || "Daftarnama"}</span></span>
@@ -1221,7 +1214,7 @@ const ManageDomain = ({ isAdmin = false }) => {
           <div className="flex gap-1 overflow-x-auto no-scrollbar">
             {[
               { id: "overview", label: "Overview", icon: "M4 6h16M4 12h16m-7 6h7" },
-              isIdDomain && { id: "verifikasi", label: "Verifikasi", icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" },
+              needsDocuments && { id: "verifikasi", label: "Verifikasi", icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" },
               { id: "ns", label: "Nameservers", icon: "M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" },
               { id: "dns", label: "DNS Records", icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" },
               isAdmin && { id: "audit", label: "Audit Log", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },

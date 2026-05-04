@@ -16,7 +16,7 @@ const verifyToken = (req, res, next) => {
         const logFile = path.join(__dirname, '../emergency_error.log');
         fs.appendFileSync(logFile, `[${new Date().toISOString()}] ❌ AUTH ERROR: ${err.message}\n`);
         console.error("[AuthMiddleware] Token Verification Failed:", err.message);
-        return res.status(403).json("Token is not valid!");
+        return res.status(401).json("Token is not valid or expired!");
       }
       req.user = user;
       next();

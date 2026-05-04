@@ -38,11 +38,14 @@ class WalletService {
      * @param {string} refType 'TOPUP', 'REFUND', 'ADJUSTMENT'
      * @param {string} refId Invoice ID or similar
      * @param {string} description 
+     * @param {object} dbClient Optional PostgreSQL client for shared transaction
      */
-    async credit(userId, amount, refType, refId, description) {
-        const client = await db.pool.connect();
+    async credit(userId, amount, refType, refId, description, dbClient = null) {
+        const client = dbClient || await db.pool.connect();
+        const shouldRelease = !dbClient;
+
         try {
-            await client.query('BEGIN');
+            if (shouldRelease) await client.query('BEGIN');
             
             // 1. Lock Wallet Row
             const walletRes = await client.query(
@@ -70,16 +73,15 @@ class WalletService {
                 [walletId, amount, refType, refId, description, newBalance]
             );
 
-            await client.query('COMMIT');
-            // Updated balance log removed
+            if (shouldRelease) await client.query('COMMIT');
             return { success: true, newBalance };
 
         } catch (error) {
-            await client.query('ROLLBACK');
+            if (shouldRelease) await client.query('ROLLBACK');
             console.error(`[Wallet] Credit Failed:`, error);
             throw error;
         } finally {
-            client.release();
+            if (shouldRelease) client.release();
         }
     }
 

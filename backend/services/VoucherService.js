@@ -30,6 +30,7 @@ class VoucherService {
               AND (expired_at > NOW() OR expired_at IS NULL)
               AND (started_at <= NOW() OR started_at IS NULL)
               AND (quota > quota_used OR quota = 0)
+              AND segment = 'all'
             ORDER BY priority DESC, created_at DESC
         `;
         const result = await db.pool.query(query);
@@ -40,16 +41,26 @@ class VoucherService {
      * Get Available Claimable Vouchers for a user
      */
     async getAvailableClaimableVouchers(userId) {
-        const query = `
-            SELECT * FROM vouchers 
-            WHERE is_active = TRUE 
-            AND is_automatic = FALSE
-            AND quota > quota_used
-            AND expired_at > NOW()
-            AND id NOT IN (SELECT voucher_id FROM voucher_claims WHERE user_id = $1)
-            ORDER BY priority DESC, created_at DESC
-        `;
         try {
+            // Fetch user role
+            const userRes = await db.pool.query("SELECT role FROM users WHERE id = $1", [userId]);
+            const userRole = userRes.rows[0]?.role || 'user';
+            
+            // Define allowed segments
+            const allowedSegments = userRole === 'premium' || userRole === 'reseller' 
+                ? "('all', 'premium')" 
+                : "('all', 'regular')";
+
+            const query = `
+                SELECT * FROM vouchers 
+                WHERE is_active = TRUE 
+                AND is_automatic = FALSE
+                AND quota > quota_used
+                AND expired_at > NOW()
+                AND segment IN ${allowedSegments}
+                AND id NOT IN (SELECT voucher_id FROM voucher_claims WHERE user_id = $1)
+                ORDER BY priority DESC, created_at DESC
+            `;
             const { rows } = await db.pool.query(query, [userId]);
             return rows;
         } catch (error) {
@@ -63,12 +74,12 @@ class VoucherService {
      */
     async getMyVouchers(userId) {
         const query = `
-            SELECT vc.*, v.title, v.code, v.discount_type as type, v.discount_value as value, v.description, v.banner_image, v.subtitle, v.max_discount,
-                   v.applicable_to, v.eligible_actions, v.min_transaction as min_purchase,
-                   v.expired_at as valid_until, v.is_new_user_only as first_purchase_only, v.is_active
+            SELECT vc.*, v.title, v.code, v.discount_type, v.discount_value, v.description, v.banner_image, v.subtitle, v.max_discount,
+                   v.applicable_to, v.eligible_actions, v.min_transaction,
+                   v.expired_at, v.is_new_user_only, v.is_active
             FROM voucher_claims vc
             JOIN vouchers v ON vc.voucher_id = v.id
-            WHERE vc.user_id = $1 AND vc.status = 'claimed'
+            WHERE vc.user_id = $1 
             ORDER BY vc.claimed_at DESC
         `;
         try {
@@ -445,7 +456,7 @@ class VoucherService {
         `;
 
         const values = [
-            code ? code.toUpperCase() : null, title, discount_type || 'fixed', parseFloat(discount_value) || 0, parseInt(quota) || 0,
+            code ? code.toUpperCase() : null, title, discount_type || 'flat', parseFloat(discount_value) || 0, parseInt(quota) || 0,
             parseInt(max_use_per_user) || 1, applicable_to || null, parseFloat(min_transaction) || 0,
             started_at || null, expired_at || null, created_by || null,
             parseFloat(max_discount) || 0, !!is_new_user_only, !!is_stackable,

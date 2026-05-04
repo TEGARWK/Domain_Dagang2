@@ -67,8 +67,10 @@ const Login = () => {
     setIsLoading(true);
     setError("");
     try {
+        const referralCode = sessionStorage.getItem("referral_code") || "";
         const response = await api.post("/auth/google", {
-            credential: credentialResponse.credential
+            credential: credentialResponse.credential,
+            referralCode: referralCode
         });
         const result = response.data;
 

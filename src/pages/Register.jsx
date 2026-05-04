@@ -113,7 +113,8 @@ const Register = () => {
     setError("");
     try {
         const response = await api.post("/auth/google", {
-            credential: credentialResponse.credential
+            credential: credentialResponse.credential,
+            referralCode: formData.referralCode
         });
         const result = response.data;
 

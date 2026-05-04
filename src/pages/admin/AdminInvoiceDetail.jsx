@@ -12,6 +12,9 @@ const AdminInvoiceDetail = () => {
     const [loading, setLoading] = useState(true);
     const [checking, setChecking] = useState(false);
     const [approving, setApproving] = useState(false);
+    const [rejecting, setRejecting] = useState(false);
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [rejectReason, setRejectReason] = useState("Bukti transfer tidak valid atau dana belum masuk.");
 
     useEffect(() => {
         fetchDetail();
@@ -24,15 +27,115 @@ const AdminInvoiceDetail = () => {
         element.classList.remove('hidden');
         element.classList.add('block');
         
+        const pdfHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+              body { font-family: 'Helvetica', 'Arial', sans-serif; color: #000; padding: 0; margin: 0; background: #fff; }
+              .paper { width: 800px; margin: 0 auto; padding: 50px; }
+              .full-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+              .header-text { font-size: 32px; font-weight: bold; margin: 0; letter-spacing: 1px; }
+              .bold { font-weight: bold; }
+              .gray { color: #666; font-size: 13px; margin: 2px 0; }
+              .section-title { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px; }
+              .bordered th { background: #f8f9fa; border-top: 2px solid #000; border-bottom: 1px solid #ccc; padding: 12px 10px; text-align: left; font-size: 12px; }
+              .bordered td { padding: 15px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+              .text-right { text-align: right; }
+              .total-table { width: 250px; float: right; border-collapse: collapse; }
+              .total-table td { padding: 8px 0; font-size: 14px; }
+              .grand-total { border-top: 2px solid #000; font-weight: bold; font-size: 18px; padding-top: 15px; }
+              .footer { margin-top: 100px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 20px; clear: both; }
+            </style>
+          </head>
+          <body>
+            <div class="paper">
+              <table class="full-table">
+                <tr>
+                  <td width="60%">
+                    <img src="${window.location.origin}/image/logo/ADTLogo.png" style="width: 70px; height: 70px;" />
+                    <p class="bold" style="font-size: 20px; margin: 5px 0;">PT Aplikasi Dagang Teknologi</p>
+                    <p class="gray">Official Administrative Invoice</p>
+                  </td>
+                  <td width="40%" class="text-right" valign="top">
+                    <p class="header-text">INVOICE</p>
+                    <p class="bold" style="font-size: 18px;">#${id}</p>
+                    <p class="gray">Tanggal: ${new Date().toLocaleDateString('id-ID')}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <div style="height: 2px; background: #000; margin-bottom: 40px;"></div>
+
+              <table class="full-table">
+                <tr>
+                  <td width="50%" valign="top">
+                    <div class="section-title">Diterbitkan Oleh:</div>
+                    <p class="bold">PT Aplikasi Dagang Teknologi</p>
+                    <p class="gray">Bandung, Jawa Barat, Indonesia</p>
+                  </td>
+                  <td width="50%" valign="top" class="text-right">
+                    <div class="section-title">Pelanggan:</div>
+                    <p class="bold">${invoice.user?.name}</p>
+                    <p class="gray">${invoice.user?.email}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table class="full-table bordered">
+                <thead>
+                  <tr>
+                    <th>Item Layanan</th>
+                    <th width="30%" class="text-right">Harga (IDR)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${invoice.items?.map(item => `
+                    <tr>
+                      <td>${item.description}</td>
+                      <td class="text-right">Rp ${item.amount?.toLocaleString('id-ID')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+
+              <table class="total-table">
+                <tr>
+                  <td>Subtotal</td>
+                  <td class="text-right">Rp ${invoice.sub_total?.toLocaleString('id-ID')}</td>
+                </tr>
+                <tr class="grand-total">
+                  <td>TOTAL</td>
+                  <td class="text-right">Rp ${invoice.total_amount?.toLocaleString('id-ID')}</td>
+                </tr>
+              </table>
+
+              <div class="footer">
+                <p>Dokumen ini adalah salinan resmi administrasi PT Aplikasi Dagang Teknologi.</p>
+                <p>&copy; ${new Date().getFullYear()} DomainDagang</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
         const opt = {
-          margin:       0.2,
+          margin:       0,
           filename:     `Admin_Invoice_${id}.pdf`,
-          image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true },
+          image:        { type: 'jpeg', quality: 1 },
+          html2canvas:  { 
+            scale: 2, 
+            useCORS: true,
+            logging: false,
+            letterRendering: true,
+            scrollX: 0,
+            scrollY: 0
+          },
           jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
-        
-        html2pdf().set(opt).from(element).save().then(() => {
+
+        html2pdf().set(opt).from(pdfHtml).save().then(() => {
             element.classList.remove('block');
             element.classList.add('hidden');
         });
@@ -54,18 +157,53 @@ const AdminInvoiceDetail = () => {
     const handleCheckStatus = async () => {
         setChecking(true);
         try {
-            const response = await api.get(`/prismalink/status/${id}`);
-            if (response.data.status === 'PAID') {
-                success("Status Pembayaran Terkonfirmasi: LUNAS");
+            let endpoint = "";
+            let providerName = "";
+
+            // Logic to determine provider
+            if (invoice.plink_ref_no) {
+                endpoint = `/prismalink/status/${id}`;
+                providerName = "Prismalink";
+            } else if (invoice.payment_instructions?.va_number || invoice.payment_method?.includes("VA")) {
+                // Assuming others with VA but no Plink Ref are Tripay (as per current gateway setup)
+                endpoint = `/tripay/status/${id}`; // Using invoice ID as reference for merchant_ref check
+                providerName = "Tripay";
+            } else {
+                return warning("Metode pembayaran manual harus diverifikasi secara manual oleh Admin.");
+            }
+
+            console.log(`[Admin] Checking status via ${providerName} for Invoice ${id}`);
+            const response = await api.get(endpoint);
+            
+            if (response.data.status === 'PAID' || response.data.status === 'success') {
+                success(`Status Pembayaran ${providerName} Terkonfirmasi: LUNAS`);
                 fetchDetail();
             } else {
-                warning(`Status saat ini: ${response.data.status}. Belum ada pembayaran masuk.`);
+                const currentStatus = response.data.status || "PENDING";
+                warning(`Status di ${providerName}: ${currentStatus}. Belum ada pembayaran masuk.`);
             }
         } catch (err) {
-            console.error(err);
-            error("Gagal memeriksa status transaksi.");
+            console.error("Check status error:", err);
+            error("Gagal memeriksa status transaksi di provider. Pastikan gateway dikonfigurasi dengan benar.");
         } finally {
             setChecking(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!rejectReason.trim()) return error("Alasan penolakan wajib diisi.");
+
+        setRejecting(true);
+        try {
+            await api.post(`/billing/invoice/${id}/reject`, { reason: rejectReason });
+            success("Pembayaran berhasil ditolak.");
+            setShowRejectModal(false);
+            fetchDetail();
+        } catch (err) {
+            console.error("Reject error:", err);
+            error(err.response?.data?.error || "Gagal menolak pembayaran.");
+        } finally {
+            setRejecting(false);
         }
     };
 
@@ -336,14 +474,28 @@ const AdminInvoiceDetail = () => {
                             Download PDF
                         </button>
                         {invoice.status === 'pending' && (
-                            <button 
-                                onClick={handleApprove}
-                                disabled={approving}
-                                className="h-12 px-6 bg-[#F97316] text-white rounded-lg text-sm font-semibold hover:bg-[#0f172a] transition-all classic-shadow active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                            >
-                                {approving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
-                                {approving ? 'Memproses...' : 'Terima Pembayaran'}
-                            </button>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => setShowRejectModal(true)}
+                                    disabled={rejecting}
+                                    className="h-12 px-6 bg-white border border-rose-200 text-rose-600 rounded-lg text-sm font-semibold hover:bg-rose-50 hover:border-rose-300 transition-all classic-shadow active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {rejecting ? (
+                                        <span className="w-4 h-4 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin"></span>
+                                    ) : (
+                                        <span className="material-symbols-outlined text-lg">block</span>
+                                    )}
+                                    {rejecting ? 'Menolak...' : 'Tolak Pembayaran'}
+                                </button>
+                                <button 
+                                    onClick={handleApprove}
+                                    disabled={approving}
+                                    className="h-12 px-6 bg-[#F97316] text-white rounded-lg text-sm font-semibold hover:bg-[#0f172a] transition-all classic-shadow active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {approving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>}
+                                    {approving ? 'Memproses...' : 'Terima Pembayaran'}
+                                </button>
+                            </div>
                         )}
                         {hasFailedActivation && (
                             <button 
@@ -372,9 +524,17 @@ const AdminInvoiceDetail = () => {
                                     {getCategoryBadge(invoice.category)}
                                 </div>
                                 <span className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${
-                                    invoice.status === 'paid' ? 'bg-[#ecfdf5] text-[#059669] border-[#d1fae5]' : 'bg-amber-50 text-amber-600 border-amber-100'
+                                    invoice.status === 'paid' ? 'bg-[#ecfdf5] text-[#059669] border-[#d1fae5]' : 
+                                    invoice.status === 'failed' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                    invoice.status === 'cancelled' ? 'bg-slate-50 text-slate-500 border-slate-100' :
+                                    (invoice.status === 'pending' && invoice.has_proof) ? 'bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse' :
+                                    'bg-amber-50 text-amber-600 border-amber-100'
                                 }`}>
-                                    {invoice.status === 'paid' ? 'Lunas' : 'Menunggu'}
+                                    {invoice.status === 'paid' ? 'Lunas' : 
+                                     invoice.status === 'failed' ? 'Ditolak' :
+                                     invoice.status === 'cancelled' ? 'Dibatalkan' :
+                                     (invoice.status === 'pending' && invoice.has_proof) ? 'Menunggu Verifikasi' :
+                                     'Menunggu Pembayaran'}
                                 </span>
                             </div>
                             <div className="p-8">
@@ -537,6 +697,65 @@ const AdminInvoiceDetail = () => {
                     </div>
                 </div>
             </div>
+            
+            {/* MODAL REJECT (Custom & Premium) */}
+            {showRejectModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-[fadeIn_0.2s_ease-out]">
+                    <div className="absolute inset-0 bg-[#0f172a]/60 backdrop-blur-sm" onClick={() => !rejecting && setShowRejectModal(false)}></div>
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 overflow-hidden border border-slate-100 animate-[scaleIn_0.3s_ease-out]">
+                        <div className="p-6 border-b border-slate-50 flex items-center gap-4 bg-rose-50/30">
+                            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined font-bold">block</span>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-900 tracking-tight">Tolak Pembayaran</h3>
+                                <p className="text-[10px] font-bold text-rose-600/70 uppercase tracking-widest">Konfirmasi Penolakan Manual</p>
+                            </div>
+                            <button 
+                                onClick={() => setShowRejectModal(false)}
+                                className="ml-auto w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-xl">close</span>
+                            </button>
+                        </div>
+                        
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Alasan Penolakan</label>
+                                <textarea 
+                                    value={rejectReason}
+                                    onChange={(e) => setRejectReason(e.target.value)}
+                                    placeholder="Masukkan alasan spesifik..."
+                                    className="w-full min-h-[120px] p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none"
+                                />
+                                <p className="text-[10px] text-slate-400 italic ml-1">* Alasan ini akan dikirimkan ke email pelanggan.</p>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-slate-50 flex gap-3">
+                            <button 
+                                onClick={() => setShowRejectModal(false)}
+                                disabled={rejecting}
+                                className="flex-1 h-12 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                Batalkan
+                            </button>
+                            <button 
+                                onClick={handleReject}
+                                disabled={rejecting}
+                                className="flex-1 h-12 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2"
+                            >
+                                {rejecting ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                ) : (
+                                    <span className="material-symbols-outlined text-lg">check_circle</span>
+                                )}
+                                {rejecting ? 'Memproses...' : 'Konfirmasi Tolak'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

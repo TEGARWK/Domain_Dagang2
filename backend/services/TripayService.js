@@ -29,10 +29,15 @@ const getDbConfig = async () => {
 const generateCallbackSignature = async (body) => {
     const activeConfig = await getDbConfig();
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    return crypto
+    const signature = crypto
         .createHmac('sha256', activeConfig.private_key)
         .update(payload)
         .digest('hex');
+    
+    // Low-level debug log (commented out for performance)
+    // console.log(`[Tripay Debug] Payload: ${payload} | Key: ${activeConfig.private_key.substring(0,5)}... | Sig: ${signature}`);
+    
+    return signature;
 };
 
 /**

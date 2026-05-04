@@ -10,6 +10,7 @@ const Overview = () => {
   const [invoices, setInvoices] = useState([]);
   const [wallet, setWallet] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [referralInfo, setReferralInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // --- FETCH DATA REALTIME ---
@@ -28,17 +29,19 @@ const Overview = () => {
         const user = JSON.parse(storedUser);
 
         // 2. Fetch Domains, Invoices, Wallet & Activities Parallel
-        const [domainRes, invoiceRes, walletRes, activityRes] = await Promise.all([
+        const [domainRes, invoiceRes, walletRes, activityRes, referralRes] = await Promise.all([
           api.get(`/domains/user/${user.id}`).catch(e => ({ data: [] })), 
           api.get(`/billing/user/${user.id}`).catch(e => ({ data: [] })),
           api.get(`/wallet`).catch(e => ({ data: null })),
-          api.get(`/users/activities/me?limit=5`).catch(e => ({ data: [] }))
+          api.get(`/users/activities/me?limit=5`).catch(e => ({ data: [] })),
+          api.get(`/referral/my-stats`).catch(e => ({ data: null }))
         ]);
 
         setDomains(domainRes.data || []);
         setInvoices(invoiceRes.data || []);
         setWallet(walletRes.data);
         setActivities(activityRes.data || []);
+        setReferralInfo(referralRes?.data?.data || null);
         
       } catch (err) {
         console.error("Terjadi kesalahan koneksi:", err);
@@ -73,11 +76,13 @@ const Overview = () => {
           pendingInvoicesCount={invoices.filter(inv => inv.status === 'pending').length}
           wallet={wallet}
           activities={activities}
+          referralInfo={referralInfo}
         />
       ) : (
         // B. Jika User BELUM PUNYA Domain -> Tampilkan Dashboard Kosong (Jualan)
         <EmptyDashboard 
           wallet={wallet}
+          referralInfo={referralInfo}
         />
       )}
     </>

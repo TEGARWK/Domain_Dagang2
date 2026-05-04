@@ -165,6 +165,7 @@ function sendResponse(invoice, items, logs, res) {
         status: isExpired ? 'expired' : invoice.status,
         category: category,
         has_proof: !!invoice.payment_proof,
+        refund_reason: invoice.refund_reason || null,
         date: new Date(invoice.date || invoice.created_at || now).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
         due_date: invoice.due_date || null,
         due_date_formatted: dueDate ? dueDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "Batas waktu tidak ditentukan",
@@ -212,11 +213,8 @@ function sendResponse(invoice, items, logs, res) {
             fullInvoice.payment_instructions.plink_ref_no = raw.plink_ref_no;
             fullInvoice.payment_instructions.provider = 'prismalink';
         }
-        // Prismalink VA Number List
-        if (raw.va_number_list) {
-            fullInvoice.payment_instructions.va_number_list = raw.va_number_list;
-        }
         // Prismalink Expiry
+
         if (raw.validity) {
             fullInvoice.payment_instructions.expired_at = raw.validity;
         }
@@ -279,39 +277,133 @@ exports.payInvoice = async (req, res) => {
       // Update payments status for manual
       await client.query("UPDATE payments SET status = 'SUCCESS' WHERE invoice_number = $1 AND status = 'PENDING'", [invoiceId]);
 
-      // 3. Handle by Type
-      const isTopUp = items.some(it => it.action_type === 'topup' || it.name?.toLowerCase().includes('top up')) || invoiceId.startsWith('TOPUP-');
-      const isTransfer = items.some(it => it.action_type === 'transfer' || it.name?.toLowerCase().includes('transfer'));
-
-      if (isTopUp) {
-          // EXPRESS PATH FOR TOP-UP
-          console.log(`[payInvoice] Express path for Top-up: ${invoiceId}`);
-          await WalletService.credit(invoice.user_id, invoice.total, 'TOPUP', invoiceId, 'Top Up via Manual Admin Approval', client);
-          
-          // Send Email (Async)
-          const userRes = await client.query('SELECT name, email FROM users WHERE id = $1', [invoice.user_id]);
-          EmailService.sendTopupSuccess(userRes.rows[0], invoice, invoice.total).catch(e => console.error(e));
-      } else {
-          // DOMAIN PATH (Heavier)
-          console.log(`[payInvoice] Domain path for: ${invoiceId}`);
-          activationResult = await OrderService.activateDomain(invoiceId);
-      }
-
+      // 3. COMMIT IMMEDIATELY to release locks and respond to admin faster
       await client.query('COMMIT');
 
-      if (activationResult.success) {
-          res.json({ message: "Payment Accepted & Activated Successfully", status: "paid" });
-      } else {
-          res.json({ 
-              message: "Payment Accepted but Activation Failed: " + activationResult.message, 
-              status: "paid",
-              warning: true 
-          });
+      // --- ASYNC BACKGROUND PROCESSING ---
+      // We process activation and emails outside the main transaction to prevent registrar API lag
+      (async () => {
+          try {
+              const itemsRes = await db.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [invoiceId]);
+              const items = itemsRes;
+              const isTopUp = items.some(it => it.action_type === 'topup' || it.name?.toLowerCase().includes('top up')) || invoiceId.startsWith('TOPUP-');
+
+              if (isTopUp) {
+                  await WalletService.credit(invoice.user_id, invoice.total, 'TOPUP', invoiceId, 'Top Up via Manual Admin Approval');
+                  const userRes = await db.query('SELECT name, email FROM users WHERE id = $1', [invoice.user_id]);
+                  EmailService.sendTopupSuccess(userRes[0], invoice, invoice.total).catch(e => console.error(e));
+              } else {
+                  // DOMAIN PATH
+                  console.log(`[payInvoice] Background Domain activation for: ${invoiceId}`);
+                  const activationResult = await OrderService.activateDomain(invoiceId);
+
+                  const userRes = await db.query('SELECT name, email FROM users WHERE id = $1', [invoice.user_id]);
+                  const userObj = userRes[0];
+                  const domainNames = items.map(i => i.name).join(', ');
+
+                  if (activationResult.success || activationResult.status === 'provisioned') {
+                      const isManual = (invoice.payment_method || "").startsWith("MANUAL_") || (invoice.payment_method || "").includes("MANUAL");
+                      if (isManual) {
+                          EmailService.sendManualPaymentSuccess(userObj, invoice).catch(e => console.error(e));
+                      } else {
+                          EmailService.sendPaymentSuccess(userObj, invoice, domainNames).catch(e => console.error(e));
+                      }
+
+                      NotificationService.createNotification(
+                          invoice.user_id, 
+                          "Pembayaran Dikonfirmasi", 
+                          `Pembayaran manual untuk Invoice #${invoiceId} telah diverifikasi oleh admin.`, 
+                          "success", 
+                          invoiceId, 
+                          "invoice"
+                      );
+                  }
+              }
+
+              // Referral Reward
+              const referralService = require('../services/referralService');
+              await referralService.processReferralReward(invoiceId).catch(e => console.error("[Referral] Reward Error:", e));
+
+          } catch (bgErr) {
+              console.error("[payInvoice] Background Processing Error:", bgErr);
+          }
+      })();
+
+      // Respond immediately to admin
+      res.json({ 
+          message: "Pembayaran berhasil dikonfirmasi. Proses aktivasi sedang berjalan di latar belakang.", 
+          status: "paid" 
+      });
+  } catch (err) {
+      // Avoid rollback if client is already released or transaction is committed
+      try {
+          if (client && client._connected) await client.query('ROLLBACK');
+      } catch (rbErr) {}
+      
+      console.error("[payInvoice] Error:", err);
+      if (!res.headersSent) {
+          res.status(500).json({ error: err.message || "Gagal memperbarui status invoice" });
       }
+  } finally {
+      if (client) client.release();
+  }
+};
+
+// 3b. Reject Payment (Admin Manual Rejection)
+exports.rejectInvoice = async (req, res) => {
+  const invoiceId = req.params.id;
+  const { reason } = req.body;
+
+  if (!reason) return res.status(400).json({ error: "Alasan penolakan wajib diisi" });
+
+  const client = await db.pool.connect();
+  try {
+      await client.query('BEGIN');
+
+      // 1. Fetch Invoice
+      const invRes = await client.query("SELECT * FROM invoices WHERE id = $1 FOR UPDATE", [invoiceId]);
+      if (invRes.rows.length === 0) throw new Error("Invoice tidak ditemukan");
+      const invoice = invRes.rows[0];
+
+      if (invoice.status === 'paid') {
+          throw new Error("Invoice sudah dibayar, tidak bisa ditolak");
+      }
+
+      // 2. Update Status -> failed
+      await client.query("UPDATE invoices SET status = 'failed', refund_reason = $1, updated_at = NOW() WHERE id = $2", [reason, invoiceId]);
+      
+      // Update payments status
+      await client.query("UPDATE payments SET status = 'FAILED' WHERE invoice_number = $1 AND (status = 'PENDING' OR (status = 'SUCCESS' AND payment_proof IS NOT NULL))", [invoiceId]);
+
+      // 3. Notify User
+      const userRes = await client.query('SELECT name, email FROM users WHERE id = $1', [invoice.user_id]);
+      const userObj = userRes.rows[0];
+
+      // Send Email
+      const isManual = !!invoice.payment_method && (invoice.payment_method.startsWith('MANUAL_') || invoice.payment_method.includes('MANUAL'));
+      if (isManual) {
+          EmailService.sendManualPaymentRejected(userObj, invoice, reason).catch(e => console.error("[Billing] Reject Email Error:", e));
+      } else {
+          EmailService.sendPaymentFailed(userObj, invoice, reason).catch(e => console.error("[Billing] Reject Email Error:", e));
+      }
+
+      // Send Dashboard Notification
+      NotificationService.createNotification(
+          invoice.user_id, 
+          "Pembayaran Ditolak", 
+          `Pembayaran Invoice #${invoiceId} ditolak oleh admin. Alasan: ${reason}`, 
+          "error", 
+          invoiceId, 
+          "invoice"
+      );
+
+      await client.query('COMMIT');
+      res.json({ success: true, message: "Pembayaran berhasil ditolak." });
+
   } catch (err) {
       await client.query('ROLLBACK');
-      console.error("[payInvoice] Error:", err);
-      res.status(500).json({ error: err.message || "Gagal memperbarui status invoice" });
+      console.error("[rejectInvoice] Error:", err);
+      res.status(500).json({ error: err.message || "Gagal menolak invoice" });
   } finally {
       client.release();
   }
@@ -319,7 +411,8 @@ exports.payInvoice = async (req, res) => {
 
 // 4. Get All Invoices (Admin Only)
 exports.getAllInvoices = async (req, res) => {
-  const query = `
+  // Query Lengkap (Standard)
+  const fullQuery = `
     SELECT i.*, u.name as customer_name, u.email as customer_email,
     (SELECT name FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as first_item,
     (SELECT action_type FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as action_type,
@@ -331,12 +424,34 @@ exports.getAllInvoices = async (req, res) => {
     ORDER BY i.created_at DESC
   `;
 
+  // Query Cadangan (Jika tabel transfer_requests/payments belum ada)
+  const lightQuery = `
+    SELECT i.*, u.name as customer_name, u.email as customer_email,
+    (SELECT name FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as first_item,
+    (SELECT action_type FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as action_type,
+    FALSE as is_transfer,
+    FALSE as has_proof,
+    (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as item_count
+    FROM invoices i
+    JOIN users u ON i.user_id = u.id
+    ORDER BY i.created_at DESC
+  `;
+
   try {
-      const results = await db.query(query);
+      let results;
+      try {
+          results = await db.query(fullQuery);
+      } catch (sqlErr) {
+          console.warn("[getAllInvoices] Full query failed, using Light Query fallback.");
+          results = await db.query(lightQuery);
+      }
+
       const invoices = results.map(inv => {
           let category = 'REGISTER';
           const at = (inv.action_type || '').toUpperCase();
-          if (at === 'TOPUP' || inv.first_item?.toLowerCase().includes('top up')) category = 'TOPUP';
+          const firstItem = (inv.first_item || '').toLowerCase();
+          
+          if (at === 'TOPUP' || firstItem.includes('top up')) category = 'TOPUP';
           else if (at === 'TRANSFER' || inv.is_transfer) category = 'TRANSFER';
           else if (at === 'RENEW') category = 'RENEW';
           else if (at === 'RESTORE') category = 'RESTORE';
@@ -344,7 +459,7 @@ exports.getAllInvoices = async (req, res) => {
       });
       res.json(invoices);
   } catch (err) {
-      console.error("[getAllInvoices] Error:", err);
+      console.error("[getAllInvoices] Critical Error:", err);
       res.status(500).json({ error: "Gagal mengambil data invoice" });
   }
 };
@@ -383,7 +498,7 @@ exports.deleteInvoice = async (req, res) => {
 exports.getUserInvoicesAdmin = async (req, res) => {
   const userId = req.params.userId;
   
-  const query = `
+  const fullQuery = `
     SELECT i.*, 
     (SELECT name FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as first_item,
     (SELECT action_type FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as action_type,
@@ -393,13 +508,33 @@ exports.getUserInvoicesAdmin = async (req, res) => {
     WHERE i.user_id = $1 
     ORDER BY i.created_at DESC
   `;
+
+  const lightQuery = `
+    SELECT i.*, 
+    (SELECT name FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as first_item,
+    (SELECT action_type FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as action_type,
+    FALSE as is_transfer,
+    (SELECT COUNT(*) FROM invoice_items WHERE invoice_id = i.id) as item_count
+    FROM invoices i 
+    WHERE i.user_id = $1 
+    ORDER BY i.created_at DESC
+  `;
   
   try {
-      const results = await db.query(query, [userId]);
+      let results;
+      try {
+          results = await db.query(fullQuery, [userId]);
+      } catch (sqlErr) {
+          console.warn("[getUserInvoicesAdmin] Full query failed, using Light Query fallback.");
+          results = await db.query(lightQuery, [userId]);
+      }
+
       const invoices = results.map(inv => {
           let category = 'REGISTER';
           const at = (inv.action_type || '').toUpperCase();
-          if (at === 'TOPUP' || inv.first_item?.toLowerCase().includes('top up')) category = 'TOPUP';
+          const firstItem = (inv.first_item || '').toLowerCase();
+          
+          if (at === 'TOPUP' || firstItem.includes('top up')) category = 'TOPUP';
           else if (at === 'TRANSFER' || inv.is_transfer) category = 'TRANSFER';
           else if (at === 'RENEW') category = 'RENEW';
           else if (at === 'RESTORE') category = 'RESTORE';
@@ -407,7 +542,7 @@ exports.getUserInvoicesAdmin = async (req, res) => {
       });
       res.json(invoices);
   } catch (err) {
-      console.error("[getUserInvoicesAdmin] Error:", err);
+      console.error("[getUserInvoicesAdmin] Critical Error:", err);
       res.status(500).json({ error: "Gagal mengambil data invoice user" });
   }
 };
@@ -858,6 +993,23 @@ exports.confirmManualPayment = async (req, res) => {
             INSERT INTO activity_logs (invoice_id, action, description, user_type)
             VALUES ($1, $2, $3, $4)
         `, [id, 'CONFIRM_PAYMENT', 'User mengupload bukti pembayaran manual', 'user']);
+
+        // 4. Send Email Notification to User (Async)
+        try {
+            const userRes = await db.query('SELECT name, email FROM users WHERE id = $1', [userId]);
+            if (userRes.length > 0) {
+                const userObj = userRes[0];
+                const invData = { id: id, total: invRes[0].total || 0 }; // Minimal info needed for template
+                // We need the total, let's fetch it if missing
+                if (!invData.total) {
+                    const fullInv = await db.query('SELECT total FROM invoices WHERE id = $1', [id]);
+                    invData.total = fullInv[0]?.total || 0;
+                }
+                EmailService.sendManualPaymentWaiting(userObj, invData).catch(e => console.error("[Billing] Waiting Email Error:", e));
+            }
+        } catch (emailErr) {
+            console.error("[Billing] Manual Confirmation Email Trigger Error:", emailErr);
+        }
 
         res.json({ 
             success: true, 

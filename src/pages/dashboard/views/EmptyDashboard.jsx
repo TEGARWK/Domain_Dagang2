@@ -1,8 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-const EmptyDashboard = ({ wallet }) => {
+const EmptyDashboard = ({ wallet, referralInfo }) => {
   const navigate = useNavigate();
+
+  const isEligibleForRefereeDiscount = referralInfo?.is_referee && !referralInfo?.referee_discount_used;
+  const refereeDiscountAmount = referralInfo?.referee_discount_amount || 5000;
 
   // Helper Format Rupiah
   const formatRupiah = (num) => {
@@ -16,6 +19,27 @@ const EmptyDashboard = ({ wallet }) => {
 
   return (
     <div className="flex flex-col gap-8 animate-[fadeIn_0.5s_ease-out]">
+      {/* Referral Reward Banner */}
+      {isEligibleForRefereeDiscount && (
+        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm animate-bounce-in">
+           <div className="flex items-center gap-5 text-center md:text-left">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                 <span className="material-symbols-outlined text-3xl">redeem</span>
+              </div>
+              <div>
+                 <h3 className="text-lg font-bold text-slate-900">Hadiah Pendaftaran! 🎁</h3>
+                 <p className="text-sm text-slate-600">Kamu mendapatkan potongan harga sebesar <span className="font-bold text-emerald-600">{formatRupiah(refereeDiscountAmount)}</span> untuk pembelian domain pertama kamu.</p>
+              </div>
+           </div>
+           <div className="flex flex-col items-center md:items-end gap-1">
+              <div className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest rounded-full border border-emerald-200">
+                 Otomatis Terpasang
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium italic mt-1">*Berlaku untuk semua TLD</p>
+           </div>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 md:p-12 text-center text-white relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#F97316] rounded-full blur-[100px] opacity-20"></div>

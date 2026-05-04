@@ -37,6 +37,17 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
       enabled_methods: []
   });
 
+  const [visibleKeys, setVisibleKeys] = useState({
+    tripay_api_key: false,
+    tripay_private_key: false,
+    prismalink_key_id: false,
+    prismalink_store_key: false
+  });
+
+  const toggleKeyVisibility = (key) => {
+    setVisibleKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const PRISMALINK_METHODS = [
       { id: '014', name: 'BCA Virtual Account', type: 'VA', bank_id: '014' },
       { id: '008', name: 'Mandiri Virtual Account', type: 'VA', bank_id: '008' },
@@ -154,9 +165,15 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
     try {
       // Kita simpan FLAT ARRAY langsung agar backend yang handle normalisasinya
       // Ini jauh lebih aman daripada mapping grup di frontend yang rawan error jika data channel belum load
-      const payload = {
-        ...tripayConfig,
-        enabled_banks: JSON.stringify(tripayConfig.enabled_banks), // Kirim array ["BCAVA", ...]
+      const payload = { 
+        provider: 'tripay',
+        is_active: tripayConfig.is_active,
+        mode: tripayConfig.mode,
+        api_key: tripayConfig.api_key,
+        merchant_code: tripayConfig.merchant_code,
+        private_key: tripayConfig.private_key,
+        webhook_url: tripayConfig.webhook_url,
+        enabled_banks: JSON.stringify(tripayConfig.enabled_banks),
         enabled_methods: JSON.stringify(tripayConfig.enabled_methods),
         instructions
       };
@@ -175,11 +192,13 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
     setSaving(true);
     try {
         const payload = { 
-            ...prismalinkConfig, 
-            merchant_id: prismalinkConfig.merchant_id,
-            key_id: prismalinkConfig.key_id,
-            secret_key: prismalinkConfig.store_key,
-            backend_callback: prismalinkConfig.backend_callback,
+            provider: 'prismalink',
+            is_active: prismalinkConfig.is_active,
+            mode: prismalinkConfig.mode,
+            api_key: prismalinkConfig.key_id,
+            merchant_code: prismalinkConfig.merchant_id,
+            private_key: prismalinkConfig.store_key,
+            webhook_url: prismalinkConfig.backend_callback,
             frontend_callback: prismalinkConfig.frontend_callback,
             enabled_methods: prismalinkConfig.enabled_methods
         };
@@ -224,7 +243,19 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
       const newStatus = !tripayConfig.is_active;
       setTripayConfig(prev => ({ ...prev, is_active: newStatus }));
       try {
-          await api.put(`/payment-gateways/tripay`, { ...tripayConfig, is_active: newStatus, instructions });
+          const payload = {
+              provider: 'tripay',
+              is_active: newStatus,
+              api_key: tripayConfig.api_key,
+              merchant_code: tripayConfig.merchant_code,
+              private_key: tripayConfig.private_key,
+              webhook_url: tripayConfig.webhook_url,
+              mode: tripayConfig.mode,
+              enabled_banks: JSON.stringify(tripayConfig.enabled_banks),
+              enabled_methods: JSON.stringify(tripayConfig.enabled_methods),
+              instructions
+          };
+          await api.put(`/payment-gateways/tripay`, payload);
           success(`Tripay berhasil ${newStatus ? 'diaktifkan' : 'dinonaktifkan'}`);
       } catch (err) { error("Gagal mengupdate status Tripay"); fetchConfig(); }
   };
@@ -476,6 +507,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                                   if (bankCode === '013' || bankCode.includes('permata')) return '/image/banks/permata.png';
                                   if (bankCode === '011' || bankCode.includes('danamon')) return '/image/banks/danamon.png';
                                   if (bankCode === '451' || bankCode.includes('bsi')) return '/image/banks/bsi.png';
+                                  if (!bankCode) return '/image/banks/generic.png'; // Fallback jika kode kosong
                                   return `/image/banks/${bankCode}.png`;
                               };
 
@@ -634,11 +666,43 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">API Key</label>
-                        <input type="password" value={tripayConfig.api_key} onChange={(e) => setTripayConfig({ ...tripayConfig, api_key: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-blue-500 outline-none" />
+                        <div className="relative">
+                            <input 
+                                type={visibleKeys.tripay_api_key ? "text" : "password"} 
+                                value={tripayConfig.api_key} 
+                                onChange={(e) => setTripayConfig({ ...tripayConfig, api_key: e.target.value })} 
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 pr-12 text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all" 
+                            />
+                            <button 
+                                type="button"
+                                onClick={() => toggleKeyVisibility('tripay_api_key')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-lg">
+                                    {visibleKeys.tripay_api_key ? 'visibility_off' : 'visibility'}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Private Key</label>
-                        <input type="password" value={tripayConfig.private_key} onChange={(e) => setTripayConfig({ ...tripayConfig, private_key: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-blue-500 outline-none" />
+                        <div className="relative">
+                            <input 
+                                type={visibleKeys.tripay_private_key ? "text" : "password"} 
+                                value={tripayConfig.private_key} 
+                                onChange={(e) => setTripayConfig({ ...tripayConfig, private_key: e.target.value })} 
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 pr-12 text-sm font-bold text-slate-800 focus:border-blue-500 outline-none transition-all" 
+                            />
+                            <button 
+                                type="button"
+                                onClick={() => toggleKeyVisibility('tripay_private_key')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-lg">
+                                    {visibleKeys.tripay_private_key ? 'visibility_off' : 'visibility'}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Merchant Code</label>
@@ -727,11 +791,45 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Key ID</label>
-                        <input type="password" value={prismalinkConfig.key_id} onChange={(e) => setPrismalinkConfig({ ...prismalinkConfig, key_id: e.target.value })} placeholder="b233760..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-indigo-500 outline-none" />
+                        <div className="relative">
+                            <input 
+                                type={visibleKeys.prismalink_key_id ? "text" : "password"} 
+                                value={prismalinkConfig.key_id} 
+                                onChange={(e) => setPrismalinkConfig({ ...prismalinkConfig, key_id: e.target.value })} 
+                                placeholder="b233760..." 
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 pr-12 text-sm font-bold text-slate-800 focus:border-indigo-500 outline-none transition-all" 
+                            />
+                            <button 
+                                type="button"
+                                onClick={() => toggleKeyVisibility('prismalink_key_id')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-lg">
+                                    {visibleKeys.prismalink_key_id ? 'visibility_off' : 'visibility'}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Store Key (Secret)</label>
-                        <input type="password" value={prismalinkConfig.store_key} onChange={(e) => setPrismalinkConfig({ ...prismalinkConfig, store_key: e.target.value })} placeholder="Kunci rahasia dari Prismalink" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-indigo-500 outline-none" />
+                        <div className="relative">
+                            <input 
+                                type={visibleKeys.prismalink_store_key ? "text" : "password"} 
+                                value={prismalinkConfig.store_key} 
+                                onChange={(e) => setPrismalinkConfig({ ...prismalinkConfig, store_key: e.target.value })} 
+                                placeholder="Kunci rahasia dari Prismalink" 
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 pr-12 text-sm font-bold text-slate-800 focus:border-indigo-500 outline-none transition-all" 
+                            />
+                            <button 
+                                type="button"
+                                onClick={() => toggleKeyVisibility('prismalink_store_key')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-lg">
+                                    {visibleKeys.prismalink_store_key ? 'visibility_off' : 'visibility'}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
@@ -778,6 +876,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                                             if (bankCode === '451' || bankCode.includes('bsi')) return '/image/banks/bsi.png';
                                             if (bankCode.includes('qris') || bankCode === 'qr' || bankCode === 'qris') return '/image/banks/qris.png';
                                             if (bankCode === 'cc' || bankCode === 'credit_card') return '/image/banks/visa_master.png';
+                                            if (!bankCode) return '/image/banks/generic.png'; // Fallback jika kode kosong
                                             return `/image/banks/${bankCode}.png`;
                                         };
 

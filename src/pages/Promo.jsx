@@ -28,19 +28,19 @@ const Promo = () => {
 
         if (Array.isArray(data)) {
             const formatted = data.map((v, index) => {
-                const valRaw = String(v.value || "0").replace(/[^0-9.]/g, '');
+                const valRaw = String(v.discount_value || "0").replace(/[^0-9.]/g, '');
                 const value = parseFloat(valRaw) || 0;
                 
-                const minRaw = String(v.min_purchase || "0").replace(/[^0-9.]/g, '');
+                const minRaw = String(v.min_transaction || "0").replace(/[^0-9.]/g, '');
                 const minPurchase = parseFloat(minRaw) || 0;
                 
-                const validUntilDate = v.valid_until ? new Date(v.valid_until) : null;
-                const validUntil = (validUntilDate && !isNaN(validUntilDate.getTime()) && validUntilDate.getFullYear() > 1970)
-                    ? validUntilDate.toLocaleDateString("id-ID", {day: 'numeric', month: 'long', year: 'numeric'})
+                const expiredAtDate = v.expired_at ? new Date(v.expired_at) : null;
+                const validUntil = (expiredAtDate && !isNaN(expiredAtDate.getTime()) && expiredAtDate.getFullYear() > 1970)
+                    ? expiredAtDate.toLocaleDateString("id-ID", {day: 'numeric', month: 'long', year: 'numeric'})
                     : "Selamanya";
 
-                const startDate = v.start_date ? new Date(v.start_date) : new Date();
-                const endDate = v.end_date ? new Date(v.end_date) : (validUntilDate || null);
+                const startDate = v.started_at ? new Date(v.started_at) : new Date();
+                const endDate = expiredAtDate;
 
                 return {
                     id: v.id,
@@ -49,10 +49,10 @@ const Promo = () => {
                         ? `Min. belanja ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(minPurchase)}. ${v.is_new_user_only ? 'Berlaku untuk pengguna baru.' : ''}` 
                         : "Tanpa minimal transaksi!"),
                     code: v.code,
-                    discount: v.type === 'percentage' ? `${value}%` : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value),
+                    discount: v.discount_type === 'percentage' ? `${value}%` : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value),
                     validUntil,
-                    validUntilDate,
-                    validFrom: v.start_date 
+                    validUntilDate: expiredAtDate,
+                    validFrom: v.started_at 
                         ? startDate.toLocaleDateString("id-ID", {day: 'numeric', month: 'long', year: 'numeric'}) 
                         : "Sekarang",
                     validFromDate: startDate,
@@ -61,11 +61,11 @@ const Promo = () => {
                         ? `${startDate.toLocaleDateString("id-ID", {day: 'numeric', month: 'short'})} - ${endDate.toLocaleDateString("id-ID", {day: 'numeric', month: 'short', year: 'numeric'})}`
                         : "Promo Berlangsung",
                     color: index % 3 === 0 ? "orange" : index % 3 === 1 ? "red" : "blue",
-                    tlds: v.eligible_tlds ? (typeof v.eligible_tlds === 'string' ? JSON.parse(v.eligible_tlds) : v.eligible_tlds) : [],
+                    tlds: v.applicable_to ? (typeof v.applicable_to === 'string' ? JSON.parse(v.applicable_to) : v.applicable_to) : [],
                     actions: v.eligible_actions ? (typeof v.eligible_actions === 'string' ? JSON.parse(v.eligible_actions) : v.eligible_actions) : [],
                     min_purchase: minPurchase,
                     max_discount: parseFloat(v.max_discount) || 0,
-                    type: v.type,
+                    type: v.discount_type,
                     value: value,
                     is_new_user_only: !!v.is_new_user_only
                 };
@@ -235,7 +235,7 @@ const Promo = () => {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-orange-500/20 via-transparent to-transparent"></div>
             <div className="relative z-10">
               <span className="text-[#F97316] font-bold uppercase tracking-[0.4em] text-[10px] mb-6 block opacity-80">Stay Updated</span>
-              <h2 className="text-3xl md:text-5xl font-black mb-6 tracking-tight leading-[1.1] text-white">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight leading-[1.1] text-white">
                 Dapatkan <span className="text-[#F97316]">Penawaran Eksklusif.</span>
               </h2>
               <p className="text-slate-400 mb-12 font-medium max-w-xl mx-auto text-[17px] leading-relaxed">

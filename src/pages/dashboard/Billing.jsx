@@ -262,6 +262,8 @@ const Billing = () => {
                                 { value: 'all', label: 'Semua Koleksi' },
                                 { value: 'paid', label: 'Sudah Lunas' },
                                 { value: 'pending', label: 'Menunggu' },
+                                { value: 'failed', label: 'Ditolak' },
+                                { value: 'refunded', label: 'Dikembalikan' },
                                 { value: 'cancelled', label: 'Dibatalkan' },
                             ]}
                         />
@@ -342,13 +344,19 @@ const Billing = () => {
                       <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border ${
                         inv.status?.toLowerCase() === "paid" 
                           ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                          : inv.status?.toLowerCase() === "cancelled"
+                        : inv.status?.toLowerCase() === "refunded"
                           ? "bg-rose-50 text-rose-600 border-rose-100"
-                          : inv.has_proof
+                        : (inv.status?.toLowerCase() === "cancelled" || inv.status?.toLowerCase() === "failed")
+                          ? "bg-slate-50 text-slate-400 border-slate-100"
+                        : inv.has_proof
                           ? "bg-blue-50 text-blue-600 border-blue-100"
                           : "bg-amber-50 text-amber-600 border-amber-100"
                       }`}>
-                        {inv.status?.toLowerCase() === "paid" ? "Lunas" : inv.status?.toLowerCase() === "cancelled" ? "Dibatalkan" : inv.has_proof ? "Verifikasi" : "Pending"}
+                        {inv.status?.toLowerCase() === "paid" ? "Lunas" : 
+                         inv.status?.toLowerCase() === "refunded" ? "Dikembalikan" :
+                         inv.status?.toLowerCase() === "cancelled" ? "Dibatalkan" : 
+                         inv.status?.toLowerCase() === "failed" ? "Ditolak" : 
+                         inv.has_proof ? "Verifikasi" : "Pending"}
                       </span>
                     </td>
                     <td className="px-8 py-5 text-center">
@@ -356,9 +364,9 @@ const Billing = () => {
                              <button onClick={() => handleDetail(inv.id)} className="p-2 bg-white text-slate-400 rounded-lg border border-slate-100 hover:bg-slate-50 transition-all shadow-sm">
                                 <span className="material-symbols-outlined text-lg">visibility</span>
                              </button>
-                             {inv.status?.toLowerCase() === "pending" ? (
+                             {(inv.status?.toLowerCase() === "pending" || inv.status?.toLowerCase() === "failed") ? (
                                  <>
-                                     {inv.has_proof ? (
+                                     {(inv.status?.toLowerCase() === "pending" && inv.has_proof) ? (
                                          <span className="px-3 py-1.5 bg-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-widest rounded-lg border border-slate-200">Menunggu Verifikasi</span>
                                      ) : (
                                          <>

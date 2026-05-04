@@ -1,7 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [] }) => {
+const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [], referralInfo }) => {
+  const isEligibleForRefereeDiscount = referralInfo?.is_referee && !referralInfo?.referee_discount_used;
+  const refereeDiscountAmount = referralInfo?.referee_discount_amount || 5000;
+
   // ... existing helpers ...
   const formatRupiah = (num) => {
     return new Intl.NumberFormat("id-ID", {
@@ -163,6 +166,24 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
         </Link>
 
       </div>
+      
+      {/* Referral Reward Banner */}
+      {isEligibleForRefereeDiscount && (
+        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+           <div className="flex items-center gap-4 text-center md:text-left">
+              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                 <span className="material-symbols-outlined text-2xl">redeem</span>
+              </div>
+              <div>
+                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Klaim Hadiah Referral Anda! 🎁</h3>
+                 <p className="text-xs text-slate-600">Dapatkan potongan <span className="font-bold text-emerald-600">{formatRupiah(refereeDiscountAmount)}</span> untuk transaksi pertama Anda.</p>
+              </div>
+           </div>
+           <Link to="/dashboard/buy" className="px-5 py-2 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-emerald-700 transition shadow-lg shadow-emerald-950/20">
+              Gunakan Sekarang
+           </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 2. MAIN CONTENT - LIST DOMAIN (Left 2/3) */}

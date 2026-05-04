@@ -13,6 +13,7 @@ const DomainApiSettings = () => {
     domain_api_ip: "", // Tambahkan ini
     domain_api_mode: "sandbox",
   });
+  const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -63,8 +64,23 @@ const DomainApiSettings = () => {
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">API Key / Token</label>
-            <input type="password" value={settings.domain_api_key} onChange={e => setSettings({...settings, domain_api_key: e.target.value})}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 outline-none transition-all" />
+            <div className="relative">
+              <input 
+                type={showKey ? "text" : "password"} 
+                value={settings.domain_api_key} 
+                onChange={e => setSettings({...settings, domain_api_key: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-12 text-sm font-bold text-slate-800 focus:border-orange-500 outline-none transition-all" 
+              />
+              <button 
+                type="button"
+                onClick={() => setShowKey(!showKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <span className="material-symbols-outlined text-lg">
+                  {showKey ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Authorized IP (Whitelist)</label>

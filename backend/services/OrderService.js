@@ -22,14 +22,16 @@ class OrderService {
     /**
      * Activate Domain for a given Invoice
      * IMPLEMENTS: LOCKING, RE-CHECK AVAILABILITY, DETAILED AUDITING
+     * @param {string} invoiceId
+     * @param {object} dbClient Optional PostgreSQL client for shared transaction
      */
-    async activateDomain(invoiceId) {
-        const client = await db.pool.connect();
+    async activateDomain(invoiceId, dbClient = null) {
+        const client = dbClient || await db.pool.connect();
+        const shouldRelease = !dbClient;
+        
         try {
-
-            
             // 1. START TRANSACTION & LOCK INVOICE
-            await client.query('BEGIN');
+            if (shouldRelease) await client.query('BEGIN');
             
             // Lock the invoice row to prevent concurrent activation attempts
             const invoiceLockQuery = `SELECT id, user_id, status, total, checkout_config FROM invoices WHERE id = $1 FOR UPDATE`;
@@ -386,14 +388,14 @@ class OrderService {
                 }
             }
 
-            // 4. FINAL STATUS UPDATE: Mark Invoice as PAID
-            await client.query("UPDATE invoices SET status = 'paid', updated_at = NOW() WHERE id = $1", [invoiceId]);
+            // 4. FINAL STATUS UPDATE: Mark Invoice as PAID (Only if not already refunded/failed)
+            await client.query("UPDATE invoices SET status = 'paid', updated_at = NOW() WHERE id = $1 AND status != 'REFUNDED' AND status != 'failed'", [invoiceId]);
 
-            await client.query('COMMIT');
+            if (shouldRelease) await client.query('COMMIT');
             return { success: true };
 
         } catch (error) {
-            await client.query('ROLLBACK');
+            if (shouldRelease) await client.query('ROLLBACK');
             console.error(`[OrderService] FATAL Activation Error:`, error.message);
             
             // Map specific errors to types for controller handling
@@ -403,7 +405,7 @@ class OrderService {
 
             return { success: false, message: error.message, errorType };
         } finally {
-            client.release();
+            if (shouldRelease) client.release();
         }
     }
 

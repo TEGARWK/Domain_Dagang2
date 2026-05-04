@@ -18,32 +18,31 @@ const isValidHostname = (hostname) => {
     return fqdnRegex.test(hostname);
 };
 
-// --- HELPER: Centralized Document Status Mapping ---
 const mapDocumentStatus = (regData) => {
     const rawStatus = (regData.document_status || "").toLowerCase();
-    
-    // Default to pending if raw status is missing (User fallback)
-    if (!rawStatus) return "pending";
 
-    // 1. Success cases (User specific mapping)
-    const approvedKeywords = ["complete", "completed", "approved", "active", "lengkap", "no_document_needed"];
+    // Default to rejected (Action Required) if raw status is missing
+    if (!rawStatus) return "rejected";
+
+    // 1. Success cases (Exact match to avoid NOT_COMPLETE matching COMPLETE)
+    const approvedKeywords = ["complete", "completed", "approved", "active", "lengkap", "no_document_needed", "disetujui"];
     if (approvedKeywords.includes(rawStatus)) {
         return "approved";
     }
 
-    // 2. Pending cases
-    const pendingKeywords = ["waiting_verification", "pending", "menunggu", "proses"];
-    if (pendingKeywords.includes(rawStatus)) {
-        return "pending";
-    }
-
-    // 3. Rejected cases
-    const rejectKeywords = ["upload_required", "rejected", "ditolak", "belum_upload"];
-    if (rejectKeywords.includes(rawStatus)) {
+    // 2. Rejected / Action Required cases
+    const rejectKeywords = ["upload_required", "rejected", "ditolak", "belum_upload", "verification", "required", "not_complete", "not_approved"];
+    if (rejectKeywords.some(kw => rawStatus.includes(kw))) {
         return "rejected";
     }
 
-    return "pending";
+    // 3. Pending cases
+    const pendingKeywords = ["waiting_verification", "pending", "menunggu", "proses", "verifying"];
+    if (pendingKeywords.some(kw => rawStatus.includes(kw))) {
+        return "pending";
+    }
+
+    return "rejected";
 };
 
 // --- CHECK DOMAIN AVAILABILITY ---
@@ -68,7 +67,7 @@ exports.checkDomainAvailability = async (req, res) => {
     });
   } catch (error) {
     const errorData = error.response?.data;
-    const errorMessage = errorData?.message || error.message;
+    const errorMessage = errorData?.message || error.message || "Gagal menghubungi API Registrar";
 
     console.error("[DomainController] Check Availability Error:", {
         message: errorMessage,
@@ -78,7 +77,7 @@ exports.checkDomainAvailability = async (req, res) => {
     });
 
     // Specific handling for Unauthorized IP
-    if (errorMessage.includes("IP address has not been listed")) {
+    if (typeof errorMessage === 'string' && errorMessage.includes("IP address has not been listed")) {
         const publicIp = await DaftarnamaService.getPublicIP();
         return res.status(403).json({ 
             success: false,
@@ -114,6 +113,7 @@ exports.getUserDomains = (req, res) => {
   const sql = `
     SELECT d.id, d.user_id, d.domain_name AS name, d.status, d.auto_renew, d.is_locked, 
     d.nameservers, d.registration_date, d.expiration_date, d.last_registration_error, d.created_at, d.updated_at,
+    d.registrar_response_raw,
     (SELECT COUNT(*) FROM transfer_requests tr WHERE tr.domain_name = d.domain_name AND tr.user_id = d.user_id AND tr.status IN ('COMPLETED', 'SUCCESS', 'IN_PROGRESS', 'PENDING_TRANSFER')) > 0 AS is_transfer
     FROM domains d 
     WHERE d.user_id = ?
@@ -122,7 +122,17 @@ exports.getUserDomains = (req, res) => {
 
   db.query(sql, [userId], (err, data) => {
     if (err) return res.status(500).json(err);
-    return res.status(200).json(data);
+    
+    // Map document status for each domain
+    const results = data.map(dom => {
+        const regData = dom.registrar_response_raw ? (typeof dom.registrar_response_raw === 'string' ? JSON.parse(dom.registrar_response_raw) : dom.registrar_response_raw) : {};
+        return {
+            ...dom,
+            document_status_mapped: mapDocumentStatus(regData.data || regData)
+        };
+    });
+
+    return res.status(200).json(results);
   });
 };
 
@@ -176,7 +186,9 @@ exports.getDomainDetail = (req, res) => {
           const domain = data[0];
 
           
-          domain.document_status_mapped = domain.document_status || mapDocumentStatus(domain.registrar_response_raw ? (typeof domain.registrar_response_raw === 'string' ? JSON.parse(domain.registrar_response_raw) : domain.registrar_response_raw) : {});
+          // Always re-map from raw registrar data to ensure accuracy and freshness
+          const regData = domain.registrar_response_raw ? (typeof domain.registrar_response_raw === 'string' ? JSON.parse(domain.registrar_response_raw) : domain.registrar_response_raw) : {};
+          domain.document_status_mapped = mapDocumentStatus(regData.data || regData);
 
           return res.status(200).json(domain);
       } catch (innerErr) {
@@ -349,9 +361,20 @@ exports.syncDomain = async (req, res) => {
 
         // 3. Update Local DB
         // Map API response fields to DB fields. 
-        const registrarStatus = (info.status || 'active').toLowerCase();
-        let internalStatus = registrarStatus;
-        if (registrarStatus.includes('document') || registrarStatus === 'provisioned' || registrarStatus === 'pending') {
+        const registrarStatus = (info.status || '').toLowerCase();
+        let internalStatus = registrarStatus || 'active'; // Default to active if status is missing and it's not a transfer
+        
+        // --- NEW: Check if there's an ongoing transfer for this domain ---
+        const [transferReq] = await db.promise().query(
+            "SELECT status FROM transfer_requests WHERE TRIM(domain_name) = TRIM(?) AND status NOT IN ('COMPLETED', 'SUCCESS', 'REJECTED', 'FAILED')", 
+            [domainName.trim()]
+        );
+        
+        if (transferReq && transferReq.length > 0) {
+            console.log(`[Sync] Domain ${domainName} found in active transfer_requests. Forcing pending_transfer status.`);
+            // If there's an active transfer request, force status to pending_transfer
+            internalStatus = 'pending_transfer';
+        } else if (registrarStatus.includes('document') || registrarStatus.includes('transfer') || registrarStatus === 'provisioned' || registrarStatus === 'pending') {
             internalStatus = 'provisioned';
         }
 

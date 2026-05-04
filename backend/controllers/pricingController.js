@@ -29,33 +29,19 @@ exports.syncPricing = async (req, res) => {
         for (const item of mappings) {
             // Logic: Update cost_prices based on API response
             // Daftarnama API response structure (based on audit): register_price, renewal_price, transfer_price, restore_price
-            const price1Year = item.pricings.find(p => p.duration === 1);
+            // Handle both number and string for duration (1 or "1")
+            const price1Year = item.pricings.find(p => p.duration == 1);
             
             if (!price1Year) {
-                console.warn(`No 1-year pricing found for ${item.tld}`);
+                console.warn(`[Sync] Skipping ${item.tld}: No 1-year pricing found.`);
                 continue;
             }
 
-            // SANITIZATION GUARD: Ensure prices are clean numbers 
-            // If price exceeds 10 million IDR for a single year registration, it's suspicious 
-            // (most standard domain prices are 100k - 500k)
-            const sanitizePrice = (val, tld) => {
-                let num = parseFloat(val) || 0;
-                // If price is suspiciously high (e.g. 15.6M instead of 156k), 
-                // it might be a cent-based scaling error or API format issue.
-                // NOTE: Changed threshold to 500,000 because promo prices like 25,050 
-                // returned as 2,505,000 were bypassing the 5,000,000 limit.
-                if (num > 500000 && !tld.includes('premium')) {
-                    console.warn(`[PRICING BUG DETECTED] Inflated price found for ${tld}: ${num}. Normalized by 100.`);
-                    return num / 100;
-                }
-                return num;
-            };
-
-            const cReg = sanitizePrice(price1Year.register_price, item.tld); 
-            const cRen = sanitizePrice(price1Year.renewal_price, item.tld);
-            const cTra = sanitizePrice(price1Year.transfer_price, item.tld);
-            const cRes = sanitizePrice(price1Year.restore_price || 0, item.tld);
+            // Ensure prices are clean numbers from API
+            const cReg = parseFloat(price1Year.register_price) || 0; 
+            const cRen = parseFloat(price1Year.renewal_price) || 0;
+            const cTra = parseFloat(price1Year.transfer_price) || 0;
+            const cRes = parseFloat(price1Year.restore_price || 0) || 0;
 
             const updateQuery = `
                 INSERT INTO pricing (
@@ -70,11 +56,15 @@ exports.syncPricing = async (req, res) => {
                     cost_renew = EXCLUDED.cost_renew,
                     cost_transfer = EXCLUDED.cost_transfer,
                     cost_restore = EXCLUDED.cost_restore,
+                    price_register = EXCLUDED.price_register,
+                    price_renew = EXCLUDED.price_renew,
+                    price_transfer = EXCLUDED.price_transfer,
+                    price_restore = EXCLUDED.price_restore,
                     updated_at = CURRENT_TIMESTAMP;
             `;
 
-            // Default selling price = cost + 20% margin for NEW inserts
-            const margin = 1.20;
+            // Margin 1.0 = Harga jual SAMA dengan harga modal (Daftarnama)
+            const margin = 1.0;
             const pReg = Math.round(cReg * margin);
             const pRen = Math.round(cRen * margin);
             const pTra = Math.round(cTra * margin);

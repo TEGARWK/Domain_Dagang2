@@ -50,7 +50,7 @@ const Checkout = () => {
     const isVoucherEligible = (v) => {
         console.log("[VoucherUI] Checking:", v.code, v);
         // 1. Min Purchase Check
-        const minPur = parseFloat(v.min_purchase || 0);
+        const minPur = parseFloat(v.min_transaction || 0);
         if (minPur > grossSubtotal) return { eligible: false, reason: `Min. Belanja ${formatRupiah(minPur)}` };
 
         // 2. Applicable To / TLD Check
@@ -142,7 +142,7 @@ const Checkout = () => {
                 setUser(userRes.data);
                 setGateways(gwRes.data);
                 setWallet(walletRes.data);
-                setMyVouchers(Array.isArray(myVouchersRes.data) ? myVouchersRes.data.filter(v => v.claim_status === 'claimed') : []);
+                setMyVouchers(Array.isArray(myVouchersRes.data) ? myVouchersRes.data.filter(v => (v.status || v.claim_status) === 'claimed') : []);
 
                 const queryParams = new URLSearchParams(location.search);
                 const invoiceId = queryParams.get("invoiceId");
@@ -159,7 +159,11 @@ const Checkout = () => {
                         duration: it.duration || 1
                     })));
                     if (inv.coupon_code) {
-                        setAppliedVoucher({ code: inv.coupon_code, discountAmount: parseFloat(inv.discount || 0) });
+                        setAppliedVoucher({ 
+                            code: inv.coupon_code, 
+                            title: inv.coupon_title || inv.coupon_code,
+                            discountAmount: parseFloat(inv.discount || 0) 
+                        });
                     }
                 } else {
                     const cartData = JSON.parse(localStorage.getItem("checkout_payload") || localStorage.getItem("cart") || "[]");
@@ -169,6 +173,19 @@ const Checkout = () => {
                         items = items.filter(it => it.name.toLowerCase() === domainParam.toLowerCase());
                     }
                     setCartItems(items);
+
+                    // AUTO APPLY PENDING VOUCHER
+                    const pendingCode = localStorage.getItem("pending_voucher");
+                    if (pendingCode && Array.isArray(myVouchersRes.data)) {
+                        const v = myVouchersRes.data.find(x => x.code === pendingCode && (x.status === 'claimed' || x.claim_status === 'claimed'));
+                        if (v) {
+                            setAppliedVoucher({
+                                code: v.code,
+                                title: v.title,
+                                discountAmount: 0 // Will be calculated by preview effect
+                            });
+                        }
+                    }
                 }
             } catch (err) {
                 console.error("Init Error:", err);
@@ -242,7 +259,8 @@ const Checkout = () => {
 
     let grossSubtotal = invoiceMode && invoiceDetails ? parseFloat(invoiceDetails.subtotal) : (previewData ? previewData.subtotal : cartItems.reduce((acc, it) => acc + getItemLineTotal(it), 0));
     const voucherDiscount = previewData ? (previewData.total_discount || 0) : (appliedVoucher?.discountAmount || 0);
-    const netAmount = Math.max(0, grossSubtotal - voucherDiscount);
+    const referralDiscount = previewData?.referral_discount || 0;
+    const netAmount = Math.max(0, grossSubtotal - voucherDiscount - referralDiscount);
     const ppnAmount = isTopUpOnly ? 0 : Math.floor(netAmount * 0.11);
     const grandTotal = netAmount + ppnAmount;
 
@@ -555,53 +573,72 @@ const Checkout = () => {
                                     </div>
                                 </div>
                             )}
- 
-                             <div className="p-6">
+                            {/* .ID Document Warning Banner */}
+                            {cartItems.some(it => {
+                                const name = (it.name || "").toLowerCase();
+                                return name.endsWith(".co.id") || name.endsWith(".ac.id") || name.endsWith(".sch.id") || 
+                                       name.endsWith(".or.id") || name.endsWith(".ponpes.id") || name.endsWith(".desa.id");
+                            }) && (
+                                <div className="mx-6 mt-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4 shadow-sm animate-[fadeIn_0.3s_ease-out]">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                        <span className="material-symbols-outlined text-lg">info</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[10px] font-bold text-blue-900 uppercase tracking-tight mb-1">Peringatan Dokumen</p>
+                                        <p className="text-[9px] text-blue-800 font-medium leading-relaxed">
+                                            Domain yang Anda pilih (.co.id, .ac.id, dll) memerlukan verifikasi dokumen legalitas. Anda wajib melengkapi persyaratan di Dashboard setelah pembayaran agar domain dapat diaktifkan.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-6">
                                  <div className="flex items-center gap-3 mb-8">
                                      <span className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold">{cartItems.some(it => (it.action || 'register').toLowerCase() === 'register') ? '4' : '3'}</span>
                                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-[0.2em]">Metode Pembayaran</h3>
                                  </div>
 
                                 <div className="space-y-3">
-                                    {/* Wallet - Special Case (Always Visible Row) */}
-                                    <div 
-                                        onClick={() => {
-                                            if (walletBalance >= totalToPay) {
-                                                setSelectedGateway({ id: 'WALLET', name: 'Wallet', type: 'WALLET' });
-                                            } else if (selectedGateway?.id === 'WALLET') {
-                                                setSelectedGateway(null);
-                                            }
-                                        }} 
-                                        className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
-                                            walletBalance < totalToPay 
-                                            ? 'opacity-60 cursor-not-allowed bg-slate-50 border-slate-50' 
-                                            : 'cursor-pointer hover:border-slate-200'
-                                        } ${selectedGateway?.id === 'WALLET' ? 'border-[#FF6B00] bg-orange-50/50 shadow-md' : 'border-slate-100'}`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedGateway?.id === 'WALLET' ? 'bg-[#FF6B00] text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
-                                                <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-900 text-[10px] uppercase tracking-wider">Saldo Akun (Wallet)</p>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <p className={`text-[9px] font-bold ${walletBalance < totalToPay ? 'text-rose-500' : 'text-emerald-600'}`}>
-                                                        {formatRupiah(walletBalance)}
-                                                    </p>
-                                                    {walletBalance < totalToPay && (
-                                                        <span className="text-[8px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 animate-pulse">
-                                                            -{formatRupiah(totalToPay - walletBalance)}
-                                                        </span>
-                                                    )}
+                                    {!cartItems.some(it => (it.action || '').toLowerCase() === 'topup') && (
+                                        <div 
+                                            onClick={() => {
+                                                if (walletBalance >= totalToPay) {
+                                                    setSelectedGateway({ id: 'WALLET', name: 'Wallet', type: 'WALLET' });
+                                                } else if (selectedGateway?.id === 'WALLET') {
+                                                    setSelectedGateway(null);
+                                                }
+                                            }} 
+                                            className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                                                walletBalance < totalToPay 
+                                                ? 'opacity-60 cursor-not-allowed bg-slate-50 border-slate-50' 
+                                                : 'cursor-pointer hover:border-slate-200'
+                                            } ${selectedGateway?.id === 'WALLET' ? 'border-[#FF6B00] bg-orange-50/50 shadow-md' : 'border-slate-100'}`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedGateway?.id === 'WALLET' ? 'bg-[#FF6B00] text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                                                    <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-900 text-[10px] uppercase tracking-wider">Saldo Akun (Wallet)</p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <p className={`text-[9px] font-bold ${walletBalance < totalToPay ? 'text-rose-500' : 'text-emerald-600'}`}>
+                                                            {formatRupiah(walletBalance)}
+                                                        </p>
+                                                        {walletBalance < totalToPay && (
+                                                            <span className="text-[8px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 animate-pulse">
+                                                                -{formatRupiah(totalToPay - walletBalance)}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            {selectedGateway?.id === 'WALLET' ? (
+                                                <span className="material-symbols-outlined text-[#FF6B00] text-xl">check_circle</span>
+                                            ) : (
+                                                <div className="w-5 h-5 rounded-full border-2 border-slate-200"></div>
+                                            )}
                                         </div>
-                                        {selectedGateway?.id === 'WALLET' ? (
-                                            <span className="material-symbols-outlined text-[#FF6B00] text-xl">check_circle</span>
-                                        ) : walletBalance < totalToPay && (
-                                            <span className="material-symbols-outlined text-rose-400 text-xl">block</span>
-                                        )}
-                                    </div>
+                                    )}
 
                                     {/* Accordion Categories */}
                                     {Object.entries(groupedGateways).map(([key, list]) => list.length > 0 && (
@@ -654,86 +691,142 @@ const Checkout = () => {
                             <h3 className="font-bold text-slate-900 uppercase text-[9px] tracking-[0.3em] mb-6">Ringkasan Tagihan</h3>
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span className="text-slate-900 font-bold">{formatRupiah(grossSubtotal)}</span></div>
-                                {!isTopUpOnly && <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Pajak (11%)</span><span className="text-slate-900 font-bold">+{formatRupiah(ppnAmount)}</span></div>}
-                                {voucherDiscount > 0 && <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex justify-between text-[9px] font-bold text-emerald-600 uppercase"><span>Voucher Diskon</span><span>-{formatRupiah(voucherDiscount)}</span></div>}
+                                
+                                {previewData?.referral_discount > 0 && (
+                                    <div className="flex justify-between text-[10px] font-bold text-emerald-600 uppercase">
+                                        <div className="flex items-center gap-1">
+                                            <span>Diskon Referral</span>
+                                            <span className="material-symbols-outlined text-xs">verified</span>
+                                        </div>
+                                        <span>-{formatRupiah(previewData.referral_discount)}</span>
+                                    </div>
+                                )}
+
+                                {voucherDiscount > 0 && (
+                                    <div className="flex justify-between text-[10px] font-bold text-emerald-600 uppercase animate-in fade-in slide-in-from-right-2 duration-300">
+                                        <div className="flex items-center gap-1">
+                                            <span>Promo Terpasang</span>
+                                            <span className="material-symbols-outlined text-xs">verified</span>
+                                        </div>
+                                        <span>-{formatRupiah(voucherDiscount)}</span>
+                                    </div>
+                                )}
+
+                                {!isTopUpOnly && (
+                                    <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase border-t border-slate-50 pt-2">
+                                        <span>Pajak (11%)</span>
+                                        <span className="text-slate-900 font-bold">+{formatRupiah(ppnAmount)}</span>
+                                    </div>
+                                )}
+                                
                                 <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Layanan</span><span className="text-slate-900 font-bold">{isFetchingFee ? '...' : formatRupiah(serviceFee)}</span></div>
                             </div>
 
                             {!isTopUpOnly && (
                                 <div className="mb-6">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="h-px bg-slate-100 flex-1"></div>
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Gunakan Promo</span>
+                                        <div className="h-px bg-slate-100 flex-1"></div>
+                                    </div>
+
                                     {!appliedVoucher ? (
                                         <>
                                             <button 
                                                 onClick={() => setIsVoucherExpanded(!isVoucherExpanded)} 
-                                                className="w-full py-3 px-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl flex items-center justify-between group hover:border-[#FF6B00] transition-all"
+                                                className={`w-full py-4 px-5 rounded-2xl flex items-center justify-between group transition-all duration-300 border-2 ${isVoucherExpanded ? 'bg-orange-50/50 border-[#FF6B00] shadow-lg' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}
                                             >
-                                                <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined text-slate-400 group-hover:text-[#FF6B00] text-lg">confirmation_number</span>
-                                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Punya Voucher?</span>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isVoucherExpanded ? 'bg-[#FF6B00] text-white shadow-lg' : 'bg-slate-50 text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100'}`}>
+                                                        <span className="material-symbols-outlined text-xl">confirmation_number</span>
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest leading-none mb-1">Pilih Voucher</p>
+                                                        <p className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter">{myVouchers.length} Promo Tersedia</p>
+                                                    </div>
                                                 </div>
-                                                <span className={`material-symbols-outlined text-[#FF6B00] text-sm transition-transform ${isVoucherExpanded ? 'rotate-180' : ''}`}>expand_more</span>
+                                                <span className={`material-symbols-outlined text-slate-300 text-sm transition-transform duration-300 ${isVoucherExpanded ? 'rotate-180' : ''}`}>expand_more</span>
                                             </button>
                                             
                                             {isVoucherExpanded && (
-                                                <div className="mt-3 space-y-2 max-h-[240px] overflow-y-auto pr-1.5 custom-scrollbar animate-in slide-in-from-top-2 duration-300">
-                                                    {myVouchers.length === 0 && <p className="text-[9px] text-slate-400 text-center py-6 font-bold uppercase tracking-widest border border-dashed border-slate-100 rounded-xl">Belum ada voucher</p>}
-                                                    {myVouchers.map(v => {
-                                                        const eligibility = isVoucherEligible(v);
-                                                        const canUse = eligibility.eligible;
-                                                        return (
-                                                            <div 
-                                                                key={v.id} 
-                                                                onClick={() => { 
-                                                                    if(canUse) { 
-                                                                        setAppliedVoucher({ 
-                                                                            code: v.code, 
-                                                                            discountAmount: v.type === 'percentage' ? Math.floor(grossSubtotal * (v.value/100)) : v.value 
-                                                                        }); 
-                                                                        setIsVoucherExpanded(false); 
-                                                                        success("Voucher Dipasang!"); 
-                                                                    } else {
-                                                                        warning(eligibility.reason);
-                                                                    }
-                                                                }} 
-                                                                className={`p-3 rounded-xl border-2 transition-all group/v ${canUse ? 'border-slate-100 hover:border-[#FF6B00] cursor-pointer bg-white shadow-sm' : 'opacity-60 grayscale-[0.5] bg-slate-50 border-transparent cursor-not-allowed'}`}
-                                                            >
-                                                                <div className="flex justify-between items-start mb-1.5">
-                                                                    <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${canUse ? 'bg-orange-100 text-[#FF6B00]' : 'bg-slate-200 text-slate-400'}`}>{v.code}</span>
-                                                                    <span className="font-bold text-slate-900 text-[10px]">{v.type === 'percentage' ? `${v.value}%` : formatRupiah(v.value)}</span>
+                                                <div className="mt-3 space-y-2 max-h-[320px] overflow-y-auto pr-1.5 custom-scrollbar animate-in slide-in-from-top-2 duration-300">
+                                                    {myVouchers.length === 0 ? (
+                                                        <div className="text-center py-10 px-6 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                                                            <span className="material-symbols-outlined text-slate-200 text-3xl mb-2">layers_clear</span>
+                                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Belum ada promo yang kamu klaim. <br/>Klaim di halaman Promo.</p>
+                                                            <Link to="/dashboard/promo" className="text-[9px] text-[#FF6B00] font-bold uppercase underline mt-4 block">Cari Promo →</Link>
+                                                        </div>
+                                                    ) : (
+                                                        myVouchers.map(v => {
+                                                            const eligibility = isVoucherEligible(v);
+                                                            const canUse = eligibility.eligible;
+                                                            return (
+                                                                <div 
+                                                                    key={v.id} 
+                                                                    onClick={() => { 
+                                                                        if(canUse) { 
+                                                                            setAppliedVoucher({ 
+                                                                                code: v.code, 
+                                                                                title: v.title,
+                                                                                discountAmount: v.discount_type === 'percentage' ? Math.floor(grossSubtotal * (v.discount_value/100)) : v.discount_value 
+                                                                            }); 
+                                                                            setIsVoucherExpanded(false); 
+                                                                            success(`Voucher "${v.title}" terpasang!`); 
+                                                                        } else {
+                                                                            warning(eligibility.reason);
+                                                                        }
+                                                                    }} 
+                                                                    className={`p-4 rounded-2xl border-2 transition-all duration-300 group/v relative overflow-hidden ${canUse ? 'border-slate-100 hover:border-[#FF6B00] cursor-pointer bg-white shadow-sm hover:shadow-md' : 'opacity-60 grayscale-[0.5] bg-slate-50 border-transparent cursor-not-allowed'}`}
+                                                                >
+                                                                    <div className="flex justify-between items-start relative z-10">
+                                                                        <div className="flex-1 pr-4">
+                                                                            <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-tight mb-1 truncate group-hover/v:text-[#FF6B00] transition-colors">{v.title}</h4>
+                                                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{v.discount_type === 'percentage' ? `DISKON ${v.discount_value}%` : `DISKON ${formatRupiah(v.discount_value)}`}</p>
+                                                                        </div>
+                                                                        <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${canUse ? 'bg-orange-50 text-[#FF6B00] group-hover/v:bg-[#FF6B00] group-hover/v:text-white' : 'bg-slate-200 text-slate-400'}`}>
+                                                                            <span className="material-symbols-outlined text-sm">{canUse ? 'add_circle' : 'lock'}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    {!canUse && (
+                                                                        <div className="mt-3 pt-3 border-t border-slate-200/50 relative z-10">
+                                                                            <p className="text-[8px] text-rose-500 font-bold uppercase flex items-center gap-1">
+                                                                                <span className="material-symbols-outlined text-[12px]">info</span> 
+                                                                                {eligibility.reason}
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+                                                                    
+                                                                    {/* Background Decor */}
+                                                                    <span className="absolute bottom-[-10px] right-[-10px] material-symbols-outlined text-[64px] text-slate-50 opacity-20 rotate-12 group-hover/v:text-orange-50 group-hover/v:opacity-40 transition-all">local_activity</span>
                                                                 </div>
-                                                                <p className="font-bold text-slate-800 text-[10px] truncate">{v.name || v.title}</p>
-                                                                {!canUse && (
-                                                                    <p className="text-[7px] text-rose-500 font-bold uppercase mt-1 flex items-center gap-1">
-                                                                        <span className="material-symbols-outlined text-[10px]">info</span> 
-                                                                        {eligibility.reason}
-                                                                    </p>
-                                                                )}
-                                                                {canUse && (
-                                                                    <p className="text-[7px] text-emerald-600 font-bold uppercase mt-1 flex items-center gap-1 opacity-0 group-hover/v:opacity-100 transition-opacity">
-                                                                        <span className="material-symbols-outlined text-[10px]">check_circle</span>
-                                                                        Klik untuk pasang
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
+                                                            );
+                                                        })
+                                                    )}
                                                 </div>
                                             )}
                                         </>
                                     ) : (
-                                        <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-center justify-between shadow-sm">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center"><span className="material-symbols-outlined text-sm">check_circle</span></div>
+                                        <div className="p-4 bg-emerald-50/50 border-2 border-emerald-500/30 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-500/5 animate-in zoom-in-95 duration-300">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20"><span className="material-symbols-outlined text-2xl">check_circle</span></div>
                                                 <div>
-                                                    <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Voucher Terpasang</p>
-                                                    <p className="text-[10px] font-bold text-slate-900 uppercase">{appliedVoucher.code}</p>
+                                                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-[0.2em] mb-0.5">Voucher Digunakan</p>
+                                                    <p className="text-[11px] font-bold text-slate-900 uppercase italic truncate max-w-[140px]">{appliedVoucher.title}</p>
                                                 </div>
                                             </div>
-                                            <button onClick={() => setAppliedVoucher(null)} className="w-8 h-8 rounded-lg bg-emerald-100/50 text-emerald-600 hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center">
-                                                <span className="material-symbols-outlined text-lg">close</span>
+                                            <button 
+                                                onClick={() => {
+                                                    setAppliedVoucher(null);
+                                                    localStorage.removeItem("pending_voucher");
+                                                }} 
+                                                className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center active:scale-90"
+                                            >
+                                                <span className="material-symbols-outlined text-xl">close</span>
                                             </button>
                                         </div>
                                     )}
+                                    
                                     {previewData?.voucher_warning && (
                                         <div className="mt-3 p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-2 animate-in fade-in duration-300">
                                             <span className="material-symbols-outlined text-rose-500 text-sm">error</span>

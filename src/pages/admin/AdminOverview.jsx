@@ -25,23 +25,124 @@ const AdminOverview = () => {
 
   // PDF Report Handler
   const handleDownloadReport = () => {
-    info("📊 Menyiapkan laporan PDF... Harap tunggu sebentar.");
-    const element = document.getElementById('admin-report-print-area');
-    
-    element.classList.remove('hidden');
-    element.classList.add('block');
-    
+    const pdfHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+          body { font-family: 'Helvetica', 'Arial', sans-serif; color: #000; padding: 0; margin: 0; background: #fff; }
+          .paper { width: 800px; margin: 0 auto; padding: 50px; }
+          .full-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .header-text { font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 1px; }
+          .bold { font-weight: bold; }
+          .gray { color: #666; font-size: 13px; margin: 2px 0; }
+          
+          /* Stats Grid Simulation with Tables */
+          .stats-table { width: 100%; border-collapse: separate; border-spacing: 15px 0; margin: 0 -15px 40px -15px; }
+          .stat-box { 
+            border: 1px solid #000; 
+            padding: 20px; 
+            text-align: center; 
+            background: #fff;
+          }
+          .stat-label { font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 5px; }
+          .stat-value { font-size: 18px; font-weight: bold; color: #000; }
+
+          .bordered th { background: #f8f9fa; border-top: 2px solid #000; border-bottom: 1px solid #ccc; padding: 12px 10px; text-align: left; font-size: 12px; }
+          .bordered td { padding: 15px 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+          .text-right { text-align: right; }
+          .footer { margin-top: 100px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="paper">
+          <table class="full-table">
+            <tr>
+              <td width="60%">
+                <img src="${window.location.origin}/image/logo/ADTLogo.png" style="width: 70px; height: 70px;" />
+                <p class="bold" style="font-size: 20px; margin: 5px 0;">PT Aplikasi Dagang Teknologi</p>
+                <p class="gray">Business Administrative Report</p>
+              </td>
+              <td width="40%" class="text-right" valign="top">
+                <p class="header-text">RINGKASAN BISNIS</p>
+                <p class="gray">Dicetak: ${new Date().toLocaleString('id-ID')}</p>
+              </td>
+            </tr>
+          </table>
+
+          <div style="height: 2px; background: #000; margin-bottom: 40px;"></div>
+
+          <table class="stats-table">
+            <tr>
+              <td width="33%">
+                <div class="stat-box">
+                  <div class="stat-label">Total Pendapatan</div>
+                  <div class="stat-value">Rp ${stats.totalRevenue?.toLocaleString('id-ID')}</div>
+                </div>
+              </td>
+              <td width="33%">
+                <div class="stat-box">
+                  <div class="stat-label">Invoice Lunas</div>
+                  <div class="stat-value">${stats.paidInvoices}</div>
+                </div>
+              </td>
+              <td width="33%">
+                <div class="stat-box">
+                  <div class="stat-label">Total Domain</div>
+                  <div class="stat-value">${stats.totalDomains}</div>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <p class="bold" style="font-size: 14px; margin-top: 40px; border-bottom: 1px solid #000; padding-bottom: 5px;">TRANSAKSI TERBARU</p>
+          <table class="full-table bordered">
+            <thead>
+              <tr>
+                <th>ID Invoice</th>
+                <th>Pelanggan</th>
+                <th align="center">Status</th>
+                <th class="text-right">Total (IDR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${stats.recentTransactions?.map(tx => `
+                <tr>
+                  <td>#${tx.id}</td>
+                  <td>${tx.user_name}</td>
+                  <td align="center">${tx.status.toUpperCase()}</td>
+                  <td class="text-right">Rp ${tx.total_amount?.toLocaleString('id-ID')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>Laporan Bisnis Resmi - Dihasilkan secara otomatis oleh sistem DomainDagang.</p>
+            <p>&copy; ${new Date().getFullYear()} PT Aplikasi Dagang Teknologi</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
     const opt = {
-      margin:       0.5,
-      filename:     `Laporan_DagangDomain_${new Date().toISOString().split('T')[0]}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
+      margin:       0,
+      filename:     `Business_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+      image:        { type: 'jpeg', quality: 1 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        letterRendering: true,
+        scrollX: 0,
+        scrollY: 0
+      },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
-    
-    html2pdf().set(opt).from(element).save().then(() => {
-        element.classList.remove('block');
-        element.classList.add('hidden');
+
+    html2pdf().set(opt).from(pdfHtml).save().then(() => {
         success("Laporan PDF berhasil diunduh.");
     });
   };

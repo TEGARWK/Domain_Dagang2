@@ -180,7 +180,13 @@ class ReferralService {
                 [JSON.stringify(currentMeta), invoiceId]
             );
 
-            console.log(`🎁 [ReferralService] Reward PENDING for Invoice ${invoiceId}. Referrer: ${invoice.referred_by_id}`);
+            // 7. Mark Discount as Used in Users Table
+            await db.pool.query(
+                "UPDATE users SET referee_discount_used = TRUE WHERE id = $1",
+                [invoice.user_id]
+            );
+
+            console.log(`🎁 [ReferralService] Reward PENDING and Discount LOCKED for Invoice ${invoiceId}.`);
 
         } catch (err) {
             console.error("[ReferralService] processReferralReward Fatal Error:", err.message);
@@ -246,6 +252,13 @@ class ReferralService {
     async getReferralStats(userId) {
         const tierData = await this.getReferrerTier(userId);
         
+        // Count all registered friends (regardless of payment)
+        const totalFriendsRes = await db.pool.query(
+            "SELECT COUNT(*) FROM users WHERE referred_by_id = $1",
+            [userId]
+        );
+        const totalRegistered = parseInt(totalFriendsRes.rows[0].count);
+
         const rewardsRes = await db.pool.query(`
             SELECT 
                 SUM(CASE WHEN status = 'pending' THEN reward_amount ELSE 0 END) as pending,
@@ -275,8 +288,14 @@ class ReferralService {
             };
         });
 
+        const userRes = await db.pool.query("SELECT referred_by_id, referee_discount_used, referral_code FROM users WHERE id = $1", [userId]);
+        const user = userRes.rows[0];
+        const config = await this.getGlobalConfig();
+
         return {
-            total_referrals: tierData.count,
+            referral_code: user?.referral_code,
+            total_referrals: totalRegistered, // Now counts ALL registrations
+            successful_referrals: tierData.count, // Counts only those who PAID
             pending_rewards: parseFloat(stats.pending || 0),
             active_rewards: parseFloat(stats.active || 0),
             current_tier: tierData.current.tier_name,
@@ -286,7 +305,10 @@ class ReferralService {
                 min: tierData.next.min_referrals,
                 needed: tierData.next.min_referrals - tierData.count
             } : null,
-            referral_history: history
+            referral_history: history,
+            is_referee: !!user?.referred_by_id,
+            referee_discount_used: user?.referee_discount_used,
+            referee_discount_amount: config.referee_discount
         };
     }
 

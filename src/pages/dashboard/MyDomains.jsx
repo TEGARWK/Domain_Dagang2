@@ -59,6 +59,8 @@ const MyDomains = () => {
         return { label: "Unpaid", className: "bg-amber-50 text-amber-600 border-amber-100" };
       case "expired":
         return { label: "Expired", className: "bg-rose-50 text-rose-600 border-rose-100" };
+      case "pending_transfer":
+        return { label: "Pending Transfer", className: "bg-blue-50 text-blue-600 border-blue-100 animate-pulse" };
       case "failed":
         return { label: "Gagal", className: "bg-amber-50 text-amber-600 border-amber-200 animate-pulse" };
       default:
@@ -253,7 +255,27 @@ const MyDomains = () => {
                                 )}
                               </span>
                           </p>
-                          <p className="hidden sm:block text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">Asset Terverifikasi</p>
+                          {(() => {
+                              const isId = (dom.name || "").toLowerCase().split('.').some(part => ['id', 'co', 'ac', 'sch', 'or', 'my', 'biz', 'web', 'ponpes'].includes(part));
+                              if (!isId) return <p className="hidden sm:block text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">Asset Terverifikasi</p>;
+                              
+                              switch (dom.document_status_mapped) {
+                                  case 'approved':
+                                      return <p className="hidden sm:block text-[9px] text-emerald-500 font-bold uppercase tracking-tighter mt-0.5 flex items-center gap-1">
+                                          <span className="material-symbols-outlined text-[10px]">verified</span> Asset Terverifikasi
+                                      </p>;
+                                  case 'pending':
+                                      return <p className="hidden sm:block text-[9px] text-amber-500 font-bold uppercase tracking-tighter mt-0.5 flex items-center gap-1">
+                                          <span className="material-symbols-outlined text-[10px]">history</span> Verifikasi Diproses
+                                      </p>;
+                                  case 'rejected':
+                                      return <p className="hidden sm:block text-[9px] text-[#F97316] font-bold uppercase tracking-tighter mt-0.5 flex items-center gap-1 animate-pulse">
+                                          <span className="material-symbols-outlined text-[10px]">error</span> Menunggu Dokumen
+                                      </p>;
+                                  default:
+                                      return <p className="hidden sm:block text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">Asset Terverifikasi</p>;
+                              }
+                          })()}
                       </td>
                       <td className="hidden lg:table-cell px-8 py-5">
                           <p className="text-[11px] font-bold text-slate-400 uppercase">

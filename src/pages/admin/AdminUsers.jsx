@@ -293,6 +293,20 @@ const AdminUsers = () => {
                     <td className="px-8 py-5 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                              <button 
+                                onClick={() => navigate(`/admin/invoices?search=${user.email}`)}
+                                className="w-8 h-8 flex items-center justify-center bg-white text-slate-400 rounded-lg hover:bg-emerald-50 hover:text-emerald-500 border border-slate-100 transition-all shadow-sm active:scale-90"
+                                title="Lihat Invoice User"
+                             >
+                                <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+                             </button>
+                             <button 
+                                onClick={() => navigate(`/admin/domains?search=${user.email}`)}
+                                className="w-8 h-8 flex items-center justify-center bg-white text-slate-400 rounded-lg hover:bg-blue-50 hover:text-blue-500 border border-slate-100 transition-all shadow-sm active:scale-90"
+                                title="Lihat Domain User"
+                             >
+                                <span className="material-symbols-outlined text-[18px]">language</span>
+                             </button>
+                             <button 
                                 onClick={() => navigate(`/admin/users/${user.id}`)}
                                 className="w-8 h-8 flex items-center justify-center bg-white text-slate-400 rounded-lg hover:bg-orange-950 hover:text-white border border-slate-100 transition-all shadow-sm active:scale-90"
                                 title="Kelola Akun"
