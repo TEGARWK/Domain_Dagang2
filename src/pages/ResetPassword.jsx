@@ -68,7 +68,7 @@ const ResetPassword = () => {
       {/* BACKGROUND DECORATION */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#F97316] rounded-full mix-blend-multiply filter blur-[100px] opacity-20"></div>
       
-      <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-10 relative z-10 border border-white/50">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-xl p-10 relative z-10 border border-white/50">
         <div className="mb-8 text-center">
             <div className="w-16 h-16 bg-orange-50 rounded-lg flex items-center justify-center mx-auto mb-4 text-[#F97316]">
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">

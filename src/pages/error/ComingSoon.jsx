@@ -10,7 +10,7 @@ const ComingSoon = () => {
       <div className="relative z-10 max-w-2xl w-full">
         {/* Modern Coming Soon Header */}
         <div className="mb-10 relative inline-block">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto border border-blue-100 shadow-2xl shadow-blue-100 animate-float">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-blue-50 rounded-xl flex items-center justify-center mx-auto border border-blue-100 shadow-xl shadow-blue-100 animate-float">
              <span className="material-symbols-outlined text-5xl sm:text-7xl text-blue-500">rocket_launch</span>
           </div>
         </div>
@@ -42,7 +42,7 @@ const ComingSoon = () => {
           <div className="mt-12">
              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full border border-blue-100">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest">Pengerjaan: 85%</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">Pengerjaan: 85%</span>
              </div>
           </div>
         </div>

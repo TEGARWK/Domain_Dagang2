@@ -84,35 +84,61 @@ exports.renderReferralTiers = async (req, res) => {
 
 exports.getGlobalStats = async (req, res) => {
     try {
-        const statsQuery = `
+        const stats = await db.pool.query(`
             SELECT 
-                COUNT(*) as total_rewards,
-                COALESCE(SUM(CASE WHEN status = 'active' THEN reward_amount ELSE 0 END), 0) as total_paid_out,
-                COALESCE(SUM(CASE WHEN status = 'pending' THEN reward_amount ELSE 0 END), 0) as total_pending
-            FROM referral_rewards
-        `;
-        const topReferrersQuery = `
-            SELECT u.id, u.name, u.email, COUNT(rr.id) as success_referrals, COALESCE(SUM(rr.reward_amount), 0) as total_earned
-            FROM referral_rewards rr
-            JOIN users u ON rr.referrer_id = u.id
-            WHERE rr.status = 'active'
-            GROUP BY u.id
-            ORDER BY success_referrals DESC
-            LIMIT 10
-        `;
+                (SELECT COUNT(*) FROM users WHERE role = 'user') as total_users,
+                (SELECT COUNT(*) FROM users WHERE role = 'user' AND registrar_customer_id IS NOT NULL) as total_merchants,
+                (SELECT SUM(reward_amount) FROM referral_rewards WHERE status = 'active') as total_paid,
+                (SELECT SUM(reward_amount) FROM referral_rewards WHERE status = 'pending') as total_pending,
+                (SELECT COUNT(*) FROM referral_rewards) as total_rewards
+        `);
 
-        const stats = await db.pool.query(statsQuery);
-        const top = await db.pool.query(topReferrersQuery);
-
+        const configRes = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'referral_config'");
+        
         return res.status(200).json({
             success: true,
             data: {
-                overview: stats.rows[0] || { total_rewards: 0, total_paid_out: 0, total_pending: 0 },
-                top_referrers: top.rows
+                overview: {
+                    total_users: parseInt(stats.rows[0].total_users || 0),
+                    total_merchants: parseInt(stats.rows[0].total_merchants || 0),
+                    total_paid: parseFloat(stats.rows[0].total_paid || 0),
+                    total_pending: parseFloat(stats.rows[0].total_pending || 0),
+                    total_rewards: parseInt(stats.rows[0].total_rewards || 0)
+                },
+                config: configRes.rows[0]?.setting_value || {}
             }
         });
     } catch (err) {
         console.error("Referral Stats Error:", err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+exports.getReferralMerchants = async (req, res) => {
+    try {
+        const { search } = req.query;
+        let query = `
+            SELECT 
+                u.id, u.name, u.email, u.referral_code,
+                (SELECT COUNT(*) FROM users WHERE referred_by_id = u.id) as total_invite,
+                COALESCE((SELECT SUM(reward_amount) FROM referral_rewards WHERE referrer_id = u.id AND status = 'active'), 0) as active_commission,
+                COALESCE((SELECT SUM(reward_amount) FROM referral_rewards WHERE referrer_id = u.id AND status = 'pending'), 0) as pending_commission
+            FROM users u
+            WHERE u.role = 'user' 
+              AND u.registrar_customer_id IS NOT NULL
+        `;
+        const params = [];
+
+        if (search) {
+            query += " AND (u.name ILIKE $1 OR u.email ILIKE $1 OR u.referral_code ILIKE $1)";
+            params.push(`%${search}%`);
+        }
+
+        query += " ORDER BY total_invite DESC";
+        const result = await db.pool.query(query, params);
+
+        return res.status(200).json({ success: true, data: result.rows });
+    } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
@@ -176,23 +202,30 @@ exports.getGlobalConfig = async (req, res) => {
 
 exports.updateGlobalConfig = async (req, res) => {
     try {
-        const { referee_discount, holding_period_days } = req.body;
-        const config = JSON.stringify({ referee_discount, holding_period_days });
-
-        // Check if exists
-        const check = await db.pool.query("SELECT setting_key FROM site_settings WHERE setting_key = 'referral_config'");
+        const { referee_discount, holding_period_days, commission_tier_1_percent, commission_tier_2_percent } = req.body;
         
-        if (check.rows.length > 0) {
-            await db.pool.query(
-                "UPDATE site_settings SET setting_value = $1 WHERE setting_key = 'referral_config'",
-                [config]
-            );
-        } else {
-            await db.pool.query(
-                "INSERT INTO site_settings (setting_key, setting_value) VALUES ('referral_config', $1)",
-                [config]
-            );
-        }
+        // Fetch current config first to preserve other fields like banned_words
+        const configRes = await db.pool.query("SELECT setting_value FROM site_settings WHERE setting_key = 'referral_config'");
+        let currentConfig = configRes.rows.length > 0 
+            ? (typeof configRes.rows[0].setting_value === 'string' ? JSON.parse(configRes.rows[0].setting_value) : configRes.rows[0].setting_value)
+            : {};
+
+        const updatedConfig = {
+            ...currentConfig,
+            referee_discount: parseFloat(referee_discount || 0),
+            holding_period_days: parseInt(holding_period_days),
+            commission_tier_1_percent: parseFloat(commission_tier_1_percent),
+            commission_tier_2_percent: parseFloat(commission_tier_2_percent)
+        };
+
+        const configJson = JSON.stringify(updatedConfig);
+
+        await db.pool.query(`
+            INSERT INTO site_settings (setting_key, setting_value)
+            VALUES ('referral_config', $1)
+            ON CONFLICT (setting_key)
+            DO UPDATE SET setting_value = EXCLUDED.setting_value
+        `, [configJson]);
 
         return res.status(200).json({ success: true, message: "Konfigurasi global referral berhasil diperbarui." });
     } catch (err) {

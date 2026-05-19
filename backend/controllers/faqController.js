@@ -3,12 +3,22 @@ const { createLog } = require("./auditController");
 
 // 1. Get All FAQs (Public & Admin)
 exports.getAllFAQs = async (req, res) => {
+  const { category } = req.query;
   try {
-    const result = await db.query("SELECT * FROM faqs WHERE is_active = TRUE ORDER BY priority DESC, created_at DESC");
+    let query = "SELECT * FROM faqs WHERE is_active = TRUE";
+    let params = [];
+
+    if (category) {
+      query += " AND category = $1";
+      params.push(category);
+    }
+
+    query += " ORDER BY priority DESC, created_at DESC";
+    
+    const result = await db.query(query, params);
     res.json(Array.isArray(result) ? result : []);
   } catch (err) {
     console.error("Fetch FAQ Error:", err.message);
-    // Return empty array instead of 500 to keep the page alive
     res.json([]);
   }
 };

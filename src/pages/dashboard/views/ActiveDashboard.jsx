@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [], referralInfo }) => {
   const isEligibleForRefereeDiscount = referralInfo?.is_referee && !referralInfo?.referee_discount_used;
-  const refereeDiscountAmount = referralInfo?.referee_discount_amount || 5000;
+  const refereeDiscountPercent = referralInfo?.referee_discount_percent || 0;
 
   // ... existing helpers ...
   const formatRupiah = (num) => {
@@ -54,11 +54,11 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
   const activeDomainsCount = domains.filter(d => d.expiration_date && getDaysLeft(d.expiration_date) > 0).length;
 
   return (
-    <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
+    <div className="space-y-4 animate-[fadeIn_0.5s_ease-out]">
       {/* 1. TOP STATS CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Total Domain */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 flex items-center gap-4 hover:border-blue-200 transition">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex items-center gap-4 hover:border-blue-200 transition">
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
             <svg
               className="w-6 h-6"
@@ -85,7 +85,7 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
         </div>
 
         {/* Domain Aktif (Count) */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 flex items-center gap-4 hover:border-green-200 transition">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex items-center gap-4 hover:border-green-200 transition">
           <div className="w-12 h-12 bg-green-50 text-green-600 rounded-lg flex items-center justify-center">
             <svg
               className="w-6 h-6"
@@ -112,7 +112,7 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
         </div>
 
         {/* Tagihan Pending */}
-        <Link to="/dashboard/billing" className="bg-white p-6 rounded-lg shadow-sm border border-slate-100 flex items-center gap-4 hover:border-orange-200 transition group cursor-pointer">
+        <Link to="/dashboard/billing" className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 flex items-center gap-4 hover:border-orange-200 transition group cursor-pointer">
           <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition">
             <svg
               className="w-6 h-6"
@@ -139,7 +139,7 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
         </Link>
 
         {/* Saldo Akun (NEW) */}
-        <Link to="/dashboard/wallet" className="bg-[#f97316] p-6 rounded-lg shadow-xl shadow-orange-900/10 border border-orange-400/20 flex items-center gap-4 hover:scale-[1.02] transition group cursor-pointer">
+        <Link to="/dashboard/wallet" className="bg-[#f97316] p-4 rounded-lg shadow-xl shadow-orange-900/10 border border-orange-400/20 flex items-center gap-4 hover:scale-[1.02] transition group cursor-pointer">
           <div className="w-12 h-12 bg-white/20 text-white rounded-lg flex items-center justify-center group-hover:bg-white group-hover:text-[#f97316] transition">
             <svg
               className="w-6 h-6"
@@ -176,7 +176,7 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
               </div>
               <div>
                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Klaim Hadiah Referral Anda! 🎁</h3>
-                 <p className="text-xs text-slate-600">Dapatkan potongan <span className="font-bold text-emerald-600">{formatRupiah(refereeDiscountAmount)}</span> untuk transaksi pertama Anda.</p>
+                 <p className="text-xs text-slate-600">Dapatkan potongan <span className="font-bold text-emerald-600">{refereeDiscountPercent}%</span> untuk transaksi pertama Anda.</p>
               </div>
            </div>
            <Link to="/dashboard/buy" className="px-5 py-2 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-emerald-700 transition shadow-lg shadow-emerald-950/20">
@@ -185,12 +185,12 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* 2. MAIN CONTENT - LIST DOMAIN (Left 2/3) */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-4">
           {/* List Domain Terbaru */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+            <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#F97316]"></span>
                 Domain Terbaru
@@ -206,7 +206,7 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
               {domains.slice(0, 3).map((dom) => (
                 <div
                   key={dom.id}
-                  className="px-6 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center hover:bg-slate-50 transition group gap-4"
+                  className="px-4 py-2 flex flex-col sm:flex-row sm:justify-between sm:items-center hover:bg-slate-50 transition group gap-4"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 text-lg group-hover:bg-white group-hover:text-[#F97316] group-hover:shadow-md transition">
@@ -228,7 +228,7 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
                   </div>
                   <Link 
                     to={`/dashboard/domains/${dom.id}`}
-                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 px-6 py-3 h-12 rounded-lg hover:bg-slate-800 hover:text-white hover:border-slate-800 transition shadow-sm text-center flex items-center justify-center min-w-[140px]"
+                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 px-4 py-2 h-10 rounded-lg hover:bg-slate-800 hover:text-white hover:border-slate-800 transition shadow-sm text-center flex items-center justify-center min-w-[120px]"
                   >
                     Kelola Domain
                   </Link>
@@ -239,19 +239,19 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
           
           {/* 3. LOG AKTIVITAS (NEW) */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+            <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm uppercase tracking-wider">
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                 Aktivitas Terbaru
               </h3>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               {activities.length > 0 ? (
                 activities.map((act, idx) => {
                   const { title, desc, color } = translateAction(act.action);
                   const isLast = idx === activities.length - 1;
                   return (
-                    <div key={act.id} className={`flex items-start gap-4 ${!isLast ? 'pb-6 border-l-2 border-slate-100' : ''} ml-3 pl-6 relative`}>
+                    <div key={act.id} className={`flex items-start gap-4 ${!isLast ? 'pb-4 border-l-2 border-slate-100' : ''} ml-3 pl-6 relative`}>
                       <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white border-4 ${color.replace('bg-', 'border-')}`}></div>
                       <div>
                         <p className="text-sm font-bold text-slate-800">{title}</p>
@@ -270,74 +270,71 @@ const ActiveDashboard = ({ domains, pendingInvoicesCount, wallet, activities = [
           </div>
         </div>
 
-        {/* 3. SIDEBAR (Right 1/3) - QUICK ACTIONS */}
-        <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group/menu">
-              {/* Decorative Background Element */}
-              <div className="absolute -right-8 -top-8 w-24 h-24 bg-slate-50 rounded-full opacity-50 group-hover/menu:scale-110 transition-transform duration-700"></div>
-              
-              <h3 className="font-black text-slate-800 mb-6 text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
-                 <span className="w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
-                 Akses Cepat
-              </h3>
+        <div className="lg:col-span-1 space-y-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm relative overflow-hidden group/menu">
+            {/* Decorative Background Element */}
+            <div className="absolute -right-8 -top-8 w-24 h-24 bg-slate-50 rounded-full opacity-50 group-hover/menu:scale-110 transition-transform duration-700"></div>
+            
+            <h3 className="font-bold text-slate-800 mb-4 text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+               <span className="w-1.5 h-1.5 rounded-full bg-[#f97316]"></span>
+               Akses Cepat
+            </h3>
 
-              <div className="grid grid-cols-2 gap-4 relative z-10">
-                 {/* Item: Beli Domain */}
-                 <Link to="/dashboard/buy" className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50/50 hover:bg-orange-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-orange-200 hover:shadow-md hover:-translate-y-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2.5 text-orange-500 group-hover:scale-110 transition-transform">
-                       <span className="material-symbols-outlined text-xl">add_shopping_cart</span>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-orange-600 transition-colors">Beli Domain</span>
-                 </Link>
+            <div className="grid grid-cols-2 gap-3 relative z-10">
+               {/* Item: Beli Domain */}
+               <Link to="/dashboard/buy" className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50/50 hover:bg-orange-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-orange-200 hover:shadow-md hover:-translate-y-1">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2 text-orange-500 group-hover:scale-110 transition-transform">
+                     <span className="material-symbols-outlined text-xl">add_shopping_cart</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-orange-600 transition-colors">Beli Domain</span>
+               </Link>
 
-                 {/* Item: Transfer Domain */}
-                 <Link to="/dashboard/transfer" className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50/50 hover:bg-blue-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-blue-200 hover:shadow-md hover:-translate-y-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2.5 text-blue-500 group-hover:scale-110 transition-transform">
-                       <span className="material-symbols-outlined text-xl">move_up</span>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-blue-600 transition-colors text-center">Transfer</span>
-                 </Link>
+               {/* Item: Transfer Domain */}
+               <Link to="/dashboard/transfer" className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50/50 hover:bg-blue-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-blue-200 hover:shadow-md hover:-translate-y-1">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2 text-blue-500 group-hover:scale-110 transition-transform">
+                     <span className="material-symbols-outlined text-xl">move_up</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-blue-600 transition-colors text-center">Transfer</span>
+               </Link>
 
-                 {/* Item: Domain Saya */}
-                 <Link to="/dashboard/domains" className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50/50 hover:bg-emerald-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-emerald-200 hover:shadow-md hover:-translate-y-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2.5 text-emerald-500 group-hover:scale-110 transition-transform">
-                       <span className="material-symbols-outlined text-xl">language</span>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-emerald-600 transition-colors">Domain Saya</span>
-                 </Link>
+               {/* Item: Domain Saya */}
+               <Link to="/dashboard/domains" className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50/50 hover:bg-emerald-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-emerald-200 hover:shadow-md hover:-translate-y-1">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2 text-emerald-500 group-hover:scale-110 transition-transform">
+                     <span className="material-symbols-outlined text-xl">language</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-emerald-600 transition-colors">Domain Saya</span>
+               </Link>
 
-                 {/* Item: Dompet & Saldo */}
-                 <Link to="/dashboard/wallet" className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50/50 hover:bg-indigo-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-indigo-200 hover:shadow-md hover:-translate-y-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2.5 text-indigo-500 group-hover:scale-110 transition-transform">
-                       <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Dompet</span>
-                 </Link>
+               {/* Item: Dompet & Saldo */}
+               <Link to="/dashboard/wallet" className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50/50 hover:bg-indigo-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-indigo-200 hover:shadow-md hover:-translate-y-1">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2 text-indigo-500 group-hover:scale-110 transition-transform">
+                     <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Dompet</span>
+               </Link>
 
-                 {/* Item: Billing */}
-                 <Link to="/dashboard/billing" className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50/50 hover:bg-amber-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-amber-200 hover:shadow-md hover:-translate-y-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2.5 text-amber-500 group-hover:scale-110 transition-transform">
-                       <span className="material-symbols-outlined text-xl">receipt_long</span>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-amber-600 transition-colors">Billing</span>
-                 </Link>
+               {/* Item: Billing */}
+               <Link to="/dashboard/billing" className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50/50 hover:bg-amber-50 transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-amber-200 hover:shadow-md hover:-translate-y-1">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm mb-2 text-amber-500 group-hover:scale-110 transition-transform">
+                     <span className="material-symbols-outlined text-xl">receipt_long</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-amber-600 transition-colors">Billing</span>
+               </Link>
 
-
-
-                 {/* Item: Pengaturan */}
-                 <Link to="/dashboard/settings" className="flex items-center gap-4 p-4 rounded-xl bg-slate-50/50 hover:bg-slate-800 hover:text-white transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-slate-700 hover:shadow-lg">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm text-slate-500 group-hover:text-slate-800 transition-all group-hover:rotate-[30deg]">
-                       <span className="material-symbols-outlined text-xl">settings</span>
-                    </div>
-                    <div>
-                       <span className="text-[10px] font-black uppercase tracking-widest block mb-0.5">Pengaturan Akun</span>
-                       <span className="text-[9px] font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Kelola profile & keamanan</span>
-                    </div>
-                 </Link>
-              </div>
+               {/* Item: Pengaturan */}
+               <Link to="/dashboard/settings" className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/50 hover:bg-slate-800 hover:text-white transition-all duration-300 group cursor-pointer border border-slate-100/50 hover:border-slate-700 hover:shadow-lg">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm text-slate-500 group-hover:text-slate-800 transition-all group-hover:rotate-[30deg]">
+                     <span className="material-symbols-outlined text-xl">settings</span>
+                  </div>
+                  <div>
+                     <span className="text-[10px] font-bold uppercase tracking-widest block mb-0.5">Settings</span>
+                     <span className="text-[8px] font-medium text-slate-400 group-hover:text-slate-300 transition-colors line-clamp-1">Kelola profile</span>
+                  </div>
+               </Link>
             </div>
+          </div>
 
-           <div className="bg-[#1e293b] p-6 rounded-lg text-white relative overflow-hidden">
+           <div className="bg-[#1e293b] p-4 rounded-lg text-white relative overflow-hidden">
                <div className="relative z-10">
                    <h4 className="font-bold mb-1">Butuh Bantuan?</h4>
                    <p className="text-xs text-slate-400 mb-4">Chat Admin / CS kami siap membantu kendala Anda 24/7.</p>

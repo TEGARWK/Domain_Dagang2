@@ -454,6 +454,18 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS ticket_replies (
+    id SERIAL PRIMARY KEY,
+    ticket_id INT NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    is_admin BOOLEAN DEFAULT FALSE,
+    attachments JSONB DEFAULT '[]',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ticket_replies_ticket ON ticket_replies(ticket_id);
+
 CREATE TABLE IF NOT EXISTS regions (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,

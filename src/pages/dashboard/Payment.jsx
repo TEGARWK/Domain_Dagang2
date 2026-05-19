@@ -575,11 +575,11 @@ const Payment = () => {
     const vaValue = plinkVA || paymentResult.pay_code || paymentResult.va_number;
 
     return (
-      <div className="relative bg-white rounded-2xl shadow-xl shadow-slate-200/60 overflow-hidden animate-[fadeIn_0.5s_ease-out] border border-slate-100">
+      <div className="relative bg-white rounded-xl shadow-xl shadow-slate-200/60 overflow-hidden animate-[fadeIn_0.5s_ease-out] border border-slate-100">
         {/* EXPIRED OVERLAY */}
         {timeLeft === 0 && (paymentResult.expired_at || invoice?.due_date) && paymentState !== 'PAID' && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-6 text-center">
-            <div className="bg-white border border-red-100 rounded-3xl p-8 shadow-2xl shadow-red-200/50 max-w-sm">
+            <div className="bg-white border border-red-100 rounded-xl p-8 shadow-xl shadow-red-200/50 max-w-sm">
               <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="material-symbols-outlined text-3xl">timer_off</span>
               </div>
@@ -597,7 +597,7 @@ const Payment = () => {
           </div>
         )}
         {/* Header Instruksi - Premium Deadline & Countdown */}
-        <div className="p-5 px-6 bg-slate-50/80 border-b border-slate-100">
+        <div className="p-4 px-6 bg-slate-50/80 border-b border-slate-100">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-col">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 items-center gap-1.5 flex">
@@ -624,13 +624,13 @@ const Payment = () => {
           </div>
         </div>
 
-        <div className="p-6 md:p-10">
+        <div className="p-4 md:p-6">
           {/* Main Payment Display */}
           <div className="flex flex-col items-center">
             {isEwallet ? (
               <div className="flex flex-col items-center w-full max-w-md mx-auto">
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden w-full mb-8">
-                  <div className="bg-slate-50/80 p-6 border-b border-slate-100 text-center">
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden w-full mb-4">
+                  <div className="bg-slate-50/80 p-4 border-b border-slate-100 text-center">
                     <div className="w-16 h-10 bg-white rounded-lg shadow-sm border border-slate-100 p-1.5 flex items-center justify-center mx-auto mb-3">
                       <img src={getBankLogo(methodLower, paymentResult.icon_url)} className="max-h-full max-w-full object-contain" alt="E-Wallet Logo" />
                     </div>
@@ -638,8 +638,8 @@ const Payment = () => {
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{methodLower.toUpperCase()}</p>
                   </div>
 
-                  <div className="p-8 text-center">
-                    <div className="w-full bg-orange-50/50 p-6 rounded-2xl border border-orange-100 mb-8">
+                  <div className="p-6 text-center">
+                    <div className="w-full bg-orange-50/50 p-4 rounded-xl border border-orange-100 mb-4">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Pembayaran</p>
                       <p className="text-3xl font-bold text-orange-600 tracking-tighter">{formatRupiah(actualPaidTotal)}</p>
                     </div>
@@ -669,8 +669,8 @@ const Payment = () => {
                 </div>
 
                 <div className="w-full">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left mb-4">Cara Pembayaran</p>
-                  <ul className="space-y-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left mb-2">Cara Pembayaran</p>
+                  <ul className="space-y-2">
                     {[
                       `Buka aplikasi <b>${methodLower.toUpperCase()}</b> di HP Anda.`,
                       "Cek menu <b>Notifikasi</b> atau <b>Riwayat</b> (jika notifikasi tidak muncul).",
@@ -689,11 +689,11 @@ const Payment = () => {
               </div>
             ) : isQR ? (
               <div className="flex flex-col items-center w-full max-w-sm mx-auto">
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden w-full">
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden w-full">
                   {/* Kondisional Header: Hanya muncul jika BUKAN QRIS Manual */}
                   {!(manualInfo && (manualInfo.qris_url || manualInfo.qr_image)) && (
-                    <div className="bg-slate-50/80 p-6 border-b border-slate-100 text-center">
-                      <h2 className="text-lg font-bold text-slate-800 tracking-tighter uppercase mb-0.5">DOMAIN DAGANG</h2>
+                    <div className="bg-slate-50/80 p-4 border-b border-slate-100 text-center">
+                      <h2 className="text-base font-bold text-slate-800 tracking-tighter uppercase mb-0.5">DOMAIN DAGANG</h2>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Metode Pembayaran QRIS</p>
                     </div>
                   )}
@@ -730,7 +730,7 @@ const Payment = () => {
                     </div>
 
                     {/* Footer Info (Matching Image) - Compact Mode */}
-                    <div className="text-center p-6 pt-2 space-y-2 pb-6">
+                    <div className="text-center p-4 pt-2 space-y-2 pb-4">
                       <div>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Total Pembayaran</p>
                         <p className="text-2xl font-bold text-[#FF6B00] tracking-tighter">{formatRupiah(actualPaidTotal)}</p>
@@ -753,15 +753,15 @@ const Payment = () => {
                 <div className="w-full mt-6 space-y-3">
                   <button
                     onClick={handleDownloadQR}
-                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-xl active:scale-95"
+                    className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-xl active:scale-95"
                   >
                     <span className="material-symbols-outlined text-lg">download</span>
                     Simpan QR Code
                   </button>
                   
                   <div className="pt-4 border-t border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left mb-4">Cara Bayar QRIS</p>
-                    <ul className="space-y-3">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left mb-2">Cara Bayar QRIS</p>
+                    <ul className="space-y-2">
                       {[
                         "Buka aplikasi e-wallet (OVO, DANA, GoPay) atau m-banking Anda.",
                         "Pilih menu <b>Scan / Bayar</b> dan arahkan kamera ke QR Code di atas.",
@@ -781,7 +781,7 @@ const Payment = () => {
             ) : (
               /* --- UNIFIED VA CARD (Manual, Tripay, Prismalink) --- */
               <div className="w-full max-w-md mx-auto">
-                <div className="bg-white rounded-[32px] border-2 border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden group">
+                <div className="bg-white rounded-xl border-2 border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden group">
                   {/* Bank Header Section */}
                   {(() => {
                     const pMethod = String(paymentResult.payment_method || "").toLowerCase();
@@ -817,7 +817,7 @@ const Payment = () => {
 
                     return (
                       <>
-                        <div className="bg-slate-50/50 p-6 border-b border-slate-100 flex flex-col items-center gap-3 relative overflow-hidden">
+                        <div className="bg-slate-50/50 p-4 border-b border-slate-100 flex flex-col items-center gap-2 relative overflow-hidden">
                           {/* Provider Badge */}
                           <div className="absolute top-4 right-4">
                             <span className={`text-[7px] px-2 py-0.5 rounded font-bold uppercase tracking-widest ${isManual ? 'bg-blue-100 text-blue-600' : provider === 'prismalink' ? 'bg-indigo-100 text-indigo-600' : 'bg-orange-100 text-orange-600'}`}>
@@ -841,7 +841,7 @@ const Payment = () => {
                         </div>
 
                         {/* VA/Rekening Number Section */}
-                        <div className="p-8 pb-4 text-center bg-white">
+                        <div className="p-4 pb-2 text-center bg-white">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-center gap-2">
                             <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isManual ? 'bg-blue-500' : 'bg-[#FF6B00]'}`}></span>
                             {sectionLabel}
@@ -870,8 +870,8 @@ const Payment = () => {
                         </div>
 
                         {/* Total Section in Card */}
-                        <div className="p-8 pt-4 pb-10 text-center bg-white">
-                          <div className="w-full bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
+                        <div className="p-4 pt-2 pb-6 text-center bg-white">
+                          <div className="w-full bg-orange-50/50 p-4 rounded-xl border border-orange-100">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Pembayaran</p>
                             <div className="flex items-center justify-center gap-2">
                               <p className="text-2xl font-bold text-orange-600 tracking-tighter">{formatRupiah(actualPaidTotal)}</p>
@@ -896,8 +896,8 @@ const Payment = () => {
 
                 {/* INSTRUCTIONS SECTION (ACCORDION) */}
                 <div className="mt-8 border-t border-slate-100 pt-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="material-symbols-outlined text-orange-500 text-lg">format_list_numbered</span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-orange-500 text-base">format_list_numbered</span>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Cara Pembayaran</p>
                   </div>
 
@@ -905,10 +905,10 @@ const Payment = () => {
                     {manualInfo ? (
                       <div className="space-y-3">
                         <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm transition-all hover:border-slate-200">
-                          <div className="px-5 py-4 bg-slate-50/50 border-b border-slate-100">
+                          <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-100">
                             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">Langkah Pembayaran Manual</span>
                           </div>
-                          <div className="p-5 space-y-4">
+                          <div className="p-4 space-y-3">
                             <div className="flex gap-4 items-start">
                               <span className="shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center shadow-md">1</span>
                               <div>
@@ -965,15 +965,15 @@ const Payment = () => {
                         <div key={idx} className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-sm transition-all hover:border-slate-200">
                           <button
                             onClick={() => setActiveInstruction(activeInstruction === idx ? -1 : idx)}
-                            className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
                           >
                             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">{group.title}</span>
                             <span className={`material-symbols-outlined text-slate-400 text-sm transition-transform duration-300 ${activeInstruction === idx ? 'rotate-180' : ''}`}>expand_more</span>
                           </button>
 
                           {activeInstruction === idx && (
-                            <div className="px-5 pb-5 pt-1 animate-[fadeIn_0.3s_ease-out]">
-                              <ul className="space-y-3">
+                            <div className="px-4 pb-4 pt-1 animate-[fadeIn_0.3s_ease-out]">
+                              <ul className="space-y-2">
                                 {group.steps.map((step, sIdx) => (
                                   <li key={sIdx} className="flex gap-3 items-start">
                                     <span className="shrink-0 w-5 h-5 rounded-full bg-slate-900 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
@@ -995,7 +995,7 @@ const Payment = () => {
                 {manualInfo && (
                   <div className="mt-8 border-t border-slate-100 pt-8 animate-[fadeIn_0.5s_ease-out]">
                     {paymentResult.payment_proof || paymentResult.manual_details?.payment_proof ? (
-                      <div className="bg-green-50 border border-green-100 rounded-2xl p-6 text-center">
+                      <div className="bg-green-50 border border-green-100 rounded-xl p-6 text-center">
                         <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
                           <span className="material-symbols-outlined">verified</span>
                         </div>
@@ -1010,7 +1010,7 @@ const Payment = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-6">
+                      <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-6">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-4">Upload Bukti Transfer</p>
                         {previewUrl ? (
                           <div className="relative mb-4 group">
@@ -1037,7 +1037,7 @@ const Payment = () => {
 
 
           {/* Manual Action Buttons */}
-          <div className="mt-8 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <button
               id="btn-check-status"
               onClick={handleCheckStatus}
@@ -1056,7 +1056,7 @@ const Payment = () => {
           </div>
 
           {/* Polling Indicator */}
-          <div className="mt-8 flex justify-center items-center gap-2.5">
+          <div className="mt-4 flex justify-center items-center gap-2.5">
             <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
               Memonitor status pembayaran secara real-time...
@@ -1099,7 +1099,7 @@ const Payment = () => {
         {showSuccessPopup && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-[fadeIn_0.3s_ease-out]"></div>
-            <div className="relative bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-[scaleIn_0.3s_ease-out] border border-white/20">
+            <div className="relative bg-white rounded-xl p-8 max-w-md w-full shadow-xl animate-[scaleIn_0.3s_ease-out] border border-white/20">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 text-green-500 mb-6 shadow-xl shadow-green-100">
                   <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
@@ -1107,7 +1107,7 @@ const Payment = () => {
                 <h2 className="text-2xl font-bold text-slate-800 mb-2 tracking-tight">Pembayaran Berhasil!</h2>
                 <p className="text-sm text-slate-500 mb-8 font-medium">Terima kasih, tagihan Anda telah kami terima dan sedang diproses.</p>
 
-                <div className="bg-slate-50 rounded-2xl p-5 mb-8 text-left border border-slate-100 space-y-3">
+                <div className="bg-slate-50 rounded-xl p-5 mb-8 text-left border border-slate-100 space-y-3">
                   <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     <span>Total yang diBayar</span>
                     <span className="text-lg font-bold text-[#FF6B00]">{formatRupiah(actualPaidTotal)}</span>
@@ -1153,8 +1153,8 @@ const Payment = () => {
           <div className="lg:col-span-2 space-y-6">
 
             {/* HEADER INVOICE (Always Visible) */}
-            <div className="bg-white p-5 md:p-8 rounded-lg border border-slate-200 shadow-sm">
-              <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center mb-0 md:mb-6 gap-4">
+            <div className="bg-white p-4 md:p-6 rounded-lg border border-slate-200 shadow-sm">
+              <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center mb-0 md:mb-4 gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
                     <h1 className="text-xl md:text-2xl font-bold text-slate-800">Pembayaran Invoice</h1>
@@ -1199,7 +1199,7 @@ const Payment = () => {
 
           {/* --- KOLOM KANAN (30%) - ORDER SUMMARY --- */}
           <div className="lg:col-span-1">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm sticky top-5 overflow-hidden">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm sticky top-5 overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#FF6B00] to-orange-400"></div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-900 uppercase text-[9px] tracking-[0.2em] flex items-center gap-2">
@@ -1209,7 +1209,7 @@ const Payment = () => {
                 {getCategoryBadge(invoice.category)}
               </div>
 
-              <div className="space-y-5 mb-8">
+              <div className="space-y-4 mb-6">
                 {invoice.items.map((item, idx) => {
                   const isTopUpItem = item.name.toLowerCase().includes('top up') || item.desc?.toLowerCase().includes('top up') || item.action_type === 'topup';
                   // Use raw price from invoice item (now Base Price in Additive Mode)
@@ -1309,7 +1309,7 @@ const Payment = () => {
                   );
                 })()}
 
-                <div className="pt-4 border-t border-dashed border-slate-100 mb-6 text-center">
+                <div className="pt-3 border-t border-dashed border-slate-100 mb-4 text-center">
                   <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest block mb-1">Total Pembayaran</span>
                   <span className="text-xl font-bold text-[#FF6B00] tracking-tight">
                     {formatRupiah(actualPaidTotal)}
@@ -1331,8 +1331,8 @@ const Payment = () => {
       {/* Cancellation Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-[scaleUp_0.3s_ease-out]">
-            <div className="p-8">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-xl overflow-hidden animate-[scaleUp_0.3s_ease-out]">
+            <div className="p-4">
               <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="material-symbols-outlined text-3xl">cancel</span>
               </div>

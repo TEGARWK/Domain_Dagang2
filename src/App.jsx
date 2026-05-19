@@ -17,6 +17,7 @@ import { NotificationProvider } from "./context/NotificationContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
 import { ConfigProvider, useConfig } from "./context/ConfigContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { Toaster } from "react-hot-toast";
 
 // --- 3. PAGES: PUBLIC (LANDING & AUTH) ---
 import Home from "./pages/Home";
@@ -72,6 +73,8 @@ const AdminSupportTickets = lazy(() => import("./pages/admin/AdminSupportTickets
 const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs"));
 const AdminReferral = lazy(() => import("./pages/admin/AdminReferral"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminRevenueDetail = lazy(() => import("./pages/admin/AdminRevenueDetail"));
+
 
 // --- 5. ERROR PAGES ---
 import Error404 from "./pages/error/Error404";
@@ -115,9 +118,9 @@ const Layout = () => {
     "/forgot-password",
     "/cart",
     "/checkout",
-  ].includes(location.pathname) || 
-  location.pathname.startsWith("/reset-password") || 
-  location.pathname.startsWith("/verify");
+  ].includes(location.pathname) ||
+    location.pathname.startsWith("/reset-password") ||
+    location.pathname.startsWith("/verify");
 
   // 3. Halaman Dashboard & Admin
   const isDashboardPage = location.pathname.startsWith("/dashboard");
@@ -133,6 +136,7 @@ const Layout = () => {
     <div className="font-sans text-slate-900 bg-white selection:bg-[#F97316] selection:text-white flex flex-col min-h-screen">
       {/* NAVBAR PUBLIC */}
       {showPublicHeaderFooter && <Navbar />}
+      <Toaster position="top-right" reverseOrder={false} />
 
       {/* CONTENT AREA */}
       <main className="flex-grow">
@@ -141,85 +145,86 @@ const Layout = () => {
             <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="w-12 h-12 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div></div>}>
               <Routes>
 
-          {/* === A. PUBLIC ROUTES === */}
-          <Route path="/" element={<Home />} />
-          <Route path="/domain" element={<Domain />} />
-          <Route path="/transfer" element={<Transfer />} />
-          <Route path="/promo" element={<Promo />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/contact" element={<Contact />} />
+                {/* === A. PUBLIC ROUTES === */}
+                <Route path="/" element={<Home />} />
+                <Route path="/domain" element={<Domain />} />
+                <Route path="/transfer" element={<Transfer />} />
+                <Route path="/promo" element={<Promo />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/contact" element={<Contact />} />
 
-          {/* === B. AUTH ROUTES === */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/verify" element={<VerifyEmail />} />
-          <Route path="/checkout" element={<Checkout />} />
+                {/* === B. AUTH ROUTES === */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/verify" element={<VerifyEmail />} />
+                <Route path="/checkout" element={<Checkout />} />
 
-          {/* === C. DASHBOARD ROUTES (PROTECTED) === */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Overview />} />
+                {/* === C. DASHBOARD ROUTES (PROTECTED) === */}
+                <Route path="/dashboard" element={<DashboardLayout />}>
+                  <Route index element={<Overview />} />
 
-            <Route path="buy" element={<BuyDomain />} />
-            <Route path="transfer" element={<TransferDomain />} />
-            <Route path="promo" element={<Promo />} />
+                  <Route path="buy" element={<BuyDomain />} />
+                  <Route path="transfer" element={<TransferDomain />} />
+                  <Route path="promo" element={<Promo />} />
 
-            {/* Halaman Domain Saya -> MyDomains.jsx (UPDATE DISINI) */}
-            <Route path="domains" element={<MyDomains />} />
-            {/* Halaman Manage Domain -> ManageDomain.jsx */}
-            <Route path="domains/:id" element={<ManageDomain />} />
-            {/* Halaman Wallet -> Wallet.jsx */}
-            <Route path="wallet" element={<Wallet />} />
-            {/* Halaman Tagihan -> Billing.jsx */}
-            <Route path="billing" element={<Billing />} />
-            {/* Halaman Detail Invoice -> DetailInvoice.jsx */}
-            <Route path="billing/:invoiceId" element={<DetailInvoice />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="support" element={<Support />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="vouchers" element={<Vouchers />} />
-            <Route path="referral" element={<Referral />} />
-          </Route>
+                  {/* Halaman Domain Saya -> MyDomains.jsx (UPDATE DISINI) */}
+                  <Route path="domains" element={<MyDomains />} />
+                  {/* Halaman Manage Domain -> ManageDomain.jsx */}
+                  <Route path="domains/:id" element={<ManageDomain />} />
+                  {/* Halaman Wallet -> Wallet.jsx */}
+                  <Route path="wallet" element={<Wallet />} />
+                  {/* Halaman Tagihan -> Billing.jsx */}
+                  <Route path="billing" element={<Billing />} />
+                  {/* Halaman Detail Invoice -> DetailInvoice.jsx */}
+                  <Route path="billing/:invoiceId" element={<DetailInvoice />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="support" element={<Support />} />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="vouchers" element={<Vouchers />} />
+                  <Route path="referral" element={<Referral />} />
+                </Route>
 
-          {/* === TRANSACTIONS (STANDALONE) === */}
-          <Route path="/payment/:invoiceId" element={<Payment />} />
+                {/* === TRANSACTIONS (STANDALONE) === */}
+                <Route path="/payment/:invoiceId" element={<Payment />} />
 
-          {/* --- ADMIN ROUTES --- */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminOverview />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="users/:id" element={<AdminManageUser />} />
-            <Route path="invoices" element={<AdminInvoices />} />
-            <Route path="invoices/:id" element={<AdminInvoiceDetail />} />
-            <Route path="domains" element={<AdminDomains />} />
-            <Route path="domains/:id" element={<AdminManageDomain />} />
-            <Route path="pricing" element={<AdminPricing />} />
-            <Route path="promos" element={<AdminPromos />} />
-            <Route path="promos/create-coupon" element={<AdminCreateCoupon />} />
-            <Route path="promos/create-event" element={<AdminCreateEvent />} />
-            <Route path="payment-gateways" element={<AdminPaymentGateways />} />
-            <Route path="transfers" element={<AdminTransferRequests />} />
-            <Route path="registrar-balance" element={<AdminRegistrarBalance />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="faqs" element={<AdminFAQs />} />
-            <Route path="support-tickets" element={<AdminSupportTickets />} />
-            <Route path="logs" element={<AdminAuditLogs />} />
-            <Route path="referral" element={<AdminReferral />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
+                {/* --- ADMIN ROUTES --- */}
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<AdminOverview />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="users/:id" element={<AdminManageUser />} />
+                  <Route path="invoices" element={<AdminInvoices />} />
+                  <Route path="invoices/:id" element={<AdminInvoiceDetail />} />
+                  <Route path="domains" element={<AdminDomains />} />
+                  <Route path="domains/:id" element={<AdminManageDomain />} />
+                  <Route path="pricing" element={<AdminPricing />} />
+                  <Route path="promos" element={<AdminPromos />} />
+                  <Route path="promos/create-coupon" element={<AdminCreateCoupon />} />
+                  <Route path="promos/create-event" element={<AdminCreateEvent />} />
+                  <Route path="payment-gateways" element={<AdminPaymentGateways />} />
+                  <Route path="transfers" element={<AdminTransferRequests />} />
+                  <Route path="registrar-balance" element={<AdminRegistrarBalance />} />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="faqs" element={<AdminFAQs />} />
+                  <Route path="support-tickets" element={<AdminSupportTickets />} />
+                  <Route path="logs" element={<AdminAuditLogs />} />
+                  <Route path="referral" element={<AdminReferral />} />
+                  <Route path="finance" element={<AdminRevenueDetail />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
 
 
-          {/* === D. ERROR ROUTES === */}
-          <Route path="/403" element={<Error403 />} />
-          <Route path="/500" element={<Error500 />} />
-          <Route path="/maintenance" element={<Maintenance />} />
-          <Route path="/coming-soon" element={<ComingSoon />} />
-          <Route path="*" element={<Error404 />} />
-            </Routes>
-              </Suspense>
+                {/* === D. ERROR ROUTES === */}
+                <Route path="/403" element={<Error403 />} />
+                <Route path="/500" element={<Error500 />} />
+                <Route path="/maintenance" element={<Maintenance />} />
+                <Route path="/coming-soon" element={<ComingSoon />} />
+                <Route path="*" element={<Error404 />} />
+              </Routes>
+            </Suspense>
           </ConfirmProvider>
         </NotificationProvider>
       </main>
@@ -232,7 +237,7 @@ const Layout = () => {
 
 function AppContent() {
   const config = useConfig();
-  
+
   return (
     <GoogleOAuthProvider clientId={config.google_client_id}>
       <Router>

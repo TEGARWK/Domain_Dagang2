@@ -155,7 +155,7 @@ const Navbar = () => {
                   className="absolute top-full left-0 pt-2 w-72 z-[60]"
                   onMouseLeave={() => setIsOtherMenuOpen(false)}
                 >
-                  <div className="bg-white rounded-xl shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-left">
+                  <div className="bg-white rounded-xl shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-left">
                     <div className="p-2">
                       {[
                         { name: "Pengembangan Website", url: "https://aplikasidagang.com/jasa-pembuatan-website-dan-landing-page-bandung/" },
@@ -234,7 +234,7 @@ const Navbar = () => {
 
                   {/* Dropdown Menu */}
                   {isUserDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-xl shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right z-[60]">
+                    <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-xl shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right z-[60]">
                       <div className="p-6 border-b border-slate-50 bg-slate-50/30">
                         <div className="flex items-center gap-3 mb-1">
                           <p className="text-sm font-bold text-slate-800 tracking-tight">{user.name || "User"}</p>
@@ -309,7 +309,7 @@ const Navbar = () => {
 
       {/* --- MOBILE MENU OVERLAY --- */}
       {isMobileMenuOpen && (
-        <div className="absolute top-20 left-0 w-full bg-white border-b border-slate-100 shadow-xl p-4 flex flex-col gap-2 md:hidden animate-fade-in-down origin-top max-h-[calc(100vh-80px)] overflow-y-auto">
+        <div className="absolute top-12 left-0 w-full bg-white border-b border-slate-100 shadow-xl p-4 flex flex-col gap-2 md:hidden animate-fade-in-down origin-top max-h-[calc(100vh-80px)] overflow-y-auto">
           <Link to="/" className={mobileLinkClasses("/")}>Home</Link>
           <Link to="/domain" className={mobileLinkClasses("/domain")}>Daftar Harga</Link>
           <Link to="/transfer" className={mobileLinkClasses("/transfer")}>Transfer Domain</Link>

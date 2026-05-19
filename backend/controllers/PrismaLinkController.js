@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const OrderService = require('../services/OrderService');
 const PrismalinkService = require('../services/PrismaLinkService');
+const FinanceService = require('../services/FinanceService');
 
 class PrismaLinkController {
     /**
@@ -71,6 +72,10 @@ class PrismaLinkController {
 
             console.log(`[DEBUG] Items Count to be sent: ${invoiceItems.length}`);
 
+            console.log('--- CALLING PRISMALINK SERVICE ---');
+            console.log('Order ID:', invoice.id);
+            console.log('Payment Channel:', payment_channel);
+            
             const result = await PrismalinkService.createTransaction({
                 order_id: invoice.id, 
                 amount: amountToSend,
@@ -85,11 +90,13 @@ class PrismaLinkController {
 
             if (!result.success) {
                 console.error('❌ [Prismalink API Error]:', result.error);
-                const errorMsg = typeof result.error === 'object' ? JSON.stringify(result.error) : result.error;
-                throw new Error(errorMsg || "Gagal ke Prismalink");
+                return res.status(400).json({ 
+                    success: false, 
+                    message: result.error || "Gagal melakukan inisialisasi pembayaran ke Prismalink."
+                });
             }
 
-            // Handle va_number_list yang bisa berupa string JSON atau sudah diparse jadi Array
+            // Va data handling logic
             let vaData = [];
             try {
                 if (Array.isArray(result.data.va_number_list)) {
@@ -99,55 +106,52 @@ class PrismaLinkController {
                 }
             } catch (pErr) {
                 console.warn('[Prismalink] Failed to parse va_number_list:', pErr.message);
-                vaData = [];
             }
             
             let vaNumber = null;
-            if (vaData && vaData.length > 0) {
-                const matchedVa = vaData.find(item => String(item.bank) === String(payment_channel) || String(item.bank_code) === String(payment_channel) || String(item.bank_id) === String(payment_channel));
-                if (matchedVa) {
-                    vaNumber = matchedVa.va;
-                } else {
-                    // Kembalikan error agar frontend menampilkan pemberitahuan bahwa bank tersebut tidak didukung di Sandbox
-                    return res.json({
-                        success: false,
-                        message: "Mode Development (Sandbox): Bank yang Anda pilih belum tersedia untuk simulasi. Silakan gunakan BCA, Mandiri, BRI, atau CIMB Niaga untuk testing."
-                    });
-                }
+            if (payment_channel === 'QR' || payment_channel === 'QRIS' || payment_channel === '04') {
+                vaNumber = result.data.qris_data || null;
+            } else if (vaData && vaData.length > 0) {
+                const matchedVa = vaData.find(item => 
+                    String(item.bank) === String(payment_channel) || 
+                    String(item.bank_code) === String(payment_channel) || 
+                    String(item.bank_id) === String(payment_channel)
+                );
+                if (matchedVa) vaNumber = matchedVa.va;
             }
 
-
+            // Save payment info
             await db.pool.query("DELETE FROM payments WHERE invoice_number = $1", [invoice.id]);
+            const rawResponse = { ...result.data, provider: 'prismalink', payment_method: payment_channel };
             await db.pool.query(`
                 INSERT INTO payments (
                     invoice_number, transaction_id, payment_method, amount, status, 
                     plink_ref_no, va_number, expired_at, created_at, raw_response
                 ) VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, $7, NOW(), $8)
-            `, [invoice.id, result.data.plink_ref_no || invoice.id, payment_channel, amountToSend, result.data.plink_ref_no, vaNumber, result.data.validity || null, JSON.stringify(result.data)]);
-
-
-            // Hapus va_number_list agar frontend tidak salah ambil urutan pertama (Mandiri)
-            if (result.data && result.data.va_number_list) {
-                delete result.data.va_number_list;
-            }
+            `, [
+                invoice.id, 
+                result.data.plink_ref_no || invoice.id, 
+                payment_channel, 
+                amountToSend, 
+                result.data.plink_ref_no, 
+                vaNumber, 
+                result.data.validity || null, 
+                JSON.stringify(rawResponse)
+            ]);
 
             res.json({ 
                 success: true, 
                 data: {
                     ...result.data,
-                    va_number: vaNumber, // Kirim VA yang sudah difilter
-                    bank_code: payment_channel, // Kirim kode bank untuk logo di frontend
-                    customer_name: invoice.user_name // Kirim nama asli agar muncul di VA Card
+                    va_number: vaNumber,
+                    bank_code: payment_channel,
+                    customer_name: invoice.user_name
                 } 
             });
 
         } catch (err) {
             console.error('❌ [Prismalink Fatal Error]:', err);
-            res.status(500).json({ 
-                success: false, 
-                message: err.message,
-                detail: err.response?.data || null 
-            });
+            res.status(500).json({ success: false, message: err.message });
         }
     }
 
@@ -157,8 +161,7 @@ class PrismaLinkController {
     async handleWebhook(req, res) {
         const incomingMac = req.headers['mac'];
         const body = req.body;
-
-        console.log(`[Prismalink Webhook] 📥 Received Event for Merchant Ref: ${body.merchant_ref_no || body.external_id}`);
+        console.log(`[Prismalink Webhook] 📥 Received Event for Ref: ${body.merchant_ref_no || body.external_id}`);
 
         const client = await db.pool.connect();
         try {
@@ -174,22 +177,31 @@ class PrismaLinkController {
 
             await client.query('BEGIN');
 
-            // 1. Find Invoice with Lock
-            const invRes = await client.query(
+            let cleanedRef = merchant_ref_no.replace(/[^a-zA-Z0-9]/g, '');
+            let invRes = await client.query(
                 "SELECT * FROM invoices WHERE REGEXP_REPLACE(id, '[^a-zA-Z0-9]', '', 'g') = $1 FOR UPDATE", 
-                [merchant_ref_no.replace(/[^a-zA-Z0-9]/g, '')]
+                [cleanedRef]
             );
 
             if (invRes.rows.length === 0) {
-                console.warn(`[Prismalink Webhook] ❌ Invoice NOT FOUND for Ref: ${merchant_ref_no}`);
+                const numericSuffix = cleanedRef.replace(/[a-zA-Z]/g, '');
+                if (numericSuffix.length >= 6) {
+                    invRes = await client.query(
+                        "SELECT * FROM invoices WHERE REGEXP_REPLACE(id, '[^0-9]', '', 'g') LIKE '%' || $1 FOR UPDATE",
+                        [numericSuffix]
+                    );
+                }
+            }
+
+            if (invRes.rows.length === 0) {
                 await client.query('ROLLBACK');
                 return res.status(404).send('Invoice not found');
             }
+            
             const invoice = invRes.rows[0];
             const realInvoiceId = invoice.id;
 
             if (invoice.status === 'paid' || invoice.status === 'PAID') {
-                console.log(`[Prismalink Webhook] Invoice ${realInvoiceId} already PAID. Skipping.`);
                 await client.query('ROLLBACK');
                 return res.status(200).send('OK');
             }
@@ -197,37 +209,41 @@ class PrismaLinkController {
             const isSuccess = status === 'SETLD' || status === 'SUCCESS' || response_code === '00' || response_code === 'PL000';
             
             if (isSuccess) {
-                console.log(`✅ [Prismalink Webhook] Payment SUCCESS for ${realInvoiceId}. Processing...`);
-
-                // A. Check for Topup
                 const itemRes = await client.query("SELECT * FROM invoice_items WHERE invoice_id = $1", [realInvoiceId]);
                 const items = itemRes.rows;
                 const isTopUp = invoice.type === 'TOPUP' || realInvoiceId.startsWith('TOPUP-') || items.some(it => it.action_type === 'topup' || (it.name || '').toLowerCase().includes('top up'));
 
                 if (isTopUp) {
-                    console.log(`💰 [Prismalink Webhook] Topup detected. UserID: ${invoice.user_id}`);
                     const WalletService = require('../services/WalletService');
-                    await WalletService.credit(
-                        invoice.user_id, 
-                        parseFloat(invoice.total), 
-                        'TOPUP', 
-                        realInvoiceId, 
-                        'Top Up Wallet via Prismalink Webhook',
-                        client
-                    );
+                    await WalletService.credit(invoice.user_id, parseFloat(invoice.total), 'TOPUP', realInvoiceId, 'Top Up Wallet via Prismalink Webhook', client);
                 } else {
-                    console.log(`🚀 [Prismalink Webhook] Triggering Domain Activation: ${realInvoiceId}`);
                     const OrderService = require('../services/OrderService');
                     await OrderService.activateDomain(realInvoiceId, client);
                 }
 
-                // B. Finalize State
-                await client.query("UPDATE invoices SET status = 'paid', updated_at = NOW() WHERE id = $1", [realInvoiceId]);
-                await client.query("UPDATE payments SET status = 'SUCCESS', updated_at = NOW() WHERE invoice_number = $1", [realInvoiceId]);
-                
-                await client.query('COMMIT');
-                console.log(`🎉 [Prismalink Webhook] Completed transaction for Invoice: ${realInvoiceId}`);
+                // Finance Integration
+                try {
+                    const now = new Date();
+                    const periodData = await FinanceService.getPeriodData(now.getMonth() + 1, now.getFullYear());
+                    const mainLocRes = await client.query("SELECT id FROM finance_money_locations WHERE is_main = true LIMIT 1");
+                    const locationId = mainLocRes.rows[0]?.id || 1;
 
+                    await FinanceService.addMutation({
+                        period_id: periodData.period.id,
+                        type: 'IN',
+                        category: isTopUp ? 'DEPOSIT' : 'REVENUE',
+                        nominal: parseFloat(invoice.final_amount || invoice.total),
+                        location_id: locationId,
+                        description: isTopUp ? `Top Up Saldo User (Prismalink) - ${realInvoiceId}` : `Alokasi Revenue Otomatis (Prismalink) - ${realInvoiceId}`
+                    });
+                } catch (finErr) {
+                    console.error('❌ [Finance Error]:', finErr.message);
+                }
+
+                await client.query("UPDATE invoices SET status = 'paid', paid_at = NOW(), updated_at = NOW() WHERE id = $1", [realInvoiceId]);
+                await client.query("UPDATE payments SET status = 'SUCCESS', updated_at = NOW() WHERE invoice_number = $1", [realInvoiceId]);
+                await client.query('COMMIT');
+                console.log(`🎉 [Prismalink Webhook] Success for ${realInvoiceId}`);
             } else if (status === 'REJEC' || status === 'FAILED') {
                 await client.query("UPDATE invoices SET status = 'failed', updated_at = NOW() WHERE id = $1", [realInvoiceId]);
                 await client.query("UPDATE payments SET status = 'FAILED', updated_at = NOW() WHERE invoice_number = $1", [realInvoiceId]);
@@ -239,7 +255,6 @@ class PrismaLinkController {
             res.status(200).send('OK');
         } catch (err) {
             if (client) await client.query('ROLLBACK');
-            console.error('❌ [Prismalink Webhook] Fatal Error:', err.message);
             res.status(500).send('Internal Error');
         } finally {
             if (client) client.release();

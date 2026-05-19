@@ -11,15 +11,15 @@ const Error404 = () => {
       <div className="relative z-10 max-w-2xl w-full">
         {/* Modern 404 Header */}
         <div className="mb-8 relative inline-block">
-          <h1 className="text-[120px] sm:text-[180px] font-black text-slate-900 leading-none tracking-tight select-none opacity-[0.03] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
+          <h1 className="text-[120px] sm:text-[180px] font-bold text-slate-900 leading-none tracking-tight select-none opacity-[0.03] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full">
             404
           </h1>
           <div className="relative flex items-center justify-center gap-4">
-            <span className="text-6xl sm:text-8xl font-black text-slate-900">4</span>
-            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-[#F97316] rounded-2xl rotate-12 flex items-center justify-center shadow-2xl shadow-orange-200">
-               <span className="text-white text-4xl sm:text-6xl font-black -rotate-12">0</span>
+            <span className="text-6xl sm:text-8xl font-bold text-slate-900">4</span>
+            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-[#F97316] rounded-xl rotate-12 flex items-center justify-center shadow-xl shadow-orange-200">
+               <span className="text-white text-4xl sm:text-6xl font-bold -rotate-12">0</span>
             </div>
-            <span className="text-6xl sm:text-8xl font-black text-slate-900">4</span>
+            <span className="text-6xl sm:text-8xl font-bold text-slate-900">4</span>
           </div>
         </div>
         

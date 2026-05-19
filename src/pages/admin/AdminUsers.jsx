@@ -4,6 +4,7 @@ import api from "../../services/api";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { useNotification } from "../../context/NotificationContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { exportToExcel, formatDataForExport } from "../../utils/exportUtils";
 
 const AdminUsers = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // Pagination & Sorting State
   const [currentPage, setCurrentPage] = useState(1);
@@ -100,6 +102,32 @@ const AdminUsers = () => {
     applyFilters(users, roleFilter, newSort, searchTerm);
   };
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(currentItems.map(u => u.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectItem = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleExportExcel = () => {
+    const exportData = formatDataForExport(filteredUsers, {
+        id: 'UID',
+        name: 'Nama',
+        email: 'Email',
+        phone: 'WhatsApp',
+        role: 'Role',
+        created_at: 'Member Since'
+    });
+    exportToExcel(exportData, 'Data_Users', 'Users');
+  };
+
   const handleDelete = async (id, name) => {
     const isConfirmed = await confirm({
       title: "Hapus Pengguna",
@@ -137,11 +165,11 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="space-y-6 animate-[fadeIn_0.5s_ease-out] pb-10">
+    <div className="space-y-4 animate-[fadeIn_0.5s_ease-out] pb-10">
       
       {/* Stats Cards Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="relative overflow-hidden bg-[#f97316] p-6 rounded-xl shadow-xl shadow-orange-200/50 flex items-center gap-5 group hover:shadow-2xl hover:shadow-orange-300/40 hover:-translate-y-1 transition-all duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative overflow-hidden bg-[#f97316] p-3 rounded-xl shadow-xl shadow-orange-200/50 flex items-center gap-4 group hover:shadow-xl hover:shadow-orange-300/40 hover:-translate-y-1 transition-all duration-500">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-3xl -mr-16 -mt-16 transition-transform duration-1000 group-hover:bg-white/30 group-hover:scale-150"></div>
               <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-black/10 rounded-full blur-2xl transition-transform duration-1000 group-hover:scale-125"></div>
               
@@ -158,8 +186,8 @@ const AdminUsers = () => {
               </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-              <div className="w-14 h-14 bg-purple-50 text-purple-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
+          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                   <span className="material-symbols-outlined text-2xl">admin_panel_settings</span>
               </div>
               <div>
@@ -169,8 +197,8 @@ const AdminUsers = () => {
               </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-              <div className="w-14 h-14 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
+          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                   <span className="material-symbols-outlined text-2xl">person</span>
               </div>
               <div>
@@ -181,9 +209,9 @@ const AdminUsers = () => {
           </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
         {/* Unified Header */}
-        <div className="p-4 sm:p-8 border-b border-slate-50 bg-slate-50/30">
+        <div className="p-3 sm:p-3 border-b border-slate-50 bg-slate-50/30">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
                 <div className="flex-1 w-full max-w-xl relative group">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#f97316] transition-colors">search</span>
@@ -208,19 +236,13 @@ const AdminUsers = () => {
                         />
                     </div>
                     <div className="w-48">
-                        <CustomSelect
-                            value={itemsPerPage}
-                            onChange={(val) => {
-                                setItemsPerPage(Number(val));
-                                setCurrentPage(1);
-                            }}
-                            options={[
-                                { value: 15, label: "15 Baris" },
-                                { value: 25, label: "25 Baris" },
-                                { value: 50, label: "50 Baris" },
-                                { value: 100, label: "100 Baris" },
-                            ]}
-                        />
+                        <button 
+                            onClick={handleExportExcel}
+                            className="w-full h-11 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-100 transition-all"
+                        >
+                            <span className="material-symbols-outlined text-lg">download</span>
+                            Export
+                        </button>
                     </div>
                 </div>
             </div>
@@ -238,30 +260,66 @@ const AdminUsers = () => {
           <table className="w-full text-left text-sm border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('name')}>
+                <th className="px-4 py-3 w-10">
+                    <input 
+                        type="checkbox" 
+                        onChange={handleSelectAll}
+                        checked={selectedIds.length === currentItems.length && currentItems.length > 0}
+                        className="w-4 h-4 rounded border-slate-300 text-[#F97316] focus:ring-[#F97316]"
+                    />
+                </th>
+                <th className="px-4 py-2 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('name')}>
                     User Profile <SortIcon column="name" />
                 </th>
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('email')}>
+                <th className="px-4 py-2 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('email')}>
                     Informasi Kontak <SortIcon column="email" />
                 </th>
-                <th className="px-8 py-5 text-center cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('role')}>
+                <th className="px-4 py-2 text-center cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('role')}>
                     Tingkat Akses <SortIcon column="role" />
                 </th>
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('created_at')}>
+                <th className="px-4 py-2 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('created_at')}>
                     Member Since <SortIcon column="created_at" />
                 </th>
-                <th className="px-8 py-5 text-center">Aksi</th>
+                <th className="px-4 py-2 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
               {loading ? (
-                <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400 font-bold italic">Memuat data pengguna...</td></tr>
+                Array(itemsPerPage).fill(0).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                        <td className="px-4 py-4"><div className="h-4 w-4 bg-slate-100 rounded"></div></td>
+                        <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-100"></div>
+                                <div>
+                                    <div className="h-4 w-32 bg-slate-100 rounded mb-2"></div>
+                                    <div className="h-2 w-16 bg-slate-50 rounded"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td className="px-4 py-4">
+                            <div className="h-4 w-40 bg-slate-100 rounded mb-2"></div>
+                            <div className="h-2 w-24 bg-slate-50 rounded"></div>
+                        </td>
+                        <td className="px-4 py-4 text-center"><div className="h-5 w-16 bg-slate-100 rounded mx-auto"></div></td>
+                        <td className="px-4 py-4"><div className="h-4 w-24 bg-slate-100 rounded"></div></td>
+                        <td className="px-4 py-4 text-center"><div className="h-8 w-32 bg-slate-100 rounded-lg mx-auto"></div></td>
+                    </tr>
+                ))
               ) : currentItems.length === 0 ? (
-                <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400 font-bold italic">Tidak ada pengguna ditemukan.</td></tr>
+                <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-400 font-bold italic">Tidak ada pengguna ditemukan.</td></tr>
               ) : (
                 currentItems.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-5">
+                  <tr key={user.id} className={`hover:bg-slate-50/50 transition-colors group ${selectedIds.includes(user.id) ? 'bg-orange-50/30' : ''}`}>
+                    <td className="px-4 py-3">
+                        <input 
+                            type="checkbox" 
+                            checked={selectedIds.includes(user.id)}
+                            onChange={() => handleSelectItem(user.id)}
+                            className="w-4 h-4 rounded border-slate-300 text-[#F97316] focus:ring-[#F97316]"
+                        />
+                    </td>
+                    <td className="px-4 py-1.5">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#f97316] flex items-center justify-center font-bold border border-orange-100 transition-transform group-hover:scale-105 text-xs">
                           {user.name.charAt(0)}
@@ -272,11 +330,11 @@ const AdminUsers = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <p className="text-xs font-semibold text-slate-700">{user.email}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{user.phone || "-"}</p>
+                      <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5">{user.phone || "-"}</p>
                     </td>
-                    <td className="px-8 py-5 text-center">
+                    <td className="px-4 py-1.5 text-center">
                       <span className={`inline-flex px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all ${
                         user.role === 'admin' 
                         ? 'bg-purple-50 text-purple-600 border-purple-100 group-hover:bg-purple-100' 
@@ -285,12 +343,12 @@ const AdminUsers = () => {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-8 py-5">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                    <td className="px-4 py-1.5">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">
                         {new Date(user.created_at).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })}
                       </p>
                     </td>
-                    <td className="px-8 py-5 text-center">
+                    <td className="px-4 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                              <button 
                                 onClick={() => navigate(`/admin/invoices?search=${user.email}`)}
@@ -330,10 +388,10 @@ const AdminUsers = () => {
         </div>
 
         {/* Footer Navigation */}
-        <div className="bg-slate-50/50 p-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="bg-white px-5 py-2.5 rounded-lg border border-slate-200 shadow-sm">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Total <span className="text-[#F97316] font-extrabold">{filteredUsers.length}</span> Pengguna • Hal <span className="text-slate-800 font-extrabold">{currentPage} / {totalPages || 1}</span>
+                  Total <span className="text-[#F97316] font-bold">{filteredUsers.length}</span> Pengguna • Hal <span className="text-slate-800 font-bold">{currentPage} / {totalPages || 1}</span>
                 </p>
             </div>
             

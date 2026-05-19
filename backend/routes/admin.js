@@ -53,6 +53,7 @@ const adminReferralController = require("../controllers/adminReferralController"
 
 // API Routes must come FIRST to avoid collision with view routes sharing the same path
 router.get("/referral/stats", verifyAdmin, adminReferralController.getGlobalStats);
+router.get("/referral/merchants", verifyAdmin, adminReferralController.getReferralMerchants);
 
 router.get("/referral/tiers", verifyAdmin, adminReferralController.getTiers);
 router.post("/referral/tiers", verifyAdmin, adminReferralController.createTier);

@@ -10,7 +10,7 @@ const Error403 = () => {
       <div className="relative z-10 max-w-2xl w-full">
         {/* Modern 403 Header */}
         <div className="mb-10 relative inline-block">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-red-50 rounded-3xl flex items-center justify-center mx-auto border border-red-100 shadow-2xl shadow-red-100 rotate-3">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-red-50 rounded-xl flex items-center justify-center mx-auto border border-red-100 shadow-xl shadow-red-100 rotate-3">
              <span className="material-symbols-outlined text-5xl sm:text-7xl text-red-500 -rotate-3">lock_person</span>
           </div>
         </div>

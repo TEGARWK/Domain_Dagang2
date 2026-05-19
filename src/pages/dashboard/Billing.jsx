@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../services/api";
+import { exportToExcel, formatDataForExport } from "../../utils/exportUtils";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { useConfirm } from "../../context/ConfirmContext";
 
@@ -36,6 +37,17 @@ const Billing = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportExcel = () => {
+    const exportData = formatDataForExport(processedInvoices, {
+        id: 'Invoice ID',
+        created_at: 'Tanggal',
+        first_item: 'Item',
+        total: 'Total',
+        status: 'Status'
+    });
+    exportToExcel(exportData, 'My_Invoices', 'Invoices');
   };
 
   // --- CALCULATE STATS ---
@@ -204,45 +216,65 @@ const Billing = () => {
   };
 
   return (
-    <div className="space-y-6 animate-[fadeIn_0.5s_ease-out] pb-20">
+    <div className="space-y-4 animate-[fadeIn_0.5s_ease-out] pb-10">
       
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-slate-900 p-6 rounded-xl shadow-xl shadow-slate-200/50 flex items-center gap-5 transition-transform hover:-translate-y-1 duration-300">
-              <div className="w-14 h-14 bg-white/10 text-white rounded-lg flex items-center justify-center backdrop-blur-md border border-white/10">
-                  <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
+      {loading && invoices.length === 0 ? (
+          <div className="space-y-4 animate-pulse">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {Array(3).fill(0).map((_, i) => (
+                      <div key={i} className="h-24 bg-slate-100 rounded-xl"></div>
+                  ))}
               </div>
-              <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">Total Belanja</p>
-                  <h3 className="text-2xl font-bold text-white leading-none">{formatRupiah(stats.totalExpense)}</h3>
-              </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center gap-5 transition-transform hover:-translate-y-1 duration-300">
-              <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-2xl">pending_actions</span>
-              </div>
-              <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">Belum Terbayar</p>
-                  <h3 className="text-2xl font-bold text-slate-900 leading-none">{stats.pendingCount} <span className="text-xs text-slate-400 font-medium lowercase">Item</span></h3>
+              <div className="bg-white rounded-xl border border-slate-100 h-96">
+                  <div className="p-4 border-b border-slate-50 flex justify-between">
+                      <div className="h-10 w-1/2 bg-slate-50 rounded-lg"></div>
+                      <div className="h-10 w-1/4 bg-slate-50 rounded-lg"></div>
+                  </div>
+                  <div className="p-4 space-y-4">
+                      {Array(5).fill(0).map((_, i) => (
+                          <div key={i} className="h-12 bg-slate-50/50 rounded-lg"></div>
+                      ))}
+                  </div>
               </div>
           </div>
-
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center gap-5 transition-transform hover:-translate-y-1 duration-300">
-              <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-lg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-2xl">favorite</span>
+      ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-slate-900 p-3 rounded-xl shadow-xl shadow-slate-200/50 flex items-center gap-4 transition-transform hover:-translate-y-1 duration-300">
+                  <div className="w-12 h-12 bg-white/10 text-white rounded-lg flex items-center justify-center backdrop-blur-md border border-white/10">
+                      <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
+                  </div>
+                  <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">Total Belanja</p>
+                      <h3 className="text-2xl font-bold text-white leading-none">{formatRupiah(stats.totalExpense)}</h3>
+                  </div>
               </div>
-              <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">Pembayaran Favorit</p>
-                  <h3 className="text-2xl font-bold text-slate-900 leading-none uppercase truncate max-w-[150px]">{stats.favMethod === "N/A" ? "-" : stats.favMethod}</h3>
+
+              <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1 duration-300">
+                  <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-2xl">pending_actions</span>
+                  </div>
+                  <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">Belum Terbayar</p>
+                      <h3 className="text-2xl font-bold text-slate-900 leading-none">{stats.pendingCount} <span className="text-xs text-slate-400 font-medium lowercase">Item</span></h3>
+                  </div>
+              </div>
+
+              <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1 duration-300">
+                  <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-2xl">favorite</span>
+                  </div>
+                  <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">Pembayaran Favorit</p>
+                      <h3 className="text-2xl font-bold text-slate-900 leading-none uppercase truncate max-w-[150px]">{stats.favMethod === "N/A" ? "-" : stats.favMethod}</h3>
+                  </div>
               </div>
           </div>
-      </div>
+      )}
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
         {/* Unified Header */}
-        <div className="p-4 sm:p-8 border-b border-slate-50 bg-slate-50/30">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="p-3 border-b border-slate-50 bg-slate-50/30">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex-1 w-full max-w-xl relative group">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#f97316] transition-colors">search</span>
                     <input 
@@ -250,10 +282,18 @@ const Billing = () => {
                         placeholder="Cari ID Invoice atau Item Domain..." 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full h-12 pl-12 pr-6 bg-white border border-slate-100 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] transition-all placeholder:text-slate-300"
+                        className="w-full h-11 pl-12 pr-6 bg-white border border-slate-100 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] transition-all placeholder:text-slate-300"
                     />
                 </div>
-                <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <button 
+                        onClick={handleExportExcel}
+                        className="h-11 px-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-100 transition-all shadow-sm flex items-center gap-2"
+                        title="Export to Excel"
+                    >
+                        <span className="material-symbols-outlined text-lg">download</span>
+                        Excel
+                    </button>
                     <div className="w-48">
                         <CustomSelect
                             value={statusFilter}
@@ -284,12 +324,33 @@ const Billing = () => {
           <table className="w-full text-left border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100" onClick={() => handleSort('id')}>Invoice ID</th>
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100" onClick={() => handleSort('created_at')}>Tanggal</th>
-                <th className="px-8 py-5 border-b border-slate-100">Item Layanan</th>
-                <th className="px-8 py-5 text-right border-b border-slate-100" onClick={() => handleSort('total')}>Total Tagihan</th>
-                <th className="px-8 py-5 text-center border-b border-slate-100">Status</th>
-                <th className="px-8 py-5 text-center border-b border-slate-100">Aksi</th>
+                <th className="px-4 py-3 cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100 group/th" onClick={() => handleSort('id')}>
+                    <div className="flex items-center gap-1">
+                        Invoice ID
+                        <span className={`material-symbols-outlined text-sm ${sortConfig.key === 'id' ? 'text-[#f97316]' : 'text-slate-300 opacity-0 group-hover/th:opacity-100'}`}>
+                            {sortConfig.key === 'id' ? (sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more'}
+                        </span>
+                    </div>
+                </th>
+                <th className="px-4 py-3 cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100 group/th" onClick={() => handleSort('created_at')}>
+                    <div className="flex items-center gap-1">
+                        Tanggal
+                        <span className={`material-symbols-outlined text-sm ${sortConfig.key === 'created_at' ? 'text-[#f97316]' : 'text-slate-300 opacity-0 group-hover/th:opacity-100'}`}>
+                            {sortConfig.key === 'created_at' ? (sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more'}
+                        </span>
+                    </div>
+                </th>
+                <th className="px-4 py-3 border-b border-slate-100">Item Layanan</th>
+                <th className="px-4 py-3 text-right cursor-pointer hover:text-slate-600 transition-colors border-b border-slate-100 group/th" onClick={() => handleSort('total')}>
+                    <div className="flex items-center justify-end gap-1">
+                        Total Tagihan
+                        <span className={`material-symbols-outlined text-sm ${sortConfig.key === 'total' ? 'text-[#f97316]' : 'text-slate-300 opacity-0 group-hover/th:opacity-100'}`}>
+                            {sortConfig.key === 'total' ? (sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more'}
+                        </span>
+                    </div>
+                </th>
+                <th className="px-4 py-3 text-center border-b border-slate-100">Status</th>
+                <th className="px-4 py-3 text-center border-b border-slate-100">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
@@ -300,20 +361,20 @@ const Billing = () => {
               ) : (
                 paginatedInvoices.map((inv) => (
                   <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <p className="font-bold text-slate-900 text-xs uppercase tracking-tight">#{inv.id}</p>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <p className="text-[11px] font-bold text-slate-400 uppercase">{formatDate(inv.created_at)}</p>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <p className="font-semibold text-slate-800 text-xs truncate max-w-[200px]">
                         {inv.first_item} {inv.item_count > 1 && <span className="text-[#f97316]">+{inv.item_count - 1}</span>}
                         {getCategoryBadge(inv.category)}
                       </p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{inv.payment_method || "N/A"}</p>
                     </td>
-                    <td className="px-8 py-5 text-right font-bold text-slate-900">
+                    <td className="px-4 py-3 text-right font-bold text-slate-900">
                       <div>
                         {(inv.is_topup || inv.first_item?.toLowerCase().includes('top up')) ? (
                           formatRupiah(inv.total)
@@ -340,7 +401,7 @@ const Billing = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-8 py-5 text-center">
+                    <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border ${
                         inv.status?.toLowerCase() === "paid" 
                           ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
@@ -359,7 +420,7 @@ const Billing = () => {
                          inv.has_proof ? "Verifikasi" : "Pending"}
                       </span>
                     </td>
-                    <td className="px-8 py-5 text-center">
+                    <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">
                              <button onClick={() => handleDetail(inv.id)} className="p-2 bg-white text-slate-400 rounded-lg border border-slate-100 hover:bg-slate-50 transition-all shadow-sm">
                                 <span className="material-symbols-outlined text-lg">visibility</span>
@@ -393,7 +454,7 @@ const Billing = () => {
 
         {/* Improved Pagination */}
         {totalPages > 1 && (
-            <div className="bg-slate-50/50 p-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="bg-white px-5 py-2.5 rounded-xl border border-slate-200 shadow-sm font-bold text-[10px] text-slate-400 uppercase tracking-widest">
                     Halaman <span className="text-slate-900">{currentPage}</span> Dari <span className="text-slate-900">{totalPages}</span>
                 </div>
@@ -420,8 +481,8 @@ const Billing = () => {
       {/* Cancellation Modal */}
       {cancelModal.show && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-              <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-[scaleUp_0.3s_ease-out]">
-                  <div className="p-8">
+              <div className="bg-white rounded-xl w-full max-w-md shadow-xl overflow-hidden animate-[scaleUp_0.3s_ease-out]">
+                  <div className="p-4">
                       <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
                           <span className="material-symbols-outlined text-3xl">cancel</span>
                       </div>

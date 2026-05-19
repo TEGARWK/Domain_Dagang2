@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../services/api";
+import { exportToExcel, formatDataForExport } from "../../utils/exportUtils";
 import CustomSelect from "../../components/ui/CustomSelect";
 
 const AdminTransferRequests = () => {
@@ -84,11 +85,23 @@ const AdminTransferRequests = () => {
       }
   };
 
+  const handleExportExcel = () => {
+    const exportData = formatDataForExport(filteredRequests, {
+        domain_name: 'Domain',
+        user_name: 'User',
+        user_email: 'Email',
+        current_registrar: 'Registrar Asal',
+        status: 'Status',
+        created_at: 'Tanggal'
+    });
+    exportToExcel(exportData, 'Transfer_Requests', 'Transfers');
+  };
+
   return (
-    <div className="space-y-6 animate-[fadeIn_0.5s_ease-out] pb-10">
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+    <div className="space-y-3 animate-[fadeIn_0.5s_ease-out] pb-10">
+      <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
         {/* Unified Header */}
-        <div className="p-4 sm:p-8 border-b border-slate-50 bg-slate-50/30">
+        <div className="p-4 border-b border-slate-50 bg-slate-50/30">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
                 <div className="flex-1 w-full max-w-xl relative group">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#f97316] transition-colors">search</span>
@@ -97,10 +110,17 @@ const AdminTransferRequests = () => {
                         placeholder="Cari Domain, Nama User, atau Email..." 
                         value={searchTerm}
                         onChange={handleSearch}
-                        className="w-full h-12 pl-12 pr-6 bg-white border border-slate-100 rounded-lg text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#f97316]/10 focus:border-[#f97316] transition-all placeholder:text-slate-300"
+                        className="w-full h-10 pl-11 pr-6 bg-white border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:ring-4 focus:ring-[#f97316]/10 focus:border-[#f97316] transition-all placeholder:text-slate-300"
                     />
                 </div>
                 <div className="flex items-center gap-4 w-full md:w-auto">
+                    <button 
+                        onClick={handleExportExcel}
+                        className="h-10 px-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all shadow-sm flex items-center gap-2"
+                    >
+                        <span className="material-symbols-outlined text-lg">download</span>
+                        Export
+                    </button>
                     <div className="w-48">
                         <CustomSelect
                             value={activeFilter}
@@ -131,34 +151,43 @@ const AdminTransferRequests = () => {
           <table className="w-full text-left text-sm border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-8 py-5">Target Domain</th>
-                <th className="px-8 py-5">User Profile</th>
-                <th className="px-8 py-5">Registrar Asal</th>
-                <th className="px-8 py-5 text-center">Status Histori</th>
-                <th className="px-8 py-5">Tanggal Pengajuan</th>
-                <th className="px-8 py-5 text-center">Aksi</th>
+                <th className="px-4 py-2">Target Domain</th>
+                <th className="px-4 py-2">User Profile</th>
+                <th className="px-4 py-2">Registrar Asal</th>
+                <th className="px-4 py-2 text-center">Status Histori</th>
+                <th className="px-4 py-2">Tanggal Pengajuan</th>
+                <th className="px-4 py-2 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
               {loading ? (
-                <tr><td colSpan="6" className="px-8 py-10 text-center text-slate-400 font-bold italic">Memuat data pengajuan...</td></tr>
+                 Array(5).fill(0).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                        <td className="px-4 py-4"><div className="h-10 w-40 bg-slate-100 rounded"></div></td>
+                        <td className="px-4 py-4"><div className="h-8 w-32 bg-slate-50 rounded"></div></td>
+                        <td className="px-4 py-4"><div className="h-4 w-24 bg-slate-50 rounded"></div></td>
+                        <td className="px-4 py-4 text-center"><div className="h-6 w-20 bg-slate-100 rounded-md mx-auto"></div></td>
+                        <td className="px-4 py-4"><div className="h-4 w-20 bg-slate-50 rounded"></div></td>
+                        <td className="px-4 py-4 text-center"><div className="h-8 w-16 bg-slate-100 rounded-lg mx-auto"></div></td>
+                    </tr>
+                 ))
               ) : filteredRequests.length === 0 ? (
                 <tr><td colSpan="6" className="px-8 py-10 text-center text-slate-400 font-bold italic">Belum ada pengajuan migrasi.</td></tr>
               ) : (
                 filteredRequests.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                         <p className="font-bold text-slate-900 text-sm">{r.domain_name}</p>
                         <p className="text-[10px] text-[#f97316] font-bold uppercase tracking-tighter mt-0.5">EPP: {r.epp_code}</p>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                         <p className="text-xs font-semibold text-slate-800">{r.user_name}</p>
                         <p className="text-[10px] text-slate-400 font-medium">{r.user_email}</p>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                          <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">{r.current_registrar || "-"}</p>
                     </td>
-                    <td className="px-8 py-5 text-center">
+                    <td className="px-4 py-1.5 text-center">
                       <span className={`inline-flex px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all ${
                         r.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 group-hover:bg-emerald-100' :
                         r.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border-rose-100 group-hover:bg-rose-100' :
@@ -168,15 +197,15 @@ const AdminTransferRequests = () => {
                         {(r.status || "UNKNOWN").replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
                             {new Date(r.created_at).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })}
                         </p>
                     </td>
-                    <td className="px-8 py-5 text-center">
+                    <td className="px-4 py-1.5 text-center">
                       <button 
                         onClick={() => openEditModal(r)}
-                        className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#f97316] transition-all shadow-sm active:scale-95"
+                        className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#f97316] transition-all shadow-sm active:scale-95"
                       >
                         Proses
                       </button>
@@ -192,10 +221,10 @@ const AdminTransferRequests = () => {
       {/* EDIT MODAL */}
       {showModal && (
           <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-[fadeIn_0.2s_ease-out]">
-              <div className="bg-white rounded-2xl p-10 max-w-xl w-full shadow-2xl border border-slate-100 animate-[scaleIn_0.3s_ease-out]">
-                  <div className="flex justify-between items-start mb-8">
+              <div className="bg-white rounded-xl p-4 max-w-xl w-full shadow-xl border border-slate-100 animate-[scaleIn_0.3s_ease-out]">
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Update Pengajuan</h2>
+                        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Update Pengajuan</h2>
                         <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Domain: <span className="text-[#f97316]">{selectedReq.domain_name}</span></p>
                     </div>
                     <button onClick={() => setShowModal(false)} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-slate-100 transition-colors">
@@ -203,8 +232,8 @@ const AdminTransferRequests = () => {
                     </button>
                   </div>
                   
-                  <div className="space-y-6">
-                      <div className="space-y-3">
+                  <div className="space-y-3">
+                      <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Ubah Status Pengajuan</label>
                         <CustomSelect 
                             value={status} 
@@ -219,28 +248,28 @@ const AdminTransferRequests = () => {
                         />
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Catatan Internal / Instruksi</label>
                         <textarea 
-                            rows="4"
+                            rows="3"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             placeholder="Tulis alasan reject atau instruksi teknis untuk tim/user..."
-                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] transition-all text-sm font-medium text-slate-600 placeholder:text-slate-300"
+                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] transition-all text-xs font-medium text-slate-600 placeholder:text-slate-300"
                         ></textarea>
                       </div>
                   </div>
 
-                  <div className="flex gap-4 mt-12">
+                  <div className="flex gap-3 mt-6">
                       <button 
                         onClick={() => setShowModal(false)}
-                        className="flex-1 h-14 bg-slate-100 text-slate-500 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
+                        className="flex-1 h-10 bg-slate-100 text-slate-500 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
                       >
                           Batal
                       </button>
                       <button 
                         onClick={handleUpdate}
-                        className="flex-1 h-14 bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10 active:scale-95"
+                        className="flex-1 h-10 bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10 active:scale-95"
                       >
                           Simpan Status
                       </button>

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { useNotification } from "../../context/NotificationContext";
 import { useConfirm } from "../../context/ConfirmContext";
+import { exportToExcel, formatDataForExport } from "../../utils/exportUtils";
 
 const AdminInvoices = () => {
   const { success, error, warning } = useNotification();
@@ -21,6 +22,7 @@ const AdminInvoices = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     fetchInvoices();
@@ -140,6 +142,75 @@ const AdminInvoices = () => {
     applyFilters(invoices, activeFilter, sortConfig, val, categoryFilter, startDate, endDate);
   };
 
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(currentItems.map(inv => inv.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectItem = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkApprove = async () => {
+    const isConfirmed = await confirm({
+        title: "Persetujuan Massal",
+        message: `Setujui ${selectedIds.length} invoice sekaligus?`,
+        confirmText: "Ya, Setujui Semua"
+    });
+    if (!isConfirmed) return;
+    
+    setLoading(true);
+    try {
+        await Promise.all(selectedIds.map(id => api.post(`/billing/invoice/${id}/pay`, { payment_method: "Admin Manual" })));
+        success(`${selectedIds.length} Invoice berhasil disetujui! ✅`);
+        setSelectedIds([]);
+        fetchInvoices();
+    } catch (err) {
+        error("Beberapa invoice gagal disetujui.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const isConfirmed = await confirm({
+        title: "Hapus Massal",
+        message: `Hapus ${selectedIds.length} invoice terpilih secara permanen?`,
+        type: "danger",
+        confirmText: "Hapus Semua"
+    });
+    if (!isConfirmed) return;
+    
+    setLoading(true);
+    try {
+        await Promise.all(selectedIds.map(id => api.delete(`/billing/invoice/${id}`)));
+        success(`${selectedIds.length} Invoice berhasil dihapus.`);
+        setSelectedIds([]);
+        fetchInvoices();
+    } catch (err) {
+        error("Beberapa invoice gagal dihapus.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    const exportData = formatDataForExport(filteredInvoices, {
+        id: 'ID Invoice',
+        customer_name: 'Pelanggan',
+        customer_email: 'Email',
+        total: 'Total Nominal',
+        status: 'Status',
+        created_at: 'Tanggal'
+    });
+    exportToExcel(exportData, 'Data_Invoices', 'Invoices');
+  };
+
   const handleApprove = async (id) => {
     const isConfirmed = await confirm({
         title: "Persetujuan Pembayaran",
@@ -212,11 +283,11 @@ const AdminInvoices = () => {
   };
 
   return (
-    <div className="space-y-6 animate-[fadeIn_0.5s_ease-out] pb-10">
+    <div className="space-y-4 animate-[fadeIn_0.5s_ease-out] pb-10">
       
       {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="relative overflow-hidden bg-[#f97316] p-6 rounded-xl shadow-xl shadow-orange-200/50 flex items-center gap-5 group hover:shadow-2xl hover:shadow-orange-300/40 hover:-translate-y-1 transition-all duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative overflow-hidden bg-[#f97316] p-3 rounded-xl shadow-xl shadow-orange-200/50 flex items-center gap-4 group hover:shadow-xl hover:shadow-orange-300/40 hover:-translate-y-1 transition-all duration-500">
               {/* Decorative Glass Waves */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-3xl -mr-16 -mt-16 transition-transform duration-1000 group-hover:bg-white/30 group-hover:scale-150"></div>
               <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-black/10 rounded-full blur-2xl transition-transform duration-1000 group-hover:scale-125"></div>
@@ -234,8 +305,8 @@ const AdminInvoices = () => {
               </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-              <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
+          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                   <span className="material-symbols-outlined text-2xl">check_circle</span>
               </div>
               <div>
@@ -245,8 +316,8 @@ const AdminInvoices = () => {
               </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-              <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
+          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                   <span className="material-symbols-outlined text-2xl">pending_actions</span>
               </div>
               <div>
@@ -255,8 +326,8 @@ const AdminInvoices = () => {
               </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-l-4 border-l-indigo-500">
-              <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
+          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-l-4 border-l-indigo-500">
+              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                   <span className="material-symbols-outlined text-2xl animate-pulse">fact_check</span>
               </div>
               <div>
@@ -267,9 +338,9 @@ const AdminInvoices = () => {
           </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
         {/* Unified Header with Search & Dropdown */}
-        <div className="p-4 sm:p-8 border-b border-slate-50 bg-slate-50/30">
+        <div className="p-3 sm:p-3 border-b border-slate-50 bg-slate-50/30">
             <div className="flex flex-col lg:flex-row justify-between items-center gap-4 sm:gap-6">
                 <div className="flex-1 w-full max-w-xl relative group">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#f97316] transition-colors">search</span>
@@ -328,27 +399,22 @@ const AdminInvoices = () => {
                             />
                         </div>
                     </div>
+                    </div>
                     <div className="w-full sm:w-32">
-                        <CustomSelect
-                            value={itemsPerPage}
-                            onChange={(val) => {
-                                setItemsPerPage(Number(val));
-                                setCurrentPage(1);
-                            }}
-                            options={[
-                                { value: 15, label: "15 Baris" },
-                                { value: 25, label: "25 Baris" },
-                                { value: 50, label: "50 Baris" },
-                                { value: 100, label: "100 Baris" },
-                            ]}
-                        />
+                        <button 
+                            onClick={handleExportExcel}
+                            className="w-full h-11 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-100 transition-all"
+                        >
+                            <span className="material-symbols-outlined text-lg">download</span>
+                            Export
+                        </button>
                     </div>
                 </div>
             </div>
             {(searchTerm || activeFilter !== "all" || categoryFilter !== "all" || startDate || endDate) && (
                 <div className="mt-4 flex items-center justify-between gap-2 bg-white/50 p-2 rounded-lg border border-slate-100">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">
-                        Menampilkan <span className="text-[#f97316] font-black">{filteredInvoices.length}</span> hasil filter aktif
+                        Menampilkan <span className="text-[#f97316] font-bold">{filteredInvoices.length}</span> hasil filter aktif
                     </p>
                     <button 
                         onClick={() => {
@@ -405,7 +471,7 @@ const AdminInvoices = () => {
                       <p className="text-[9px] text-slate-400 font-medium">{inv.customer_email || "-"}</p>
                     </div>
                   </div>
-                  <p className="font-black text-slate-900">{formatRupiah(inv.total)}</p>
+                  <p className="font-bold text-slate-900">{formatRupiah(inv.total)}</p>
                 </div>
 
                 <div className="flex gap-2 pt-2">
@@ -440,53 +506,83 @@ const AdminInvoices = () => {
           <table className="w-full text-left text-sm border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('id')}>
+                <th className="px-4 py-3 w-10">
+                    <input 
+                        type="checkbox" 
+                        onChange={handleSelectAll}
+                        checked={selectedIds.length === currentItems.length && currentItems.length > 0}
+                        className="w-4 h-4 rounded border-slate-300 text-[#F97316] focus:ring-[#F97316]"
+                    />
+                </th>
+                <th className="px-4 py-2 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('id')}>
                     Invoice ID <SortIcon column="id" />
                 </th>
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('customer_name')}>
+                <th className="px-4 py-2 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('customer_name')}>
                     Customer <SortIcon column="customer_name" />
                 </th>
-                <th className="px-8 py-5">
+                <th className="px-4 py-2">
                     Tipe
                 </th>
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('total')}>
+                <th className="px-4 py-2 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('total')}>
                     Total <SortIcon column="total" />
                 </th>
-                <th className="px-8 py-5 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('status')}>
+                <th className="px-4 py-2 cursor-pointer hover:text-slate-600 transition-all group" onClick={() => requestSort('status')}>
                     Status <SortIcon column="status" />
                 </th>
-                <th className="px-8 py-5 text-center">Aksi</th>
+                <th className="px-4 py-2 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
               {loading ? (
-                <tr>
-                   <td colSpan="6" className="px-8 py-10 text-center text-slate-400 font-bold italic">Memuat tagihan...</td>
-                </tr>
+                Array(itemsPerPage).fill(0).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                        <td className="px-4 py-4"><div className="h-4 w-4 bg-slate-100 rounded"></div></td>
+                        <td className="px-4 py-4">
+                            <div className="h-4 w-24 bg-slate-100 rounded mb-2"></div>
+                            <div className="h-3 w-16 bg-slate-50 rounded"></div>
+                        </td>
+                        <td className="px-4 py-4">
+                            <div className="h-4 w-32 bg-slate-100 rounded mb-2"></div>
+                            <div className="h-3 w-40 bg-slate-50 rounded"></div>
+                        </td>
+                        <td className="px-4 py-4"><div className="h-4 w-16 bg-slate-100 rounded"></div></td>
+                        <td className="px-4 py-4"><div className="h-4 w-20 bg-slate-100 rounded"></div></td>
+                        <td className="px-4 py-4"><div className="h-6 w-16 bg-slate-50 rounded-lg"></div></td>
+                        <td className="px-4 py-4 text-center"><div className="h-8 w-24 bg-slate-100 rounded-lg mx-auto"></div></td>
+                    </tr>
+                ))
               ) : currentItems.length === 0 ? (
                 <tr>
-                   <td colSpan="6" className="px-8 py-10 text-center text-slate-400 font-bold italic">Belum ada tagihan yang cocok.</td>
+                   <td colSpan="7" className="px-8 py-10 text-center text-slate-400 font-bold italic">Belum ada tagihan yang cocok.</td>
                 </tr>
               ) : (
                 currentItems.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-5">
+                  <tr key={inv.id} className={`hover:bg-slate-50/50 transition-colors group ${selectedIds.includes(inv.id) ? 'bg-orange-50/30' : ''}`}>
+                    <td className="px-4 py-3">
+                        <input 
+                            type="checkbox" 
+                            checked={selectedIds.includes(inv.id)}
+                            onChange={() => handleSelectItem(inv.id)}
+                            className="w-4 h-4 rounded border-slate-300 text-[#F97316] focus:ring-[#F97316]"
+                        />
+                    </td>
+                    <td className="px-4 py-1.5">
                       <p className="font-bold text-[#F97316] text-xs">#{inv.id}</p>
                       <p className="text-[10px] text-slate-400 font-medium tracking-tight">
                         {new Date(inv.created_at).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })}
                       </p>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <p className="font-semibold text-slate-800 text-xs">{inv.customer_name || "Unknown"}</p>
                       <p className="text-[10px] text-slate-400">{inv.customer_email || "-"}</p>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       {getActionBadge(inv.category)}
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <p className="font-bold text-slate-900">{formatRupiah(inv.total)}</p>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all ${
                         inv.status === 'paid' 
                         ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
@@ -501,7 +597,7 @@ const AdminInvoices = () => {
                          inv.status === 'pending' ? 'Menunggu' : inv.status}
                       </span>
                     </td>
-                    <td className="px-8 py-5 text-center">
+                    <td className="px-4 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-2">
                              {inv.status === 'pending' && (
                                 <button 
@@ -538,7 +634,7 @@ const AdminInvoices = () => {
         </div>
 
         {/* Footer Navigation */}
-        <div className="bg-slate-50/50 p-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="bg-white px-5 py-2.5 rounded-lg border border-slate-200 shadow-sm">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                   Total <span className="text-[#F97316]">{filteredInvoices.length}</span> Invoices • Hal <span className="text-slate-800">{currentPage} / {totalPages || 1}</span>
@@ -568,7 +664,42 @@ const AdminInvoices = () => {
                 </button>
             </div>
         </div>
-      </div>
+
+
+      {/* Floating Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
+          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-black/40 flex items-center gap-8 animate-in slide-in-from-bottom-10 duration-300 border border-slate-800">
+              <div className="flex flex-col">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Terpilih</p>
+                  <p className="text-xl font-bold leading-none">{selectedIds.length} <span className="text-xs text-slate-500 font-medium">Invoice</span></p>
+              </div>
+              
+              <div className="w-px h-10 bg-slate-800"></div>
+              
+              <div className="flex items-center gap-3">
+                  <button 
+                    onClick={handleBulkApprove}
+                    className="h-11 px-6 bg-[#F97316] text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center gap-2 shadow-lg shadow-orange-900/20"
+                  >
+                      <span className="material-symbols-outlined text-lg">verified</span>
+                      Setujui Semua
+                  </button>
+                  <button 
+                    onClick={handleBulkDelete}
+                    className="h-11 px-6 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all flex items-center gap-2"
+                  >
+                      <span className="material-symbols-outlined text-lg">delete</span>
+                      Hapus Terpilih
+                  </button>
+                  <button 
+                    onClick={() => setSelectedIds([])}
+                    className="w-11 h-11 flex items-center justify-center bg-slate-800 text-slate-400 rounded-xl hover:bg-slate-700 transition-all"
+                  >
+                      <span className="material-symbols-outlined">close</span>
+                  </button>
+              </div>
+          </div>
+      )}
     </div>
   );
 };

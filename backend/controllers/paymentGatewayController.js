@@ -106,17 +106,11 @@ exports.getAll = async (req, res) => {
             try { return JSON.parse(data); } catch (e) { return fallback; }
         };
         const plEnabledMethods = safeParse(plConfig.enabled_methods, []);
-        const PL_MAP = {
-            '014': { name: 'BCA Virtual Account', type: 'VA' },
-            '008': { name: 'Mandiri Virtual Account', type: 'VA' },
-            '009': { name: 'BNI Virtual Account', type: 'VA' },
-            '002': { name: 'BRI Virtual Account', type: 'VA' },
-            '013': { name: 'Permata Virtual Account', type: 'VA' },
-            '011': { name: 'Danamon Virtual Account', type: 'VA' },
-            '451': { name: 'BSI Virtual Account', type: 'VA' },
-            'QR':  { name: 'QRIS (GPN)', type: 'QRIS' },
-            'CC':  { name: 'Credit Card', type: 'CC' }
-        };
+        
+        // Ambil data dinamis dari tabel prismalink_channels
+        const channelsRes = await db.pool.query("SELECT * FROM prismalink_channels WHERE is_active = true");
+        const channelsFromDb = channelsRes.rows;
+
         const PL_LOGOS = {
             '002': '/image/banks/bri.png',
             '008': '/image/banks/mandiri.png',
@@ -127,16 +121,32 @@ exports.getAll = async (req, res) => {
             '451': '/image/banks/bsi.png',
             'QR': '/image/banks/qris.png'
         };
+
         plEnabledMethods.forEach(methodId => {
-            const meta = PL_MAP[methodId];
+            const meta = channelsFromDb.find(c => c.bank_id === methodId);
             if (meta) {
+                // Bank Logo Mapping
+                const getLogo = (code) => {
+                    const c = String(code).toLowerCase();
+                    if (PL_LOGOS[code]) return PL_LOGOS[code];
+                    if (c === '014' || c.includes('bca')) return '/image/banks/bca.png';
+                    if (c === '008' || c.includes('mandiri')) return '/image/banks/mandiri.png';
+                    if (c === '009' || c.includes('bni')) return '/image/banks/bni.png';
+                    if (c === '002' || c.includes('bri')) return '/image/banks/bri.png';
+                    if (c === '013' || c.includes('permata')) return '/image/banks/permata.png';
+                    if (c === '011' || c.includes('danamon')) return '/image/banks/danamon.png';
+                    if (c === '451' || c.includes('bsi')) return '/image/banks/bsi.png';
+                    if (c.includes('qris')) return '/image/banks/qris.png';
+                    return null;
+                };
+
                 allChannels.push({
                     id: `${methodId.toLowerCase()}_prismalink`,
-                    type: meta.type,
+                    type: meta.method === 'QR' ? 'QRIS' : (meta.method || 'VA'),
                     code: methodId,
-                    name: meta.name,
+                    name: meta.bank_name,
                     provider: 'prismalink',
-                    icon_url: PL_LOGOS[methodId] || null
+                    icon_url: meta.logo_url || getLogo(methodId)
                 });
             }
         });
@@ -225,6 +235,85 @@ exports.getTripayChannels = async (req, res) => {
         }
         return res.status(400).json({ success: false, message: result.error });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.getPrismalinkChannels = async (req, res) => {
+    try {
+        const rows = await db.query("SELECT * FROM prismalink_channels ORDER BY bank_name ASC");
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.createPrismalinkChannel = async (req, res) => {
+    const { bank_id, bank_name, method, logo_url } = req.body;
+    if (!bank_id || !bank_name) return res.status(400).json({ message: "Bank ID dan Nama Bank wajib diisi" });
+    
+    try {
+        // Check uniqueness
+        const rows = await db.query("SELECT bank_id FROM prismalink_channels WHERE bank_id = ?", [bank_id]);
+        if (rows.length > 0) return res.status(400).json({ message: "Bank ID sudah terdaftar" });
+
+        await db.query(`
+            INSERT INTO prismalink_channels (bank_id, bank_name, method, logo_url, is_custom)
+            VALUES (?, ?, ?, ?, true)
+        `, [bank_id, bank_name, method || 'VA', logo_url || null]);
+        
+        res.status(201).json({ success: true, message: "Bank berhasil ditambahkan" });
+    } catch (err) {
+        console.error("[CREATE PRISMALINK ERROR]", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.togglePrismalinkChannel = async (req, res) => {
+    const { bankId } = req.params;
+    const { is_active } = req.body;
+    try {
+        await db.query("UPDATE prismalink_channels SET is_active = ?, updated_at = NOW() WHERE bank_id = ?", [is_active, bankId]);
+        res.json({ success: true, message: `Bank ${bankId} updated to ${is_active}` });
+    } catch (err) {
+        console.error("[TOGGLE PRISMALINK ERROR]", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.updatePrismalinkChannel = async (req, res) => {
+    const { bankId } = req.params;
+    const { bank_name, method, logo_url } = req.body;
+    
+    try {
+        const rows = await db.query("SELECT is_custom FROM prismalink_channels WHERE bank_id = ?", [bankId]);
+        if (rows.length === 0) return res.status(404).json({ message: "Bank tidak ditemukan" });
+        if (!rows[0].is_custom) return res.status(403).json({ message: "Bank otomatis tidak dapat diedit" });
+
+        await db.query(`
+            UPDATE prismalink_channels 
+            SET bank_name = ?, method = ?, logo_url = ?, updated_at = NOW() 
+            WHERE bank_id = ?
+        `, [bank_name, method, logo_url || null, bankId]);
+        
+        res.json({ success: true, message: "Bank berhasil diperbarui" });
+    } catch (err) {
+        console.error("[UPDATE PRISMALINK ERROR]", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.deletePrismalinkChannel = async (req, res) => {
+    const { bankId } = req.params;
+    try {
+        const rows = await db.query("SELECT is_custom FROM prismalink_channels WHERE bank_id = ?", [bankId]);
+        if (rows.length === 0) return res.status(404).json({ message: "Bank tidak ditemukan" });
+        if (!rows[0].is_custom) return res.status(403).json({ message: "Bank otomatis tidak dapat dihapus" });
+
+        await db.query("DELETE FROM prismalink_channels WHERE bank_id = ?", [bankId]);
+        res.json({ success: true, message: "Bank berhasil dihapus" });
+    } catch (err) {
+        console.error("[DELETE PRISMALINK ERROR]", err);
         res.status(500).json({ error: err.message });
     }
 };

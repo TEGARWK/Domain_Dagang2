@@ -83,7 +83,7 @@ const AdminNavbar = ({ setSidebarOpen }) => {
           <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{getPageIcon()}</span>
         </div>
         <div className="flex flex-col">
-          <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">
+          <div className="hidden sm:flex items-center gap-2 text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">
             <span>Admin</span>
             <span className="text-slate-300">/</span>
             <span className="text-[#F97316]">Control</span>
@@ -95,7 +95,7 @@ const AdminNavbar = ({ setSidebarOpen }) => {
       </div>
 
       {/* 2. MIDDLE: DATE/TIME CAPSULE */}
-      <div className="hidden md:flex items-center gap-2 text-[10px] text-slate-400 font-bold bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 uppercase tracking-widest shadow-sm">
+      <div className="hidden md:flex items-center gap-2 text-[10px] text-slate-400 font-semibold bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 uppercase tracking-widest shadow-sm">
         <span className="material-symbols-outlined text-[14px]">calendar_today</span>
         <span>{currentTime.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
         <span className="text-slate-300 mx-0.5">•</span>
@@ -119,13 +119,13 @@ const AdminNavbar = ({ setSidebarOpen }) => {
 
           {/* Notification Dropdown */}
           {showNotifDropdown && (
-            <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-100 rounded-lg shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-100 rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-[0.2em]">Notifikasi</h3>
+                <h3 className="text-[10px] font-semibold text-slate-800 uppercase tracking-[0.2em]">Notifikasi</h3>
                 {unreadCount > 0 && (
                   <button 
                     onClick={markAllAsRead}
-                    className="text-[9px] font-bold text-[#F97316] uppercase hover:underline"
+                    className="text-[9px] font-semibold text-[#F97316] uppercase hover:underline"
                   >
                     Baca Semua
                   </button>
@@ -134,21 +134,21 @@ const AdminNavbar = ({ setSidebarOpen }) => {
               <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
                 {notifications.length === 0 ? (
                   <div className="p-10 text-center">
-                    <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Tidak ada notifikasi</p>
+                    <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest">Tidak ada notifikasi</p>
                   </div>
                 ) : (
                   notifications.slice(0, 5).map(n => (
                     <div key={n.id} className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors relative cursor-default ${!n.is_read ? 'bg-orange-50/20' : ''}`}>
                       {!n.is_read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316]"></div>}
-                      <h4 className="text-[11px] font-bold text-slate-800 uppercase mb-1">{n.title}</h4>
-                      <p className="text-[10px] text-slate-500 font-bold leading-relaxed mb-2">{n.message}</p>
-                      <span className="text-[8px] text-slate-300 font-bold uppercase tracking-wider">{new Date(n.created_at).toLocaleString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'})}</span>
+                      <h4 className="text-[11px] font-semibold text-slate-800 uppercase mb-1">{n.title}</h4>
+                      <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mb-2">{n.message}</p>
+                      <span className="text-[8px] text-slate-300 font-semibold uppercase tracking-wider">{new Date(n.created_at).toLocaleString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'})}</span>
                     </div>
                   ))
                 )}
               </div>
               <div className="p-3 bg-slate-50/50 border-t border-slate-50 text-center">
-                 <Link to="/admin/notifications" onClick={() => setShowNotifDropdown(false)} className="text-[9px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition">Lihat Semua</Link>
+                 <Link to="/admin/notifications" onClick={() => setShowNotifDropdown(false)} className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition">Lihat Semua</Link>
               </div>
             </div>
           )}
@@ -160,11 +160,11 @@ const AdminNavbar = ({ setSidebarOpen }) => {
             <p className="text-xs font-bold text-slate-800 leading-none mb-1 group-hover:text-[#F97316] transition-colors">
               {user.name || "Administrator"}
             </p>
-            <p className="text-[9px] font-bold text-[#F97316] uppercase tracking-tighter">
+            <p className="text-[9px] font-semibold text-[#F97316] uppercase tracking-tighter">
               {user.role || "Admin"} Level
             </p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[#faefe9] flex items-center justify-center text-[#F97316] font-bold text-sm border-2 border-transparent group-hover:border-orange-200 transition shadow-sm overflow-hidden bg-cover bg-center"
+          <div className="w-9 h-9 rounded-full bg-[#faefe9] flex items-center justify-center text-[#F97316] font-semibold text-sm border-2 border-transparent group-hover:border-orange-200 transition shadow-sm overflow-hidden bg-cover bg-center"
                style={user.avatar ? { backgroundImage: `url(${user.avatar})` } : {}}>
             {!user.avatar && (user.name ? user.name[0].toUpperCase() : "A")}
           </div>

@@ -407,13 +407,13 @@ const Checkout = () => {
     };
 
     const groupedGateways = {
-        'bankva': gateways.filter(g => g.provider !== 'manual' && (g.type === 'VA' || g.type === 'VIRTUALACCOUNT')),
+        'bankva': gateways.filter(g => g.provider !== 'manual' && (g.type === 'VA' || g.type === 'VIRTUALACCOUNT' || g.type === 'DD')),
         'manual_bank': gateways.filter(g => g.provider === 'manual' && 
             (g.type === 'VA' || g.type === 'VIRTUALACCOUNT' || g.gateway_type === 'bank') && 
             g.type !== 'QRIS' && g.type !== 'EWALLET'
         ),
-        'qris': gateways.filter(g => g.type === 'QRIS' || g.type === 'SCANNERQRIS'),
-        'ewallet': gateways.filter(g => g.type === 'EWALLET' || g.type === 'E-WALLET'),
+        'qris': gateways.filter(g => g.type === 'QRIS' || g.type === 'SCANNERQRIS' || g.type === 'QR'),
+        'ewallet': gateways.filter(g => g.type === 'EWALLET' || g.type === 'E-WALLET' || g.type === 'CC'), // CC sementara masuk kategori ewallet atau buat baru jika perlu
     };
 
     const getBankLogo = (gw) => {
@@ -438,9 +438,9 @@ const Checkout = () => {
     if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-bold text-slate-400">Memuat Data...</div>;
 
     return (
-        <div className="min-h-screen bg-slate-50/50 py-12 px-4">
-            <div className="max-w-6xl mx-auto">
-                <div className="flex items-center gap-4 mb-10">
+        <div className="min-h-screen bg-slate-50/50 py-6 px-2 md:px-4 lg:px-6">
+            <div className="w-full">
+                <div className="flex items-center gap-4 mb-6">
                     <button onClick={() => navigate(backLink)} className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-[#FF6B00] transition-all shadow-sm">
                         <span className="material-symbols-outlined">arrow_back_ios_new</span>
                     </button>
@@ -450,9 +450,9 @@ const Checkout = () => {
                     </div>
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-8">
+                <div className="grid lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2">
-                        <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+                        <div className="bg-white rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
                             {/* Step 1: Registran */}
                             <div className="p-6 border-b border-slate-50">
                                 <div className="flex items-center gap-3 mb-5">
@@ -546,7 +546,7 @@ const Checkout = () => {
                                         <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-[0.2em]">Konfigurasi Layanan</h3>
                                     </div>
                                     <div className="grid md:grid-cols-2 gap-3">
-                                        <div className="p-4 bg-white rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+                                        <div className="p-4 bg-white rounded-xl border border-slate-100 flex items-center justify-between shadow-sm">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><span className="material-symbols-outlined text-lg">security</span></div>
                                                 <div>
@@ -558,7 +558,7 @@ const Checkout = () => {
                                                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${whoisPrivacy ? 'right-0.5' : 'left-0.5'}`}></div>
                                             </button>
                                         </div>
-                                        <div className="p-4 bg-white rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+                                        <div className="p-4 bg-white rounded-xl border border-slate-100 flex items-center justify-between shadow-sm">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><span className="material-symbols-outlined text-lg">autorenew</span></div>
                                                 <div>
@@ -579,7 +579,7 @@ const Checkout = () => {
                                 return name.endsWith(".co.id") || name.endsWith(".ac.id") || name.endsWith(".sch.id") || 
                                        name.endsWith(".or.id") || name.endsWith(".ponpes.id") || name.endsWith(".desa.id");
                             }) && (
-                                <div className="mx-6 mt-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4 shadow-sm animate-[fadeIn_0.3s_ease-out]">
+                                <div className="mx-6 mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-4 shadow-sm animate-[fadeIn_0.3s_ease-out]">
                                     <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                                         <span className="material-symbols-outlined text-lg">info</span>
                                     </div>
@@ -608,7 +608,7 @@ const Checkout = () => {
                                                     setSelectedGateway(null);
                                                 }
                                             }} 
-                                            className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                                            className={`p-4 rounded-xl border-2 transition-all flex items-center justify-between ${
                                                 walletBalance < totalToPay 
                                                 ? 'opacity-60 cursor-not-allowed bg-slate-50 border-slate-50' 
                                                 : 'cursor-pointer hover:border-slate-200'
@@ -642,7 +642,7 @@ const Checkout = () => {
 
                                     {/* Accordion Categories */}
                                     {Object.entries(groupedGateways).map(([key, list]) => list.length > 0 && (
-                                        <div key={key} className="border border-slate-100 rounded-2xl overflow-hidden">
+                                        <div key={key} className="border border-slate-100 rounded-xl overflow-hidden">
                                             <div 
                                                 onClick={() => setExpandedCategory(expandedCategory === key ? null : key)}
                                                 className={`p-4 flex items-center justify-between cursor-pointer transition-all ${expandedCategory === key ? 'bg-slate-50' : 'hover:bg-slate-50/50'}`}
@@ -687,8 +687,8 @@ const Checkout = () => {
                     </div>
 
                     <div className="lg:col-span-1">
-                        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/40 sticky top-10">
-                            <h3 className="font-bold text-slate-900 uppercase text-[9px] tracking-[0.3em] mb-6">Ringkasan Tagihan</h3>
+                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xl shadow-slate-200/40 sticky top-6">
+                            <h3 className="font-bold text-slate-900 uppercase text-[9px] tracking-[0.3em] mb-4">Ringkasan Tagihan</h3>
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Subtotal</span><span className="text-slate-900 font-bold">{formatRupiah(grossSubtotal)}</span></div>
                                 
@@ -734,7 +734,7 @@ const Checkout = () => {
                                         <>
                                             <button 
                                                 onClick={() => setIsVoucherExpanded(!isVoucherExpanded)} 
-                                                className={`w-full py-4 px-5 rounded-2xl flex items-center justify-between group transition-all duration-300 border-2 ${isVoucherExpanded ? 'bg-orange-50/50 border-[#FF6B00] shadow-lg' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}
+                                                className={`w-full py-4 px-5 rounded-xl flex items-center justify-between group transition-all duration-300 border-2 ${isVoucherExpanded ? 'bg-orange-50/50 border-[#FF6B00] shadow-lg' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isVoucherExpanded ? 'bg-[#FF6B00] text-white shadow-lg' : 'bg-slate-50 text-slate-400 group-hover:text-slate-900 group-hover:bg-slate-100'}`}>
@@ -751,7 +751,7 @@ const Checkout = () => {
                                             {isVoucherExpanded && (
                                                 <div className="mt-3 space-y-2 max-h-[320px] overflow-y-auto pr-1.5 custom-scrollbar animate-in slide-in-from-top-2 duration-300">
                                                     {myVouchers.length === 0 ? (
-                                                        <div className="text-center py-10 px-6 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                                                        <div className="text-center py-10 px-6 border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
                                                             <span className="material-symbols-outlined text-slate-200 text-3xl mb-2">layers_clear</span>
                                                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Belum ada promo yang kamu klaim. <br/>Klaim di halaman Promo.</p>
                                                             <Link to="/dashboard/promo" className="text-[9px] text-[#FF6B00] font-bold uppercase underline mt-4 block">Cari Promo →</Link>
@@ -776,7 +776,7 @@ const Checkout = () => {
                                                                             warning(eligibility.reason);
                                                                         }
                                                                     }} 
-                                                                    className={`p-4 rounded-2xl border-2 transition-all duration-300 group/v relative overflow-hidden ${canUse ? 'border-slate-100 hover:border-[#FF6B00] cursor-pointer bg-white shadow-sm hover:shadow-md' : 'opacity-60 grayscale-[0.5] bg-slate-50 border-transparent cursor-not-allowed'}`}
+                                                                    className={`p-4 rounded-xl border-2 transition-all duration-300 group/v relative overflow-hidden ${canUse ? 'border-slate-100 hover:border-[#FF6B00] cursor-pointer bg-white shadow-sm hover:shadow-md' : 'opacity-60 grayscale-[0.5] bg-slate-50 border-transparent cursor-not-allowed'}`}
                                                                 >
                                                                     <div className="flex justify-between items-start relative z-10">
                                                                         <div className="flex-1 pr-4">
@@ -807,7 +807,7 @@ const Checkout = () => {
                                             )}
                                         </>
                                     ) : (
-                                        <div className="p-4 bg-emerald-50/50 border-2 border-emerald-500/30 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-500/5 animate-in zoom-in-95 duration-300">
+                                        <div className="p-4 bg-emerald-50/50 border-2 border-emerald-500/30 rounded-xl flex items-center justify-between shadow-lg shadow-emerald-500/5 animate-in zoom-in-95 duration-300">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20"><span className="material-symbols-outlined text-2xl">check_circle</span></div>
                                                 <div>
@@ -841,7 +841,7 @@ const Checkout = () => {
                                 <p className="text-2xl font-bold text-slate-900 tracking-tighter">{formatRupiah(totalToPay)}</p>
                             </div>
 
-                            <button onClick={handlePay} disabled={isProcessing || !selectedGateway} className="w-full bg-[#FF6B00] text-white py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-orange-200 hover:bg-slate-900 transition-all disabled:opacity-50">
+                            <button onClick={handlePay} disabled={isProcessing || !selectedGateway} className="w-full bg-[#FF6B00] text-white py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-orange-200 hover:bg-slate-900 transition-all disabled:opacity-50">
                                 {isProcessing ? "Memproses..." : "Bayar Sekarang"}
                             </button>
                         </div>

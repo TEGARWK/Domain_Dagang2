@@ -1,11 +1,25 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../../../services/api";
 
-const EmptyDashboard = ({ wallet, referralInfo }) => {
+const EmptyDashboard = ({ wallet }) => {
   const navigate = useNavigate();
+  const [isReferred, setIsReferred] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const isEligibleForRefereeDiscount = referralInfo?.is_referee && !referralInfo?.referee_discount_used;
-  const refereeDiscountAmount = referralInfo?.referee_discount_amount || 5000;
+  useEffect(() => {
+    const checkReferralStatus = async () => {
+      try {
+        const res = await api.get("/referral/check-eligibility");
+        setIsReferred(res.data.eligible);
+      } catch (err) {
+        console.error("Gagal cek status referral:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkReferralStatus();
+  }, []);
 
   // Helper Format Rupiah
   const formatRupiah = (num) => {
@@ -16,152 +30,143 @@ const EmptyDashboard = ({ wallet, referralInfo }) => {
     }).format(num || 0);
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-slate-900/5 rounded-2xl border-2 border-dashed border-slate-200">
+        <div className="animate-spin w-8 h-8 border-4 border-slate-200 border-t-orange-500 rounded-full mb-2"></div>
+        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Mengecek Penawaran...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-8 animate-[fadeIn_0.5s_ease-out]">
-      {/* Referral Reward Banner */}
-      {isEligibleForRefereeDiscount && (
-        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm animate-bounce-in">
-           <div className="flex items-center gap-5 text-center md:text-left">
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
-                 <span className="material-symbols-outlined text-3xl">redeem</span>
-              </div>
-              <div>
-                 <h3 className="text-lg font-bold text-slate-900">Hadiah Pendaftaran! 🎁</h3>
-                 <p className="text-sm text-slate-600">Kamu mendapatkan potongan harga sebesar <span className="font-bold text-emerald-600">{formatRupiah(refereeDiscountAmount)}</span> untuk pembelian domain pertama kamu.</p>
-              </div>
-           </div>
-           <div className="flex flex-col items-center md:items-end gap-1">
-              <div className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest rounded-full border border-emerald-200">
-                 Otomatis Terpasang
-              </div>
-              <p className="text-[10px] text-slate-400 font-medium italic mt-1">*Berlaku untuk semua TLD</p>
-           </div>
-        </div>
-      )}
+    <div className="flex flex-col gap-4 animate-[fadeIn_0.5s_ease-out]">
+      {/* Redesigned Discount / Referral Banner */}
+      <div className="relative group overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 opacity-95 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/20 rounded-full blur-[80px] animate-pulse"></div>
+        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-500/10 rounded-full blur-[80px]"></div>
+        
+        <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
+          {/* Icon Badge */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-orange-500 blur-2xl opacity-20 animate-pulse"></div>
+            <div className="relative w-16 h-16 bg-white text-slate-900 rounded-2xl flex items-center justify-center shadow-2xl transform group-hover:rotate-6 transition-transform duration-500">
+              <span className="material-symbols-outlined text-4xl">
+                {isReferred ? "card_giftcard" : "sell"}
+              </span>
+            </div>
+          </div>
 
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 md:p-12 text-center text-white relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#F97316] rounded-full blur-[100px] opacity-20"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500 rounded-full blur-[100px] opacity-20"></div>
-
-        <div className="relative z-10 max-w-2xl mx-auto">
-          <span className="inline-flex items-center gap-2 py-1 px-3 rounded-full bg-[#F97316]/20 text-[#F97316] border border-[#F97316]/30 text-xs font-bold mb-6">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            Welcome Aboard!
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
-            Halo, Calon Sultan Digital!
-          </h2>
-          <p className="text-slate-400 mb-8 text-sm md:text-base leading-relaxed">
-            Dashboard Anda masih kosong nih. Amankan nama domain impian Anda
-            sekarang sebelum diambil orang lain.
-          </p>
+          {/* New Text Content - Focused on Discount */}
+          <div className="flex-1 text-center md:text-left space-y-1">
+            <div className="flex flex-col md:flex-row items-center gap-2 mb-1">
+               <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight uppercase">
+                 {isReferred ? "Potongan Harga Pertama Anda! 🎁" : "Dapatkan Diskon Domain Kamu! 🏷️"}
+               </h3>
+               <span className={`px-2 py-0.5 border text-[9px] font-bold text-white rounded-full uppercase tracking-widest backdrop-blur-sm ${isReferred ? 'bg-green-500/30 border-green-500/50' : 'bg-orange-500/30 border-orange-500/50'}`}>
+                 {isReferred ? "Bonus Referral" : "Promo Member"}
+               </span>
+            </div>
+            
+            <p className="text-slate-300 text-sm md:text-base font-medium leading-relaxed max-w-xl">
+              {isReferred ? (
+                <>Selamat! Anda berhak mendapatkan <span className="text-orange-400 font-bold underline">Diskon Spesial</span> karena bergabung melalui link teman. Gunakan sekarang sebelum masa berlaku habis!</>
+              ) : (
+                <>Pilih nama domain impianmu hari ini dan nikmati <span className="text-orange-400 font-bold">Harga Spesial Member</span> yang lebih hemat untuk pendaftaran pertama Anda!</>
+              )}
+            </p>
+          </div>
 
           {/* Action Button */}
-          <div className="flex justify-center">
-            <button
+          <div className="shrink-0">
+            <button 
               onClick={() => navigate("/dashboard/buy")}
-              className="group bg-[#F97316] text-white px-10 py-4 rounded-xl font-bold hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-2xl shadow-orange-500/30 flex items-center justify-center gap-3 transform hover:-translate-y-1 active:scale-95 border-2 border-transparent hover:border-orange-500"
+              className="px-6 py-4 bg-white text-slate-900 font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all shadow-lg shadow-white/10 flex items-center gap-2 group/btn"
             >
-              <span className="material-symbols-outlined group-hover:rotate-12 transition-transform">add_shopping_cart</span>
-              Cari & Beli Domain Sekarang
+              Cek Harga Diskon
+              <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Wallet Balance Card for Empty State */}
-      <div 
-        onClick={() => navigate("/dashboard/wallet")}
-        className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between group cursor-pointer hover:border-[#F97316] transition-all"
-      >
-        <div className="flex items-center gap-5">
-            <div className="w-14 h-14 bg-orange-50 text-[#F97316] rounded-lg flex items-center justify-center group-hover:bg-[#F97316] group-hover:text-white transition-all">
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-            </div>
-            <div>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Saldo Tersedia</p>
-                <h3 className="text-2xl font-bold text-slate-800">{formatRupiah(wallet?.balance)}</h3>
-            </div>
-        </div>
-        <div className="hidden md:flex items-center gap-2 text-[#F97316] font-bold text-sm">
-            Top Up Saldo
-            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
+      {/* Hero Welcome Card */}
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-6 md:p-8 text-center text-white relative overflow-hidden shadow-2xl border border-slate-700/50">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[100px]"></div>
+
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-white/5 border border-white/10 text-white/80 text-[10px] font-bold mb-6 uppercase tracking-[0.2em] backdrop-blur-md">
+            🚀 Welcome to Domain Dagang
+          </div>
+          <h2 className="text-3xl md:text-4xl font-black mb-3 leading-tight tracking-tight">
+            Halo, Calon <span className="text-orange-500">Sultan Digital!</span>
+          </h2>
+          <p className="text-slate-400 mb-8 text-sm md:text-base leading-relaxed font-medium">
+            Mulai bangun identitas digital Anda sekarang. Amankan domain impian <br className="hidden md:block" /> 
+            sebelum diambil orang lain dan nikmati kemudahan kelola domain dalam satu tempat.
+          </p>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button
+              onClick={() => navigate("/dashboard/buy")}
+              className="bg-orange-500 text-white px-10 py-4 rounded-2xl font-black hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-2xl shadow-orange-500/40 flex items-center justify-center gap-3 transform hover:-translate-y-1 active:scale-95"
+            >
+              <span className="material-symbols-outlined">search</span>
+              Cari Nama Domain Kamu
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Promo Cards */}
+      {/* Wallet Summary */}
+      <div 
+        onClick={() => navigate("/dashboard/wallet")}
+        className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xl flex items-center justify-between group cursor-pointer hover:border-orange-500 transition-all duration-500"
+      >
+        <div className="flex items-center gap-5">
+            <div className="w-16 h-16 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-all duration-500 shadow-inner">
+                <span className="material-symbols-outlined text-3xl font-bold text-inherit">account_balance_wallet</span>
+            </div>
+            <div>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Saldo Akun Anda</p>
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight">{formatRupiah(wallet?.balance)}</h3>
+            </div>
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-900 rounded-lg font-bold text-xs uppercase tracking-widest group-hover:bg-orange-500 group-hover:text-white transition-all">
+            Top Up
+            <span className="material-symbols-outlined text-sm font-bold group-hover:translate-x-1 transition-transform">add_circle</span>
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Action Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
-          className="bg-white p-6 rounded-lg border border-slate-100 shadow-sm hover:border-orange-200 transition group cursor-pointer"
+          className="bg-white p-6 rounded-2xl border border-slate-100 shadow-lg hover:border-orange-500 transition-all duration-500 group cursor-pointer relative overflow-hidden"
           onClick={() => navigate("/dashboard/buy")}
         >
-          <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center mb-4">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-              />
-            </svg>
+          <div className="relative z-10">
+            <div className="w-14 h-14 bg-slate-900 text-white rounded-xl flex items-center justify-center mb-5 group-hover:bg-orange-500 transition-colors shadow-lg">
+              <span className="material-symbols-outlined text-3xl">language</span>
+            </div>
+            <h3 className="font-black text-xl text-slate-900 mb-2 tracking-tight">Daftar Domain Baru</h3>
+            <p className="text-slate-500 text-sm leading-relaxed font-medium">Beli domain .COM, .ID, dan lainnya dengan harga termurah dan aktivasi instan.</p>
           </div>
-          <h3 className="font-bold text-lg text-slate-900 mb-2">
-            Harga Terbaik
-          </h3>
-          <p className="text-slate-500 text-sm">
-            Domain .COM hanya Rp 145rb/tahun. Aktif instan tanpa ribet.
-          </p>
         </div>
+
         <div
-          className="bg-white p-6 rounded-lg border border-slate-100 shadow-sm hover:border-orange-200 transition group cursor-pointer"
+          className="bg-white p-6 rounded-2xl border border-slate-100 shadow-lg hover:border-blue-500 transition-all duration-500 group cursor-pointer relative overflow-hidden"
           onClick={() => navigate("/dashboard/transfer")}
         >
-          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-4">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-              />
-            </svg>
+          <div className="relative z-10">
+            <div className="w-14 h-14 bg-slate-900 text-white rounded-xl flex items-center justify-center mb-5 group-hover:bg-blue-500 transition-colors shadow-lg">
+              <span className="material-symbols-outlined text-3xl">move_up</span>
+            </div>
+            <h3 className="font-black text-xl text-slate-900 mb-2 tracking-tight">Transfer Domain</h3>
+            <p className="text-slate-500 text-sm leading-relaxed font-medium">Pindahkan domain Anda ke sini dan dapatkan harga perpanjangan yang lebih kompetitif.</p>
           </div>
-          <h3 className="font-bold text-lg text-slate-900 mb-2">
-            Punya Domain?
-          </h3>
-          <p className="text-slate-500 text-sm">
-            Transfer domain lama Anda ke sini. Kami bantu teknisnya sampai
-            beres.
-          </p>
         </div>
       </div>
     </div>

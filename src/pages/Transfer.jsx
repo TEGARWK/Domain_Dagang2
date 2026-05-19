@@ -126,7 +126,10 @@ const Transfer = () => {
               placeholder="Masukan nama domain (contoh: mybiz.com)"
               className="flex-1 pl-6 pr-4 h-12 md:h-[56px] text-sm md:text-base rounded-lg outline-none text-slate-800 placeholder:text-slate-400 bg-transparent"
               value={domain}
-              onChange={(e) => setDomain(e.target.value)}
+              onChange={(e) => {
+                setDomain(e.target.value);
+                if (result) setResult(null);
+              }}
             />
             <button
               type="submit"
@@ -141,7 +144,7 @@ const Transfer = () => {
 
         {/* RESULT / FORM CONTINUATION */}
         {result === "eligible" && (
-          <div className="mt-12 p-10 bg-white border border-slate-100 rounded-2xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1)] max-w-2xl mx-auto text-left animate-fade-in-up relative z-10">
+          <div className="mt-12 p-10 bg-white border border-slate-100 rounded-xl shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1)] max-w-2xl mx-auto text-left animate-fade-in-up relative z-10">
             <div className="flex flex-col gap-8">
               <div className="flex items-center gap-5">
                 <div className="bg-success-50 p-3.5 rounded-lg text-success border border-success-100">
@@ -262,7 +265,7 @@ const Transfer = () => {
            <p className="text-slate-500 font-medium">Standar layanan enterprise untuk kepuasan pelanggan.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
-          <div className="p-10 bg-white rounded-2xl border border-slate-100 hover:border-[#F97316]/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 group">
+          <div className="p-10 bg-white rounded-xl border border-slate-100 hover:border-[#F97316]/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 group">
             <div className="w-16 h-16 bg-orange-50 text-[#F97316] rounded-lg flex items-center justify-center mb-8 group-hover:bg-[#F97316] group-hover:text-white transition-all duration-300 ring-8 ring-transparent group-hover:ring-orange-50">
               {/* Icon Jam Pasir / Waktu */}
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -275,7 +278,7 @@ const Transfer = () => {
               Tidak ada gangguan bisnis sama sekali.
             </p>
           </div>
-          <div className="p-10 bg-white rounded-2xl border border-slate-100 hover:border-[#F97316]/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 group">
+          <div className="p-10 bg-white rounded-xl border border-slate-100 hover:border-[#F97316]/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 group">
             <div className="w-16 h-16 bg-orange-50 text-[#F97316] rounded-lg flex items-center justify-center mb-8 group-hover:bg-[#F97316] group-hover:text-white transition-all duration-300 ring-8 ring-transparent group-hover:ring-orange-50">
               {/* Icon Dompet / Uang */}
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -288,7 +291,7 @@ const Transfer = () => {
               sini harga kami flat dan transparan selamanya.
             </p>
           </div>
-          <div className="p-10 bg-white rounded-2xl border border-slate-100 hover:border-[#F97316]/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 group">
+          <div className="p-10 bg-white rounded-xl border border-slate-100 hover:border-[#F97316]/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 group">
             <div className="w-16 h-16 bg-orange-50 text-[#F97316] rounded-lg flex items-center justify-center mb-8 group-hover:bg-[#F97316] group-hover:text-white transition-all duration-300 ring-8 ring-transparent group-hover:ring-orange-50">
               {/* Icon Perisai / Keamanan */}
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -315,7 +318,7 @@ const Transfer = () => {
           {/* Line Connector */}
           <div className="hidden md:block absolute top-[60px] left-0 w-full h-[2px] bg-slate-100 -z-10"></div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <div className="grid md:grid-cols-3 gap-6">
             <div className="relative group">
               <div className="w-14 h-14 bg-slate-900 text-white rounded-lg flex items-center justify-center font-bold text-xl mx-auto mb-8 border-4 border-white shadow-xl group-hover:bg-[#F97316] transition-all duration-300 transform group-hover:-translate-y-1">
                 1

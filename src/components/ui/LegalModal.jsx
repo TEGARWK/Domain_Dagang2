@@ -12,7 +12,7 @@ const LegalModal = ({ isOpen, onClose, data }) => {
       ></div>
 
       {/* Modal Card */}
-      <div className="relative bg-white w-full max-w-2xl max-h-[85vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
+      <div className="relative bg-white w-full max-w-2xl max-h-[85vh] rounded-xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
         
         {/* Header */}
         <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-20">
@@ -37,7 +37,7 @@ const LegalModal = ({ isOpen, onClose, data }) => {
         <div className="flex-1 overflow-y-auto p-8 md:p-10 space-y-10 custom-scrollbar">
           {data.sections.map((section, index) => (
             <div key={index} className="space-y-3">
-              <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                 {section.title}
               </h4>
               <p className="text-[14px] text-slate-600 leading-relaxed font-medium">

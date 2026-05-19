@@ -68,7 +68,7 @@ const Footer = () => {
     <footer className="bg-white border-t border-slate-100 pt-20 pb-10">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* GRID CONTAINER */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
           {/* 1. BRAND & INFO */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center gap-3 group cursor-pointer">
@@ -240,7 +240,7 @@ const Footer = () => {
             </p>
             <div className="grid grid-cols-3 gap-2">
               {payments.length > 0 ? (
-                payments.slice(0, 9).map((pay) => {
+                payments.slice(0, 9).map((pay, i) => {
                    const getBankLogo = (code) => {
                       const bankCode = code ? String(code).toLowerCase() : '';
                       if (bankCode === '014' || bankCode.includes('bca')) return '/image/banks/bca.png';
@@ -257,7 +257,7 @@ const Footer = () => {
                   };
                   return (
                     <div
-                      key={pay.code}
+                      key={pay.id || pay.code || i}
                       className="bg-white border border-slate-100 p-2 rounded-lg flex items-center justify-center hover:border-orange-200 transition shadow-sm h-10"
                       title={pay.name}
                     >

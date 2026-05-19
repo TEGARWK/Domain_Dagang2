@@ -98,6 +98,12 @@ exports.checkDomainAvailability = async (req, res) => {
         });
     }
 
+    const fs = require('fs');
+    const path = require('path');
+    const debugLog = path.join(__dirname, '../error_debug.log');
+    const logEntry = `[${new Date().toISOString()}] ❌ CHECK DOMAIN ERROR (${domain}): ${errorMessage}\nSTACK: ${error.stack}\nDATA: ${JSON.stringify(errorData)}\n\n`;
+    fs.appendFileSync(debugLog, logEntry);
+
     return res.status(500).json({
       success: false,
       message: "Gagal cek ketersediaan domain",

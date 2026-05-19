@@ -3,6 +3,7 @@ import CustomSelect from "../../components/ui/CustomSelect";
 import { useNotification } from "../../context/NotificationContext";
 import { useConfirm } from "../../context/ConfirmContext";
 import api from "../../services/api";
+import { exportToExcel, formatDataForExport } from "../../utils/exportUtils";
 
 const AdminPricing = () => {
   const { success, error, warning } = useNotification();
@@ -154,30 +155,47 @@ const AdminPricing = () => {
     }
   };
 
+  const handleExportExcel = () => {
+    const exportData = formatDataForExport(pricing, {
+        tld: 'TLD',
+        price_register: 'Harga Daftar',
+        price_transfer: 'Harga Transfer',
+        price_renew: 'Harga Perpanjang',
+        price_restore: 'Harga Restore'
+    });
+    exportToExcel(exportData, 'Daftar_Harga_TLD', 'Pricing');
+  };
+
   return (
-    <div className="space-y-8 animate-[fadeIn_0.5s_ease-out] relative">
+    <div className="space-y-4 animate-[fadeIn_0.5s_ease-out] relative">
       <div className="flex justify-end mb-4">
         <div className="flex gap-2">
             <button 
                 onClick={handleSync}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/20 flex items-center gap-2"
+                className="h-11 px-6 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-xs font-bold hover:bg-blue-100 transition flex items-center gap-2"
                 disabled={loading}
             >
-                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Sync Prices
+                <span className={`material-symbols-outlined text-lg ${loading ? 'animate-spin' : ''}`}>sync</span>
+                Sync Registrar
+            </button>
+            <button 
+                onClick={handleExportExcel}
+                className="h-11 px-6 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-xs font-bold hover:bg-emerald-100 transition flex items-center gap-2"
+            >
+                <span className="material-symbols-outlined text-lg">download</span>
+                Export
             </button>
             <button 
                 onClick={() => setIsAdding(true)}
-                className="px-5 py-2.5 bg-[#F97316] text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition shadow-lg shadow-orange-600/20"
+                className="h-11 px-6 bg-[#F97316] text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition shadow-lg shadow-orange-600/20 flex items-center gap-2"
             >
-                Tambah TLD Baru
+                <span className="material-symbols-outlined text-lg">add_circle</span>
+                Tambah TLD
             </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
         {/* MOBILE CARDS */}
         <div className="block sm:hidden divide-y divide-slate-50">
           {loading ? (
@@ -188,7 +206,7 @@ const AdminPricing = () => {
             return (
               <div key={p.id} className="p-5 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-2xl font-black text-slate-900 tracking-tighter">{p.tld}</span>
+                  <span className="text-2xl font-bold text-slate-900 tracking-tighter">{p.tld}</span>
                   <div className="flex gap-2">
                     <button onClick={() => openEditModal(p)} className="p-2.5 bg-slate-50 text-slate-400 rounded-lg border border-slate-100 transition shadow-sm">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -231,40 +249,49 @@ const AdminPricing = () => {
             <table className="w-full text-left text-sm border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-8 py-5">Extension</th>
-                <th className="px-8 py-5 text-right">Harga Daftar</th>
-                <th className="px-8 py-5 text-right">Harga Transfer</th>
-                <th className="px-8 py-5 text-right">Harga Perpanjang</th>
-                <th className="px-8 py-5 text-right">Harga Restore</th>
-                <th className="px-8 py-5 text-center">Aksi</th>
+                <th className="px-4 py-2">Extension</th>
+                <th className="px-4 py-2 text-right">Harga Daftar</th>
+                <th className="px-4 py-2 text-right">Harga Transfer</th>
+                <th className="px-4 py-2 text-right">Harga Perpanjang</th>
+                <th className="px-4 py-2 text-right">Harga Restore</th>
+                <th className="px-4 py-2 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
               {loading ? (
-                 <tr><td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic font-bold">Memuat data harga...</td></tr>
+                 Array(10).fill(0).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                        <td className="px-4 py-4"><div className="h-6 w-16 bg-slate-100 rounded"></div></td>
+                        <td className="px-4 py-4 text-right"><div className="h-4 w-24 bg-slate-50 rounded ml-auto"></div></td>
+                        <td className="px-4 py-4 text-right"><div className="h-4 w-24 bg-slate-50 rounded ml-auto"></div></td>
+                        <td className="px-4 py-4 text-right"><div className="h-4 w-24 bg-slate-50 rounded ml-auto"></div></td>
+                        <td className="px-4 py-4 text-right"><div className="h-4 w-24 bg-slate-50 rounded ml-auto"></div></td>
+                        <td className="px-4 py-4 text-center"><div className="h-8 w-20 bg-slate-100 rounded-lg mx-auto"></div></td>
+                    </tr>
+                 ))
               ) : pricing.length === 0 ? (
                  <tr><td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic font-bold">Belum ada data pricing. Silakan Sync.</td></tr>
               ) : pricing.map((p) => {
                   return (
                 <tr key={p.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-8 py-5">
-                    <span className="text-lg font-extrabold text-slate-900 tracking-tighter">{p.tld}</span>
+                  <td className="px-4 py-1.5">
+                    <span className="text-lg font-bold text-slate-900 tracking-tighter">{p.tld}</span>
                   </td>
-                  <td className="px-8 py-5 text-right">
+                  <td className="px-4 py-1.5 text-right">
                       <div className="font-bold text-slate-800">
                         {formatRupiah(p.price_register)}
                       </div>
                   </td>
-                  <td className="px-8 py-5 text-right font-bold text-slate-800">
+                  <td className="px-4 py-1.5 text-right font-bold text-slate-800">
                       {formatRupiah(p.price_transfer)}
                   </td>
-                  <td className="px-8 py-5 text-right font-bold text-slate-800">
+                  <td className="px-4 py-1.5 text-right font-bold text-slate-800">
                       {formatRupiah(p.price_renew)}
                   </td>
-                  <td className="px-8 py-5 text-right font-bold text-slate-800">
+                  <td className="px-4 py-1.5 text-right font-bold text-slate-800">
                       {formatRupiah(p.price_restore)}
                   </td>
-                  <td className="px-8 py-5 text-center">
+                  <td className="px-4 py-1.5 text-center">
                     <div className="flex justify-center gap-2">
                       <button 
                         onClick={() => openEditModal(p)}
@@ -296,12 +323,12 @@ const AdminPricing = () => {
       {/* EDIT MODAL */}
       {editingItem && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
-            <div className="p-6 md:p-8 flex-shrink-0 bg-white border-b border-slate-50">
+          <div className="bg-white rounded-xl w-full max-w-4xl shadow-xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col text-left">
+            <div className="p-4 md:p-5 flex-shrink-0 bg-white border-b border-slate-50">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-3xl font-bold text-slate-900">Atur Harga TLD: <span className="text-[#F97316]">{editingItem.tld}</span></h2>
-                  <p className="text-slate-500 font-medium">Input harga final sesuai instruksi manajemen.</p>
+                  <h2 className="text-xl font-bold text-slate-900">Atur Harga TLD: <span className="text-[#F97316]">{editingItem.tld}</span></h2>
+                  <p className="text-[11px] text-slate-500 font-medium">Input harga final sesuai instruksi manajemen.</p>
                 </div>
                 <button onClick={() => setEditingItem(null)} className="p-3 bg-slate-50 text-slate-400 rounded-lg hover:bg-slate-100 transition">
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -311,11 +338,11 @@ const AdminPricing = () => {
               </div>
             </div>
             
-            <div className="px-6 md:px-8 py-8 overflow-y-auto custom-scrollbar bg-slate-50/30">
+            <div className="px-4 md:px-5 py-4 overflow-y-auto custom-scrollbar bg-slate-50/30">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 1: Register */}
-                <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-6">
+                <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                       <span className="material-symbols-outlined">add_circle</span>
                     </div>
@@ -329,15 +356,15 @@ const AdminPricing = () => {
                           <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Harga Jual Utama</label>
                           <input 
                             type="text" value={editForm.price_register} onChange={(e) => setEditForm({...editForm, price_register: formatInputPrice(e.target.value)})}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-black text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
+                            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-bold text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
                           />
                       </div>
                   </div>
                 </div>
 
                 {/* 2: Transfer */}
-                <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-6">
+                <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                       <span className="material-symbols-outlined">move_up</span>
                     </div>
@@ -350,14 +377,14 @@ const AdminPricing = () => {
                       <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Harga Transfer</label>
                       <input 
                         type="text" value={editForm.price_transfer} onChange={(e) => setEditForm({...editForm, price_transfer: formatInputPrice(e.target.value)})}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-black text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-bold text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
                       />
                   </div>
                 </div>
 
                 {/* 3: Renew */}
-                <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-6">
+                <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                       <span className="material-symbols-outlined">history</span>
                     </div>
@@ -370,14 +397,14 @@ const AdminPricing = () => {
                       <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Harga Perpanjang</label>
                       <input 
                         type="text" value={editForm.price_renew} onChange={(e) => setEditForm({...editForm, price_renew: formatInputPrice(e.target.value)})}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-black text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-bold text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
                       />
                   </div>
                 </div>
 
                 {/* 4: Restore */}
-                <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-6">
+                <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                       <span className="material-symbols-outlined">restart_alt</span>
                     </div>
@@ -390,14 +417,14 @@ const AdminPricing = () => {
                       <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Harga Restore</label>
                       <input 
                         type="text" value={editForm.price_restore} onChange={(e) => setEditForm({...editForm, price_restore: formatInputPrice(e.target.value)})}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-black text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-bold text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
                       />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 md:p-8 border-t border-slate-100 flex-shrink-0 bg-white">
+            <div className="p-4 md:p-5 border-t border-slate-100 flex-shrink-0 bg-white">
               <div className="flex justify-end gap-3">
                 <button onClick={() => setEditingItem(null)} className="px-8 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition">Batal</button>
                 <button onClick={handleUpdate} className="px-10 py-3.5 bg-[#F97316] text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-900 transition shadow-lg shadow-orange-500/20">Simpan Perubahan</button>
@@ -410,8 +437,8 @@ const AdminPricing = () => {
       {/* ADD MODAL */}
       {isAdding && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
-            <div className="p-6 md:p-8 flex-shrink-0 bg-white border-b border-slate-50">
+          <div className="bg-white rounded-xl w-full max-w-4xl shadow-xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col text-left">
+            <div className="p-4 md:p-5 flex-shrink-0 bg-white border-b border-slate-50">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-3xl font-bold text-slate-900">Tambah <span className="text-[#F97316]">TLD Baru</span></h2>
@@ -425,8 +452,8 @@ const AdminPricing = () => {
               </div>
             </div>
 
-            <div className="px-6 md:px-8 py-8 overflow-y-auto custom-scrollbar bg-slate-50/30">
-               <div className="mb-8 p-6 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center gap-6">
+            <div className="px-4 md:px-5 py-4 overflow-y-auto custom-scrollbar bg-slate-50/30">
+               <div className="mb-4 p-4 bg-white rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center gap-6">
                   <div className="flex-1">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-3">Pilih Ekstensi Domain</label>
                     <CustomSelect
@@ -443,38 +470,38 @@ const AdminPricing = () => {
                </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Harga Daftar</p>
                   <input 
                     type="text" value={addForm.price_register} onChange={(e) => setAddForm({...addForm, price_register: formatInputPrice(e.target.value)})}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-black text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-bold text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
                   />
                 </div>
-                <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Harga Transfer</p>
                   <input 
                     type="text" value={addForm.price_transfer} onChange={(e) => setAddForm({...addForm, price_transfer: formatInputPrice(e.target.value)})}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-black text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-bold text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
                   />
                 </div>
-                <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Harga Perpanjang</p>
                   <input 
                     type="text" value={addForm.price_renew} onChange={(e) => setAddForm({...addForm, price_renew: formatInputPrice(e.target.value)})}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-black text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-bold text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
                   />
                 </div>
-                <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Harga Restore</p>
                   <input 
                     type="text" value={addForm.price_restore} onChange={(e) => setAddForm({...addForm, price_restore: formatInputPrice(e.target.value)})}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-black text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3.5 text-lg font-bold text-slate-900 outline-none focus:border-[#F97316] focus:bg-white transition" placeholder="Rp 0"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="p-6 md:p-8 border-t border-slate-100 flex-shrink-0 bg-white">
+            <div className="p-4 md:p-5 border-t border-slate-100 flex-shrink-0 bg-white">
               <div className="flex justify-end gap-3">
                 <button onClick={() => setIsAdding(false)} className="px-8 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition">Batal</button>
                 <button onClick={handleAdd} className="px-10 py-3.5 bg-[#F97316] text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-900 transition shadow-lg shadow-orange-500/20">Tambahkan TLD</button>

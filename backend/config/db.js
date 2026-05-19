@@ -42,6 +42,8 @@ const query = (text, params, callback) => {
     callback = params;
     params = [];
   }
+  
+  if (!params) params = [];
 
   let paramIndex = 1;
   const translatedText = text.replace(/\?/g, () => `$${paramIndex++}`);

@@ -214,7 +214,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
     };
 
     return (
-        <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-2xl animate-fade-in-up">
+        <div className="bg-white rounded-xl overflow-hidden border border-slate-100 shadow-xl animate-fade-in-up">
             {/* Header */}
             <div className="bg-slate-900 p-8 text-white relative">
                 <div className="relative z-10">
@@ -233,7 +233,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
 
             <form onSubmit={handleSubmit} className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {status.msg && (
-                    <div className={`p-4 rounded-2xl text-sm font-bold border animate-bounce-subtle ${status.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                    <div className={`p-4 rounded-xl text-sm font-bold border animate-bounce-subtle ${status.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                         {status.msg}
                     </div>
                 )}
@@ -255,7 +255,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                 onChange={handleChange}
                                 required
                                 placeholder="Contoh: Diskon Merdeka .ID"
-                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-bold text-slate-700"
+                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-bold text-slate-700"
                             />
                         </div>
                         <div>
@@ -266,7 +266,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                 onChange={handleChange}
                                 rows="3"
                                 placeholder="Jelaskan aturan mainnya..."
-                                className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all resize-none font-medium text-slate-600"
+                                className="w-full p-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all resize-none font-medium text-slate-600"
                             ></textarea>
                         </div>
                     </div>
@@ -286,7 +286,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                 name="discount_type"
                                 value={coupon.discount_type}
                                 onChange={handleChange}
-                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all cursor-pointer font-bold text-slate-700"
+                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all cursor-pointer font-bold text-slate-700"
                             >
                                 <option value="flat">Nominal (Rp)</option>
                                 <option value="percentage">Persentase (%)</option>
@@ -302,7 +302,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                     onChange={handleNumberChange}
                                     required
                                     placeholder="0"
-                                    className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-bold text-emerald-600"
+                                    className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-bold text-emerald-600"
                                 />
                                 <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
                                     {coupon.discount_type === 'percentage' ? '%' : 'Rp'}
@@ -311,7 +311,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                         </div>
 
                         {coupon.discount_type === 'percentage' && (
-                            <div className="md:col-span-2 p-5 bg-orange-50/50 border border-orange-100 rounded-2xl">
+                            <div className="md:col-span-2 p-5 bg-orange-50/50 border border-orange-100 rounded-xl">
                                 <label className="block text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-2">Maksimal Diskon (Rupiah)</label>
                                 <div className="relative">
                                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-orange-400 font-bold">Rp</span>
@@ -371,7 +371,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                         value={formatRupiah(coupon.min_purchase)}
                                         onChange={handleNumberChange}
                                         placeholder="0"
-                                        className="w-full h-14 pl-12 pr-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
+                                        className="w-full h-14 pl-12 pr-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
                                     />
                                 </div>
                             </div>
@@ -381,7 +381,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                     name="segment"
                                     value={coupon.segment}
                                     onChange={handleChange}
-                                    className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer font-bold text-slate-700"
+                                    className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all cursor-pointer font-bold text-slate-700"
                                 >
                                     <option value="all">Semua Member</option>
                                     <option value="regular">Member Biasa</option>
@@ -398,7 +398,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                     <button type="button" onClick={handleClearAllTlds} className="text-[9px] font-bold uppercase text-slate-400 hover:underline tracking-widest">Bersihkan</button>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2 p-4 bg-slate-50 border border-slate-100 rounded-2xl h-44 overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2 p-4 bg-slate-50 border border-slate-100 rounded-xl h-44 overflow-y-auto custom-scrollbar">
                                 {availableTlds.map(tld => (
                                     <button
                                         key={tld}
@@ -431,7 +431,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                 value={coupon.started_at}
                                 onChange={handleChange}
                                 required
-                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-slate-700"
+                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-slate-700"
                             />
                         </div>
                         <div>
@@ -442,7 +442,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                 value={coupon.expired_at}
                                 onChange={handleChange}
                                 required
-                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-slate-700"
+                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-slate-700"
                             />
                         </div>
                         <div>
@@ -453,7 +453,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                 value={coupon.quota}
                                 onChange={handleChange}
                                 placeholder="0 (Unlimited)"
-                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-slate-700"
+                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-slate-700"
                             />
                         </div>
                         <div>
@@ -464,14 +464,14 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                 value={coupon.max_use_per_user}
                                 onChange={handleChange}
                                 placeholder="1"
-                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-2xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-slate-700"
+                                className="w-full h-14 px-5 bg-slate-50 border border-slate-200 rounded-xl text-base focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all font-bold text-slate-700"
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* SECTION 5: PENGATURAN & PRIORITAS */}
-                <div className="space-y-5 bg-slate-900 p-8 rounded-3xl text-white">
+                <div className="space-y-5 bg-slate-900 p-8 rounded-xl text-white">
                     <div className="flex items-center gap-3 border-b border-white/10 pb-3">
                         <span className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center font-bold text-sm">05</span>
                         <h3 className="font-bold text-white uppercase tracking-tight">Aturan & Prioritas</h3>
@@ -516,7 +516,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                                 value={coupon.priority}
                                 onChange={handleChange}
                                 placeholder="0"
-                                className="w-full h-14 px-5 bg-white/5 border border-white/10 rounded-2xl text-base focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all font-bold text-white"
+                                className="w-full h-14 px-5 bg-white/5 border border-white/10 rounded-xl text-base focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all font-bold text-white"
                             />
                             <p className="text-[9px] text-slate-400 mt-2 font-semibold uppercase">Makin tinggi angka, makin atas munculnya di halaman promo.</p>
                         </div>
@@ -528,7 +528,7 @@ const CreateCouponForm = ({ voucherId, onSuccess, onCancel }) => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full h-16 bg-[#f97316] text-white rounded-2xl text-base font-bold shadow-2xl shadow-orange-600/30 hover:bg-[#ea580c] hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-wait uppercase tracking-[0.2em]"
+                        className="w-full h-16 bg-[#f97316] text-white rounded-xl text-base font-bold shadow-xl shadow-orange-600/30 hover:bg-[#ea580c] hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-wait uppercase tracking-[0.2em]"
                     >
                         {isLoading ? (
                             <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>

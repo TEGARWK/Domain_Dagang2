@@ -62,19 +62,19 @@ const TopNavbar = ({ user, cartCount, setSidebarOpen }) => {
           <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{getPageIcon()}</span>
         </div>
         <div className="flex flex-col">
-          <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">
+          <div className="hidden sm:flex items-center gap-2 text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">
             <span>Member</span>
             <span className="text-slate-300">/</span>
             <span className="text-[#F97316]">{user ? user.name.split(" ")[0] : "Area"}</span>
           </div>
-          <h1 className="text-xs sm:text-sm font-bold text-slate-800 tracking-tight leading-none uppercase">
+          <h1 className="text-xs sm:text-sm font-semibold text-slate-800 tracking-tight leading-none uppercase">
             {getPageTitle()}
           </h1>
         </div>
       </div>
 
       {/* 2. MIDDLE: DATE/TIME */}
-      <div className="hidden md:flex items-center gap-2 text-[10px] text-slate-400 font-bold bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 uppercase tracking-widest">
+      <div className="hidden md:flex items-center gap-2 text-[10px] text-slate-400 font-semibold bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 uppercase tracking-widest">
         <span className="material-symbols-outlined text-[14px]">calendar_today</span>
         <span>{currentTime.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
         <span className="text-slate-300 mx-0.5">•</span>
@@ -100,13 +100,13 @@ const TopNavbar = ({ user, cartCount, setSidebarOpen }) => {
 
             {/* Notification Dropdown */}
             {showNotifDropdown && (
-              <div className="fixed inset-x-4 top-[70px] sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-3 w-auto sm:w-80 bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="fixed inset-x-4 top-[70px] sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-3 w-auto sm:w-80 bg-white/80 backdrop-blur-xl border border-white/20 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="p-4 border-b border-white/20 flex items-center justify-between bg-white/40">
-                  <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em]">Notifikasi</h3>
+                  <h3 className="text-[10px] font-semibold text-slate-800 uppercase tracking-[0.2em]">Notifikasi</h3>
                   {unreadCount > 0 && (
                     <button 
                       onClick={markAllAsRead}
-                      className="text-[9px] font-bold text-[#F97316] uppercase hover:underline bg-orange-50 px-2 py-1 rounded-md"
+                      className="text-[9px] font-semibold text-[#F97316] uppercase hover:underline bg-orange-50 px-2 py-1 rounded-md"
                     >
                       Baca Semua
                     </button>
@@ -114,22 +114,22 @@ const TopNavbar = ({ user, cartCount, setSidebarOpen }) => {
                 </div>
                 <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
                   {notifications.length === 0 ? (
-                    <div className="p-12 text-center">
+                    <div className="p-10 text-center">
                       <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 opacity-50">
                         <span className="material-symbols-outlined text-slate-300">notifications_off</span>
                       </div>
-                      <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">Inbox Kosong</p>
+                      <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest leading-relaxed">Inbox Kosong</p>
                     </div>
                   ) : (
                     notifications.slice(0, 5).map(n => (
                       <div key={n.id} className={`p-4 border-b border-white/10 hover:bg-white/60 transition-all relative cursor-default group ${!n.is_read ? 'bg-orange-50/30' : ''}`}>
                         {!n.is_read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316] shadow-[2px_0_8px_rgba(249,115,22,0.3)]"></div>}
                         <div className="flex justify-between items-start gap-2 mb-1">
-                          <h4 className={`text-[11px] font-bold uppercase transition-colors ${!n.is_read ? 'text-[#F97316]' : 'text-slate-700'}`}>{n.title}</h4>
-                          <span className="text-[8px] text-slate-400 font-bold whitespace-nowrap">{new Date(n.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span>
+                          <h4 className={`text-[11px] font-semibold uppercase transition-colors ${!n.is_read ? 'text-[#F97316]' : 'text-slate-700'}`}>{n.title}</h4>
+                          <span className="text-[8px] text-slate-400 font-semibold whitespace-nowrap">{new Date(n.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</span>
                         </div>
-                        <p className={`text-[10px] leading-relaxed mb-1 ${!n.is_read ? 'text-slate-800 font-bold' : 'text-slate-500 font-medium'}`}>{n.message}</p>
-                        <span className="text-[8px] text-slate-300 font-bold uppercase tracking-wider">{new Date(n.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
+                        <p className={`text-[10px] leading-relaxed mb-1 ${!n.is_read ? 'text-slate-800 font-semibold' : 'text-slate-500 font-medium'}`}>{n.message}</p>
+                        <span className="text-[8px] text-slate-300 font-semibold uppercase tracking-wider">{new Date(n.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</span>
                       </div>
                     ))
                   )}
@@ -147,7 +147,7 @@ const TopNavbar = ({ user, cartCount, setSidebarOpen }) => {
           <Link to="/cart" className="w-10 h-10 text-slate-400 hover:text-[#F97316] hover:bg-orange-50 rounded-lg transition relative group flex items-center justify-center">
             <span className={`material-symbols-outlined ${cartCount > 0 ? "text-[#F97316]" : ""}`} style={{ fontSize: 22 }}>shopping_cart</span>
             {cartCount > 0 && (
-              <span className="absolute top-1 right-0.5 flex h-4.5 min-w-[18px] px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white border-2 border-white shadow-sm">
+              <span className="absolute top-1 right-0.5 flex h-4.5 min-w-[18px] px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-semibold text-white border-2 border-white shadow-sm">
                 {cartCount}
               </span>
             )}
@@ -157,10 +157,10 @@ const TopNavbar = ({ user, cartCount, setSidebarOpen }) => {
         {/* PROFILE */}
         <Link to="/dashboard/settings" className="flex items-center gap-3 pl-4 border-l border-slate-100 group">
           <div className="text-right hidden xl:block">
-            <p className="text-xs font-bold text-slate-800 transition group-hover:text-[#F97316]">
+            <p className="text-xs font-semibold text-slate-800 transition group-hover:text-[#F97316]">
               {user ? user.name : "..."}
             </p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-tighter">
               Manage Profile
             </p>
           </div>
@@ -168,7 +168,7 @@ const TopNavbar = ({ user, cartCount, setSidebarOpen }) => {
              {user?.avatar ? (
                 <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
              ) : (
-                <div className="w-full h-full bg-[#faefe9] rounded-full flex items-center justify-center text-[#F97316] font-bold text-sm">
+                <div className="w-full h-full bg-[#faefe9] rounded-full flex items-center justify-center text-[#F97316] font-semibold text-sm">
                   {user ? user.name.charAt(0).toUpperCase() : "?"}
                 </div>
              )}

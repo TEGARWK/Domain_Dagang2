@@ -5,6 +5,7 @@ const { getIPv4 } = require('../utils/ipHelper');
 const referralService = require('../services/referralService');
 const VoucherService = require('../services/VoucherService');
 const OrderService = require('../services/OrderService');
+const FinanceService = require('../services/FinanceService');
 
 
 /**
@@ -414,7 +415,7 @@ exports.handleWebhook = async (req, res) => {
                 );
 
                 await client.query(
-                    'UPDATE invoices SET status = $1, updated_at = NOW() WHERE id = $2',
+                    'UPDATE invoices SET status = $1, paid_at = NOW(), updated_at = NOW() WHERE id = $2',
                     ['paid', invoice.id]
                 );
 
@@ -452,6 +453,28 @@ exports.handleWebhook = async (req, res) => {
 
                 // F. Finalize Voucher Usage
                 await VoucherService.finalizeVoucherUsage(invoice.id, client);
+
+                // G. Record to Finance Module (New Integration)
+                try {
+                    const now = new Date();
+                    const periodData = await FinanceService.getPeriodData(now.getMonth() + 1, now.getFullYear());
+                    
+                    // Ambil ID lokasi uang utama
+                    const mainLocRes = await client.query("SELECT id FROM finance_money_locations WHERE is_main = true LIMIT 1");
+                    const locationId = mainLocRes.rows[0]?.id || 1;
+
+                    await FinanceService.addMutation({
+                        period_id: periodData.period.id,
+                        type: 'IN',
+                        category: isTopUp ? 'DEPOSIT' : 'REVENUE',
+                        nominal: parseFloat(invoice.final_amount || invoice.total),
+                        location_id: locationId,
+                        description: isTopUp ? `Top Up Saldo User (Tripay) - ${invoice.id}` : `Alokasi Revenue Otomatis (Tripay) - ${invoice.id}`
+                    });
+                    console.log(`💰 [Finance] Recorded Tripay ${isTopUp ? 'deposit' : 'revenue'} for ${invoice.id}`);
+                } catch (finErr) {
+                    console.error('❌ [Finance Error] Tripay mutation failed:', finErr.message);
+                }
 
                 await client.query('COMMIT');
                 console.log(`🎉 [Tripay Webhook] Completed transaction for Invoice: ${invoice.id}`);
@@ -518,11 +541,26 @@ exports.checkStatus = async (req, res) => {
                                 'Top Up via Tripay Check'
                             );
                         }
-                        await db.pool.query('COMMIT');
-                        console.log(`💎 [Tripay StatusCheck] Database sync completed for: ${invoice.id}`);
-
+                        
                         // Finalize Coupon Usage (Success)
                         await VoucherService.finalizeVoucherUsage(invoice.id, db.pool);
+
+                        // Record to Finance (Manual Sync Case)
+                        try {
+                            const now = new Date();
+                            const periodData = await FinanceService.getPeriodData(now.getMonth() + 1, now.getFullYear());
+                            const mainLocRes = await db.pool.query("SELECT id FROM finance_money_locations WHERE is_main = true LIMIT 1");
+                            const locationId = mainLocRes.rows[0]?.id || 1;
+
+                            await FinanceService.addMutation({
+                                period_id: periodData.period.id,
+                                type: 'IN',
+                                category: isTopUp ? 'DEPOSIT' : 'REVENUE',
+                                nominal: parseFloat(invoice.final_amount || invoice.total),
+                                location_id: locationId,
+                                description: isTopUp ? `Top Up Saldo User (Tripay Sync) - ${invoice.id}` : `Alokasi Revenue Otomatis (Tripay Sync) - ${invoice.id}`
+                            });
+                        } catch (finErr) { console.error('[Finance Error] Sync mutation failed:', finErr.message); }
 
                         // Trigger Domain Activation (Async)
                         if (invoice.type !== 'TOPUP' && !invoice.id.startsWith('TOPUP-')) {
@@ -531,6 +569,9 @@ exports.checkStatus = async (req, res) => {
                                 .then(res => console.log(`[Tripay StatusCheck] Domain Activation Result for ${invoice.id}:`, res))
                                 .catch(err => console.error(`[Tripay StatusCheck] Domain Activation Error for ${invoice.id}:`, err));
                         }
+
+                        await db.pool.query('COMMIT');
+                        console.log(`💎 [Tripay StatusCheck] Database sync completed for: ${invoice.id}`);
                     } catch (innerErr) {
                         await db.pool.query('ROLLBACK');
                         console.error("Status check sync error:", innerErr);

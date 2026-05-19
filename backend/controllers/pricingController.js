@@ -14,42 +14,48 @@ exports.getAllPricing = (req, res) => {
 // 2. Sync Prices from Daftarnama (Admin Only)
 exports.syncPricing = async (req, res) => {
     try {
-        console.log("Syncing prices from Daftarnama...");
+        console.log("Syncing prices from Daftarnama (Standard Price Filter)...");
         const apiResponse = await DaftarnamaService.getTLDPricings();
         
         if (!apiResponse || !apiResponse.data) {
             return res.status(500).json({ message: "Invalid response from Daftarnama API" });
         }
 
-        // REMOVED FILTER: Now syncing ALL TLDs provided by the API (or Mock)
-        const mappings = apiResponse.data;
+        const rawData = apiResponse.data;
+        const bestPricings = {};
 
+        // 1. Group by TLD and select the CHEAPEST 1-year registration price
+        // This filters out "Premium" domain entries from the registrar response
+        for (const item of rawData) {
+            const price1Year = item.pricings?.find(p => p.duration == 1);
+            if (!price1Year) continue;
+
+            const tld = item.tld.startsWith('.') ? item.tld : `.${item.tld}`;
+            const currentRegPrice = parseFloat(price1Year.register_price) || 0;
+
+            if (!bestPricings[tld] || currentRegPrice < bestPricings[tld].cReg) {
+                bestPricings[tld] = {
+                    tld,
+                    cReg: currentRegPrice,
+                    cRen: parseFloat(price1Year.renewal_price) || 0,
+                    cTra: parseFloat(price1Year.transfer_price) || 0,
+                    cRes: parseFloat(price1Year.restore_price || 0) || 0
+                };
+            }
+        }
+
+        const mappings = Object.values(bestPricings);
         let updatedCount = 0;
 
         for (const item of mappings) {
-            // Logic: Update cost_prices based on API response
-            // Daftarnama API response structure (based on audit): register_price, renewal_price, transfer_price, restore_price
-            // Handle both number and string for duration (1 or "1")
-            const price1Year = item.pricings.find(p => p.duration == 1);
-            
-            if (!price1Year) {
-                console.warn(`[Sync] Skipping ${item.tld}: No 1-year pricing found.`);
-                continue;
-            }
-
-            // Ensure prices are clean numbers from API
-            const cReg = parseFloat(price1Year.register_price) || 0; 
-            const cRen = parseFloat(price1Year.renewal_price) || 0;
-            const cTra = parseFloat(price1Year.transfer_price) || 0;
-            const cRes = parseFloat(price1Year.restore_price || 0) || 0;
-
             const updateQuery = `
                 INSERT INTO pricing (
                     tld, 
                     cost_register, cost_renew, cost_transfer, cost_restore,
-                    price_register, price_renew, price_transfer, price_restore
+                    price_register, price_renew, price_transfer, price_restore,
+                    updated_at
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
                 ON CONFLICT (tld) 
                 DO UPDATE SET 
                     cost_register = EXCLUDED.cost_register,
@@ -63,38 +69,33 @@ exports.syncPricing = async (req, res) => {
                     updated_at = CURRENT_TIMESTAMP;
             `;
 
-            // Margin 1.0 = Harga jual SAMA dengan harga modal (Daftarnama)
+            // Margin 1.0 (Harga jual = Harga modal)
             const margin = 1.0;
-            const pReg = Math.round(cReg * margin);
-            const pRen = Math.round(cRen * margin);
-            const pTra = Math.round(cTra * margin);
-            const pRes = Math.round(cRes * margin);
+            const pReg = Math.round(item.cReg * margin);
+            const pRen = Math.round(item.cRen * margin);
+            const pTra = Math.round(item.cTra * margin);
+            const pRes = Math.round(item.cRes * margin);
 
-            await new Promise((resolve, reject) => {
-                db.query(updateQuery, [
-                    item.tld, 
-                    cReg, cRen, cTra, cRes,
-                    pReg, pRen, pTra, pRes
-                ], (err, res) => {
-                    if (err) reject(err);
-                    else resolve(res);
-                });
-            });
+            await db.pool.query(updateQuery, [
+                item.tld, 
+                item.cReg, item.cRen, item.cTra, item.cRes,
+                pReg, pRen, pTra, pRes
+            ]);
             updatedCount++;
         }
 
-        // Audit Log for Sync
+        // Audit Log
         await createLog({
             user_id: req.user.id,
             action: 'SYNC_PRICING',
             entity_type: 'pricing',
-            new_value: { count: updatedCount },
+            new_value: { count: updatedCount, method: "cheapest_filter" },
             req
         });
 
         res.json({ 
             success: true, 
-            message: `Successfully synced ${updatedCount} TLDs (v2 Granular)`, 
+            message: `Successfully synced ${updatedCount} TLDs with standard pricing.`, 
             data: mappings 
         });
 

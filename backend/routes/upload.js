@@ -57,7 +57,7 @@ router.post('/banner', verifyAdmin, upload.single('image'), async (req, res) => 
         const webpFilename = await convertToWebP(req.file.buffer, req.file.originalname, uploadDir);
 
         // Generate relative URL
-        const imageUrl = `/uploads/${webpFilename}`;
+        const imageUrl = `/api/uploads/${webpFilename}`;
 
         res.json({
             success: true,
@@ -88,7 +88,7 @@ router.post('/gateway', verifyAdmin, upload.single('image'), async (req, res) =>
         res.json({
             success: true,
             message: 'Gambar berhasil diunggah',
-            imageUrl: `/uploads/${webpFilename}`
+            imageUrl: `/api/uploads/${webpFilename}`
         });
     } catch (error) {
         console.error("Gateway Upload Error:", error);
@@ -109,11 +109,32 @@ router.post('/proof', verifyToken, upload.single('image'), async (req, res) => {
         res.json({
             success: true,
             message: 'Bukti pembayaran berhasil diunggah',
-            imageUrl: `/uploads/${webpFilename}`
+            imageUrl: `/api/uploads/${webpFilename}`
         });
     } catch (error) {
         console.error("Proof Upload Error:", error);
         res.status(500).json({ success: false, message: error.message || 'Gagal mengunggah bukti pembayaran' });
+    }
+});
+
+// Route for support ticket attachments (Accessible by Users & Admin)
+router.post('/support', verifyToken, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Tidak ada file yang diunggah.' });
+        }
+
+        // Konversi ke WebP dengan prefix 'support'
+        const webpFilename = await convertToWebP(req.file.buffer, req.file.originalname, uploadDir, 'support');
+
+        res.json({
+            success: true,
+            message: 'Lampiran berhasil diunggah',
+            imageUrl: `/api/uploads/${webpFilename}`
+        });
+    } catch (error) {
+        console.error("Support Upload Error:", error);
+        res.status(500).json({ success: false, message: error.message || 'Gagal mengunggah lampiran' });
     }
 });
 

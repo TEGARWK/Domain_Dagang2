@@ -145,7 +145,7 @@ const Register = () => {
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-blob animation-delay-2000"></div>
 
       {/* MAIN CARD */}
-      <div className="max-w-5xl w-full bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative z-10 border border-white/50 h-[90vh]">
+      <div className="max-w-5xl w-full bg-white rounded-xl shadow-xl overflow-hidden flex flex-col md:flex-row relative z-10 border border-white/50 h-[90vh]">
         {/* LEFT SIDE - BRANDING */}
         <div className="hidden md:flex w-5/12 bg-gradient-to-br from-[#F97316] to-orange-600 relative flex-col justify-between p-10 text-white overflow-hidden">
           <div
@@ -338,7 +338,7 @@ const Register = () => {
                         type="text"
                         name="referralCode"
                         value={formData.referralCode}
-                        className="w-full px-4 py-2.5 rounded-lg bg-orange-50/50 border border-orange-100 focus:bg-white focus:border-[#F97316] focus:ring-2 focus:ring-orange-100 outline-none transition font-black text-[#F97316] text-sm uppercase tracking-widest placeholder:text-slate-300"
+                        className="w-full px-4 py-2.5 rounded-lg bg-orange-50/50 border border-orange-100 focus:bg-white focus:border-[#F97316] focus:ring-2 focus:ring-orange-100 outline-none transition font-bold text-[#F97316] text-sm uppercase tracking-widest placeholder:text-slate-300"
                         placeholder="CONTOH-1234"
                         onChange={handleChange}
                       />

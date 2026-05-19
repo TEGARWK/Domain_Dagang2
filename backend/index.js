@@ -15,7 +15,12 @@ app.use(express.json({
   }
 })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'ngrok-skip-browser-warning']
+}));
 app.use(cookieParser());
 const morgan = require('morgan');
 app.use(morgan('dev'));
@@ -35,6 +40,7 @@ const billingRoutes = require("./routes/billing");
 const daftarnamaRoutes = require("./routes/daftarnama");
 const transferRoutes = require("./routes/transferRoutes");
 const prismalinkRoutes = require("./routes/prismalink");
+const pricingRoutes = require('./routes/pricing');
 
 
 // --- USE ROUTES ---
@@ -51,8 +57,11 @@ app.use("/api/pricing", require("./routes/pricing"));
 app.use("/api/content", require("./routes/content"));
 app.use("/api/payment-gateways", require("./routes/paymentGateways"));
 app.use("/api/admin", require("./routes/admin"));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.get('/api/uploads/:filename', (req, res) => {
+  res.sendFile(path.join(__dirname, 'uploads', req.params.filename));
+});
 app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/wallet", require("./routes/wallet"));
@@ -63,6 +72,8 @@ app.use("/api/support/tickets", require("./routes/supportTicketRoutes"));
 app.use("/api/vouchers", require("./routes/vouchers"));
 app.use("/api/regions", require("./routes/regions"));
 app.use("/api/referral", require("./routes/referral"));
+app.use("/api/finance", require("./routes/financeRoutes"));
+
 
 
 

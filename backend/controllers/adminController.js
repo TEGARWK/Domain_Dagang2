@@ -79,13 +79,15 @@ exports.getDashboardStats = async (req, res) => {
 
     // Execute all queries in parallel gracefully
     const [
-      usersRes, domainsRes, invoicesRes, revenueRes, troubledRes, 
-      dailyRes, monthlyRes, yearlyRes
+      usersRes, domainsRes, invoicesRes, paidInvoicesRes, revenueRes, troubledRes, 
+      dailyRes, monthlyRes, yearlyRes, pendingTicketsRes, manualVerifRes, 
+      extensionDistRes, recentTxRes
     ] = await Promise.all([
       db.query("SELECT COUNT(*) as count FROM users"),
       db.query("SELECT COUNT(*) as count FROM domains WHERE status = 'active'"),
       db.query("SELECT COUNT(*) as count FROM invoices WHERE status = 'pending'"),
-      db.query("SELECT SUM(total) as total FROM invoices WHERE status = 'paid'"),
+      db.query("SELECT COUNT(*) as count FROM invoices WHERE status = 'paid'"),
+      db.query("SELECT SUM(final_amount) as total FROM invoices WHERE status = 'paid' AND type != 'TOPUP' AND id NOT LIKE 'TOPUP-%' AND EXTRACT(MONTH FROM paid_at) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM paid_at) = EXTRACT(YEAR FROM CURRENT_DATE)"),
       db.query("SELECT COUNT(*) as count FROM domains WHERE status IN ('failed', 'paid', 'registering', 'provisioned')"),
       db.query(`
           WITH date_series AS (
@@ -95,9 +97,9 @@ exports.getDashboardStats = async (req, res) => {
                   '1 day'::interval
               )::DATE AS date
           )
-          SELECT TO_CHAR(ds.date, 'Dy') as label, COALESCE(SUM(i.total), 0) as value
+          SELECT TO_CHAR(ds.date, 'Dy') as label, COALESCE(SUM(i.final_amount), 0) as value
           FROM date_series ds
-          LEFT JOIN invoices i ON i.date::DATE = ds.date AND i.status = 'paid'
+          LEFT JOIN invoices i ON i.paid_at::DATE = ds.date AND i.status = 'paid' AND i.type != 'TOPUP' AND i.id NOT LIKE 'TOPUP-%'
           GROUP BY ds.date, ds.date ORDER BY ds.date ASC
       `),
       db.query(`
@@ -108,9 +110,9 @@ exports.getDashboardStats = async (req, res) => {
                   '1 month'::interval
               )::DATE AS month
           )
-          SELECT TO_CHAR(ms.month, 'Mon') as label, COALESCE(SUM(i.total), 0) as value
+          SELECT TO_CHAR(ms.month, 'Mon') as label, COALESCE(SUM(i.final_amount), 0) as value
           FROM month_series ms
-          LEFT JOIN invoices i ON date_trunc('month', i.date::DATE) = ms.month AND i.status = 'paid'
+          LEFT JOIN invoices i ON date_trunc('month', i.paid_at::DATE) = ms.month AND i.status = 'paid' AND i.type != 'TOPUP' AND i.id NOT LIKE 'TOPUP-%'
           GROUP BY ms.month, ms.month ORDER BY ms.month ASC
       `),
       db.query(`
@@ -121,10 +123,31 @@ exports.getDashboardStats = async (req, res) => {
                   '1 year'::interval
               )::DATE AS year
           )
-          SELECT TO_CHAR(ys.year, 'YYYY') as label, COALESCE(SUM(i.total), 0) as value
+          SELECT TO_CHAR(ys.year, 'YYYY') as label, COALESCE(SUM(i.final_amount), 0) as value
           FROM year_series ys
-          LEFT JOIN invoices i ON date_trunc('year', i.date::DATE) = ys.year AND i.status = 'paid'
+          LEFT JOIN invoices i ON date_trunc('year', i.paid_at::DATE) = ys.year AND i.status = 'paid' AND i.type != 'TOPUP' AND i.id NOT LIKE 'TOPUP-%'
           GROUP BY ys.year, ys.year ORDER BY ys.year ASC
+      `),
+      db.query("SELECT COUNT(*) as count FROM support_tickets WHERE status = 'open'"),
+      db.query("SELECT COUNT(*) as count FROM invoices WHERE status = 'pending' AND (payment_method LIKE 'MANUAL_%' OR payment_method = 'MANUAL')"),
+      db.query(`
+          SELECT 
+            '.' || split_part(domain_name, '.', array_length(string_to_array(domain_name, '.'), 1)) as tld, 
+            COUNT(*) as count 
+          FROM domains 
+          WHERE status = 'active' AND domain_name LIKE '%.%'
+          GROUP BY tld 
+          ORDER BY count DESC 
+          LIMIT 5
+      `),
+      db.query(`
+          SELECT i.id, i.total, i.date, i.status, COALESCE(u.name, 'Customer') as customer_name,
+          (SELECT action_type FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as action_type,
+          (SELECT name FROM invoice_items WHERE invoice_id = i.id LIMIT 1) as first_item
+          FROM invoices i
+          LEFT JOIN users u ON i.user_id = u.id
+          ORDER BY i.date DESC
+          LIMIT 5
       `)
     ]);
 
@@ -133,12 +156,34 @@ exports.getDashboardStats = async (req, res) => {
     const getSum = (res) => (Array.isArray(res) ? res[0]?.total : res?.rows?.[0]?.total) || 0;
     const getRows = (res) => (Array.isArray(res) ? res : res?.rows || []);
 
+    console.log(`[AdminStats] Users: ${getCount(usersRes)}, Domains: ${getCount(domainsRes)}, Pending Inv: ${getCount(invoicesRes)}`);
+    console.log(`[AdminStats] Extension Dist Rows: ${getRows(extensionDistRes).length}`);
+    console.log(`[AdminStats] Recent Tx Rows: ${getRows(recentTxRes).length}`);
+
+    // Recent Transactions with Mapping
+    const recentTxRows = getRows(recentTxRes).map(tx => {
+        let category = 'REGISTER';
+        const at = (tx.action_type || '').toUpperCase();
+        const firstItem = (tx.first_item || '').toLowerCase();
+        
+        if (at === 'TOPUP' || firstItem.includes('top up')) category = 'TOPUP';
+        else if (at === 'TRANSFER') category = 'TRANSFER';
+        else if (at === 'RENEW') category = 'RENEW';
+        else if (at === 'RESTORE') category = 'RESTORE';
+        return { ...tx, category };
+    });
+
     res.json({
         totalUsers: getCount(usersRes),
         activeDomains: getCount(domainsRes),
         pendingInvoices: getCount(invoicesRes),
+        paidInvoices: getCount(paidInvoicesRes),
         totalRevenue: getSum(revenueRes),
         troubledDomains: getCount(troubledRes),
+        pendingTickets: getCount(pendingTicketsRes),
+        manualVerifPending: getCount(manualVerifRes),
+        extensionDistribution: getRows(extensionDistRes),
+        recentTransactions: recentTxRows,
         analytics: {
             Daily: getRows(dailyRes),
             Monthly: getRows(monthlyRes),

@@ -15,6 +15,14 @@ const DashboardLayout = () => {
   const [user, setUser] = useState(null);
   const [cartCount, setCartCount] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem("sidebarCollapsed") === "true";
+  });
+
+  const toggleSidebarCollapse = (val) => {
+    setIsSidebarCollapsed(val);
+    localStorage.setItem("sidebarCollapsed", val);
+  };
 
   // --- CEK SESSION USER & KERANJANG ---
   useEffect(() => {
@@ -100,12 +108,14 @@ const DashboardLayout = () => {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
       {/* 1. SIDEBAR (Props: user data & fungsi logout) */}
-      <div className="w-0 lg:w-72 flex-none z-50">
+      <div className={`flex-none z-50 transition-all duration-300 relative ${isSidebarCollapsed ? "w-0 lg:w-20" : "w-0 lg:w-72"}`}>
         <Sidebar 
           user={user} 
           handleLogout={handleLogout} 
           isOpen={isSidebarOpen} 
           setIsOpen={setIsSidebarOpen} 
+          isCollapsed={isSidebarCollapsed}
+          setIsCollapsed={toggleSidebarCollapse}
         />
       </div>
 
@@ -119,7 +129,7 @@ const DashboardLayout = () => {
         />
 
         {/* 3. MAIN CONTENT (Halaman Dashboard Berubah-ubah disini) */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 relative custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-2 md:p-4 lg:p-6 relative custom-scrollbar">
           {/* Background Gradient Halus */}
           <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white/50 to-transparent pointer-events-none -z-10"></div>
 

@@ -107,7 +107,7 @@ const CustomSelect = ({
         {isOpen && ReactDOM.createPortal(
             <div 
             id="custom-select-portal"
-            className="absolute z-[9999] bg-white border border-slate-100 rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-100 origin-top"
+            className="absolute z-[9999] bg-white border border-slate-100 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in duration-100 origin-top"
             style={{
                 top: coords.top,
                 left: coords.left,

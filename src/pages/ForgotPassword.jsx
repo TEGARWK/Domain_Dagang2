@@ -44,7 +44,7 @@ const ForgotPassword = () => {
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-blob animation-delay-2000"></div>
 
       {/* --- MAIN CARD CONTAINER --- */}
-      <div className="max-w-4xl w-full bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative z-10 border border-white/50 h-auto max-h-[90vh]">
+      <div className="max-w-4xl w-full bg-white rounded-xl shadow-xl overflow-hidden flex flex-col md:flex-row relative z-10 border border-white/50 h-auto max-h-[90vh]">
         {/* 1. LEFT SIDE - PREMIUM BRANDING (ORANGE THEME) */}
         <div className="hidden md:flex w-5/12 bg-gradient-to-br from-[#F97316] to-orange-600 relative flex-col justify-between p-10 text-white overflow-hidden">
           {/* Grid Pattern & Glow */}
@@ -107,7 +107,7 @@ const ForgotPassword = () => {
         </div>
 
         {/* 2. RIGHT SIDE - FORM */}
-        <div className="w-full md:w-7/12 p-8 md:p-12 bg-white flex flex-col justify-center relative overflow-y-auto">
+        <div className="w-full md:w-7/12 p-8 md:p-10 bg-white flex flex-col justify-center relative overflow-y-auto">
           {/* TOMBOL BACK TO HOME */}
           <Link
             to="/"

@@ -37,6 +37,15 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
       enabled_methods: []
   });
 
+  const [prismalinkChannels, setPrismalinkChannels] = useState([]);
+  const [loadingPrismalinkChannels, setLoadingPrismalinkChannels] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newBank, setNewBank] = useState({ bank_id: '', bank_name: '', method: 'VA', logo_url: '' });
+  const [editingPrismalinkId, setEditingPrismalinkId] = useState(null);
+  const [editPrismalinkForm, setEditPrismalinkForm] = useState({ bank_id: '', bank_name: '', method: 'VA', logo_url: '' });
+  const [addError, setAddError] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
+
   const [visibleKeys, setVisibleKeys] = useState({
     tripay_api_key: false,
     tripay_private_key: false,
@@ -48,17 +57,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
     setVisibleKeys(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const PRISMALINK_METHODS = [
-      { id: '014', name: 'BCA Virtual Account', type: 'VA', bank_id: '014' },
-      { id: '008', name: 'Mandiri Virtual Account', type: 'VA', bank_id: '008' },
-      { id: '009', name: 'BNI Virtual Account', type: 'VA', bank_id: '009' },
-      { id: '002', name: 'BRI Virtual Account', type: 'VA', bank_id: '002' },
-      { id: '013', name: 'Permata Virtual Account', type: 'VA', bank_id: '013' },
-      { id: '011', name: 'Danamon Virtual Account', type: 'VA', bank_id: '011' },
-      { id: '451', name: 'BSI Virtual Account', type: 'VA', bank_id: '451' },
-      { id: 'QR', name: 'QRIS (GPN)', type: 'QR', bank_id: '' },
-      { id: 'CC', name: 'Credit Card', type: 'CC', bank_id: '' }
-  ];
+
 
   // Manual States
   const [manualMethods, setManualMethods] = useState([]);
@@ -80,6 +79,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
   useEffect(() => {
     fetchConfig();
     fetchAllChannels();
+    fetchPrismalinkChannels();
     
     // Prioritaskan URL dari sistem settings, kalau kosong baru pake fallback localhost
     const backendUrl = systemSettings?.app_backend_url || window.location.origin.replace(':5173', ':3009');
@@ -160,6 +160,89 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
     }
   };
 
+  const fetchPrismalinkChannels = async () => {
+    setLoadingPrismalinkChannels(true);
+    try {
+        const res = await api.get("/payment-gateways/prismalink/channels");
+        setPrismalinkChannels(res.data);
+    } catch (err) {
+        console.error("Failed to fetch Prismalink channels:", err);
+    } finally {
+        setLoadingPrismalinkChannels(false);
+    }
+  };
+
+  const togglePrismalinkChannelStatus = async (bankId, currentStatus) => {
+    try {
+        const newStatus = !currentStatus;
+        await api.patch(`/payment-gateways/prismalink/channels/${bankId}/toggle`, { is_active: newStatus });
+        setPrismalinkChannels(prev => prev.map(c => c.bank_id === bankId ? { ...c, is_active: newStatus } : c));
+        success(`Status bank ${bankId} berhasil diperbarui.`);
+    } catch (err) {
+        error("Gagal memperbarui status bank.");
+    }
+  };
+
+  const handleAddPrismalinkBank = async () => {
+    if (!newBank.bank_id || !newBank.bank_name) {
+      setAddError("Bank ID dan Nama Bank wajib diisi");
+      return;
+    }
+    setAddLoading(true);
+    setAddError("");
+    try {
+      await api.post("/payment-gateways/prismalink/channels", newBank);
+      // Otomatis aktifkan (centang) bank baru ini di konfigurasi
+      const addedId = newBank.bank_id;
+      setPrismalinkConfig(prev => {
+          const current = prev.enabled_methods || [];
+          if (!current.includes(addedId)) {
+              return { ...prev, enabled_methods: [...current, addedId] };
+          }
+          return prev;
+      });
+      
+      setNewBank({ bank_id: '', bank_name: '', method: 'VA', logo_url: '' });
+      setShowAddForm(false);
+      fetchPrismalinkChannels();
+      success("Bank manual berhasil ditambahkan! Jangan lupa klik 'Simpan Konfigurasi Prismalink' di bawah.");
+    } catch (err) {
+      setAddError(err.response?.data?.message || "Gagal menambahkan bank");
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  const handleUpdatePrismalinkBank = async () => {
+    if (!editPrismalinkForm.bank_name) return error("Nama Bank wajib diisi");
+    console.log("[DEBUG] Updating Prismalink Bank:", { id: editingPrismalinkId, data: editPrismalinkForm });
+    setSaving(true);
+    try {
+        const response = await api.put(`/payment-gateways/prismalink/channels/${editingPrismalinkId}`, editPrismalinkForm);
+        console.log("[DEBUG] Update Response:", response.data);
+        setEditingPrismalinkId(null);
+        fetchPrismalinkChannels();
+        success("Data bank berhasil diperbarui!");
+    } catch (err) {
+        console.error("[DEBUG] Update Error:", err);
+        error(err.response?.data?.message || "Gagal memperbarui bank");
+    } finally {
+        setSaving(false);
+    }
+  };
+
+
+  const handleDeletePrismalinkBank = async (bankId) => {
+    if (!window.confirm("Yakin ingin menghapus bank manual ini?")) return;
+    try {
+      await api.delete(`/payment-gateways/prismalink/channels/${bankId}`);
+      setPrismalinkChannels(prev => prev.filter(c => c.bank_id !== bankId));
+      success("Bank berhasil dihapus.");
+    } catch (err) {
+      error(err.response?.data?.message || "Gagal menghapus bank.");
+    }
+  };
+
   const saveTripay = async () => {
     setSaving(true);
     try {
@@ -234,6 +317,34 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
           }
       } catch (err) {
           error("Gagal mengunggah gambar.");
+      } finally {
+          setSaving(false);
+      }
+  };
+
+  const handlePrismalinkLogoUpload = async (e, mode) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const oldUrl = mode === 'add' ? newBank.logo_url : editPrismalinkForm.logo_url;
+      if (oldUrl) formData.append('oldImageUrl', oldUrl);
+
+      setSaving(true);
+      try {
+          const res = await api.post("/upload/gateway", formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          
+          if (res.data.success) {
+              if (mode === 'add') setNewBank(prev => ({ ...prev, logo_url: res.data.imageUrl }));
+              else setEditPrismalinkForm(prev => ({ ...prev, logo_url: res.data.imageUrl }));
+              success("Logo bank berhasil diunggah!");
+          }
+      } catch (err) {
+          error("Gagal mengunggah logo.");
       } finally {
           setSaving(false);
       }
@@ -363,9 +474,9 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
   };
 
   const renderManualForm = () => (
-      <div className="mb-8 p-6 bg-slate-50 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-300">
+      <div className="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">{editForm.id ? 'Edit' : 'Tambah'} {editForm.gateway_type === 'bank' ? 'Bank' : 'QRIS'}</h3>
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">{editForm.id ? 'Edit' : 'Tambah'} {editForm.gateway_type === 'bank' ? 'Bank' : 'QRIS'}</h3>
               <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-600"><span className="material-symbols-outlined">close</span></button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -385,7 +496,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Logo {editForm.gateway_type === 'bank' ? 'Bank' : 'QRIS'}</label>
                   <div className="flex gap-4 items-center">
                       {(editForm.logo_url || editForm.qris_url) && <img src={editForm.gateway_type === 'bank' ? editForm.logo_url : editForm.qris_url} className="w-12 h-12 rounded-lg object-contain bg-white border p-1" alt="preview" />}
-                      <input type="file" onChange={(e) => handleImageUpload(e, editForm.gateway_type)} className="text-[10px] text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                      <input type="file" onChange={(e) => handleImageUpload(e, editForm.gateway_type)} className="text-[10px] text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                   </div>
               </div>
               <div className="md:col-span-2 space-y-2">
@@ -394,8 +505,8 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
               </div>
           </div>
           <div className="mt-6 pt-6 border-t border-slate-200 flex justify-end gap-3">
-              <button onClick={() => setIsEditing(false)} className="px-6 py-2.5 text-[10px] font-black uppercase text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
-              <button onClick={handleSaveManual} disabled={saving} className="px-8 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition">Simpan Metode</button>
+              <button onClick={() => setIsEditing(false)} className="px-6 py-2.5 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
+              <button onClick={handleSaveManual} disabled={saving} className="px-8 py-2.5 bg-blue-600 text-white text-[10px] font-bold uppercase rounded-xl shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition">Simpan Metode</button>
           </div>
       </div>
   );
@@ -412,17 +523,17 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                           <span className="material-symbols-outlined">arrow_back</span>
                       </button>
                       <div>
-                          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Atur Channel Tripay</h2>
+                          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Atur Channel Tripay</h2>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Pilih bank & e-wallet yang ingin kamu aktifkan</p>
                       </div>
                   </div>
-                  <button onClick={() => { saveTripay(); setActiveView('main'); }} className="px-8 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center gap-2">
+                  <button onClick={() => { saveTripay(); setActiveView('main'); }} className="px-8 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center gap-2">
                       <span className="material-symbols-outlined text-lg">check_circle</span>
                       Simpan & Selesai
                   </button>
               </div>
 
-               <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-10 shadow-sm">
+               <div className="bg-white rounded-xl border border-slate-200 p-8 space-y-10 shadow-sm">
                   {tripayConfig.enabled_methods.map(group => {
                       // Normalize group name for matching
                       const groupChannels = allTripayChannels.filter(ch => (ch.group || '').toUpperCase().replace(/\s+/g, '') === group.toUpperCase().replace(/\s+/g, ''));
@@ -431,7 +542,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                       return (
                           <div key={group} className="space-y-6">
                               <div className="flex items-center gap-3">
-                                  <div className="px-3 py-1 bg-blue-50 rounded-lg text-blue-600 text-[9px] font-black uppercase tracking-widest">{group}</div>
+                                  <div className="px-3 py-1 bg-blue-50 rounded-lg text-blue-600 text-[9px] font-bold uppercase tracking-widest">{group}</div>
                                   <div className="h-[1px] flex-1 bg-slate-100"></div>
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -440,13 +551,13 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                                       return (
                                           <div key={ch.code} 
                                               onClick={() => toggleTripayBank(group, ch.code)}
-                                              className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-50/20 shadow-sm' : 'border-slate-100 bg-slate-50/30 hover:border-slate-300'}`}>
+                                              className={`p-4 rounded-xl border transition-all flex items-center justify-between gap-4 cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-50/20 shadow-sm' : 'border-slate-100 bg-slate-50/30 hover:border-slate-300'}`}>
                                               <div className="flex items-center gap-3 min-w-0">
                                                   <div className={`w-12 h-10 rounded-xl flex items-center justify-center p-2 shrink-0 shadow-sm transition-all ${isSelected ? 'bg-white' : 'bg-white grayscale opacity-40'}`}>
                                                       <img src={ch.icon_url} className="w-full h-full object-contain" alt={ch.name} />
                                                   </div>
                                                   <div className="min-w-0">
-                                                      <h4 className={`text-[10px] font-black uppercase tracking-tight truncate ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{ch.name}</h4>
+                                                      <h4 className={`text-[10px] font-bold uppercase tracking-tight truncate ${isSelected ? 'text-blue-900' : 'text-slate-500'}`}>{ch.name}</h4>
                                                       <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{group}</span>
                                                   </div>
                                               </div>
@@ -478,93 +589,372 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                           <span className="material-symbols-outlined">arrow_back</span>
                       </button>
                       <div>
-                          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Atur Channel Prismalink</h2>
+                          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Atur Channel Prismalink</h2>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Pilih metode pembayaran yang didukung Prismalink</p>
                       </div>
                   </div>
-                  <button onClick={() => { savePrismalink(); setActiveView('main'); }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center gap-2">
+                  <button onClick={() => { savePrismalink(); setActiveView('main'); }} className="px-8 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center gap-2">
                       <span className="material-symbols-outlined text-lg">check_circle</span>
                       Simpan & Selesai
                   </button>
               </div>
 
-              <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-10">
-                  {/* GROUP: VIRTUAL ACCOUNT */}
-                  <div className="space-y-6">
-                      <div className="flex items-center gap-3">
-                          <div className="px-3 py-1 bg-indigo-50 rounded-lg text-indigo-600 text-[9px] font-black uppercase tracking-widest">Virtual Account</div>
-                          <div className="h-[1px] flex-1 bg-slate-100"></div>
+              <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm space-y-10">
+                  <div className="flex justify-between items-center">
+                      <div className="space-y-1">
+                          <h3 className="text-sm font-bold text-slate-800">Manajemen Channel Prismalink</h3>
+                          <p className="text-[10px] text-slate-500 font-medium">Tambah bank manual atau kelola bank hasil auto-sync</p>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {PRISMALINK_METHODS.filter(m => m.type === 'VA').map(method => {
-                              const isSelected = (prismalinkConfig.enabled_methods || []).includes(method.id);
-                              const getBankLogo = (code) => {
-                                  const bankCode = code ? String(code).toLowerCase() : '';
-                                  if (bankCode === '014' || bankCode.includes('bca')) return '/image/banks/bca.png';
-                                  if (bankCode === '008' || bankCode.includes('mandiri')) return '/image/banks/mandiri.png';
-                                  if (bankCode === '009' || bankCode.includes('bni')) return '/image/banks/bni.png';
-                                  if (bankCode === '002' || bankCode.includes('bri')) return '/image/banks/bri.png';
-                                  if (bankCode === '013' || bankCode.includes('permata')) return '/image/banks/permata.png';
-                                  if (bankCode === '011' || bankCode.includes('danamon')) return '/image/banks/danamon.png';
-                                  if (bankCode === '451' || bankCode.includes('bsi')) return '/image/banks/bsi.png';
-                                  if (!bankCode) return '/image/banks/generic.png'; // Fallback jika kode kosong
-                                  return `/image/banks/${bankCode}.png`;
-                              };
-
-                              return (
-                                  <div key={method.id} className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${isSelected ? 'border-indigo-500 bg-indigo-50/20 shadow-sm' : 'border-slate-100 bg-slate-50/30'}`}>
-                                      <div className="flex items-center gap-3 min-w-0">
-                                          <div className={`w-12 h-10 rounded-xl flex items-center justify-center p-2 shrink-0 shadow-sm transition-all ${isSelected ? 'bg-white' : 'bg-white grayscale opacity-40'}`}>
-                                              <img src={getBankLogo(method.bank_id)} alt={method.name} className="w-full h-full object-contain" />
-                                          </div>
-                                          <div className="min-w-0">
-                                              <h4 className={`text-[10px] font-black uppercase tracking-tight truncate ${isSelected ? 'text-indigo-900' : 'text-slate-500'}`}>{method.name.replace('Virtual Account', '').trim()}</h4>
-                                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">VA</span>
-                                          </div>
-                                      </div>
-                                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                                          <input type="checkbox" checked={isSelected} onChange={() => togglePrismalinkMethod(method.id)} className="sr-only peer" />
-                                          <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                                      </label>
-                                  </div>
-                              );
-                          })}
-                      </div>
+                      <button 
+                        onClick={() => setShowAddForm(!showAddForm)}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${showAddForm ? 'bg-slate-100 text-slate-600' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-700'}`}
+                      >
+                        <span className="material-symbols-outlined text-sm">{showAddForm ? 'close' : 'add'}</span>
+                        {showAddForm ? 'Batal' : 'Tambah Bank'}
+                      </button>
                   </div>
 
-                  {/* GROUP: QRIS & LAINNYA */}
-                  <div className="space-y-6">
-                      <div className="flex items-center gap-3">
-                          <div className="px-3 py-1 bg-orange-50 rounded-lg text-orange-600 text-[9px] font-black uppercase tracking-widest">QRIS & Kartu Kredit</div>
-                          <div className="h-[1px] flex-1 bg-slate-100"></div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {PRISMALINK_METHODS.filter(m => m.type !== 'VA').map(method => {
-                              const isSelected = (prismalinkConfig.enabled_methods || []).includes(method.id);
-                              return (
-                                  <div key={method.id} className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${isSelected ? 'border-orange-400 bg-orange-50/20 shadow-sm' : 'border-slate-100 bg-slate-50/30'}`}>
-                                      <div className="flex items-center gap-3 min-w-0">
-                                          <div className={`w-12 h-10 rounded-xl flex items-center justify-center p-2 shrink-0 shadow-sm transition-all ${isSelected ? 'bg-white' : 'bg-white grayscale opacity-40'}`}>
-                                              {method.id === 'QR' ? (
-                                                  <img src="/image/banks/qris.png" className="w-full h-full object-contain" alt="QRIS" />
-                                              ) : (
-                                                  <img src="/image/banks/visa_master.png" className="w-full h-full object-contain" alt="Credit Card" />
-                                              )}
+                  {showAddForm && (
+                      <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-6 animate-in slide-in-from-top-4 duration-300">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Kode Bank (ID)</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Contoh: 535" 
+                                    value={newBank.bank_id} 
+                                    onChange={e => setNewBank({ ...newBank, bank_id: e.target.value })}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all"
+                                  />
+                              </div>
+                              <div className="space-y-2">
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Nama Bank</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Contoh: SEABANK" 
+                                    value={newBank.bank_name} 
+                                    onChange={e => setNewBank({ ...newBank, bank_name: e.target.value })}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all"
+                                  />
+                              </div>
+                              <div className="space-y-2">
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Metode</label>
+                                  <select 
+                                    value={newBank.method} 
+                                    onChange={e => setNewBank({ ...newBank, method: e.target.value })}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all appearance-none"
+                                  >
+                                      <option value="VA">Virtual Account</option>
+                                      <option value="QR">QRIS</option>
+                                      <option value="CC">Credit Card</option>
+                                      <option value="DD">Direct Debit</option>
+                                  </select>
+                              </div>
+                              <div className="md:col-span-3 space-y-2">
+                                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">Logo Bank</label>
+                                  <div className="flex gap-4 items-center bg-white border border-slate-200 rounded-xl p-3">
+                                      {newBank.logo_url ? (
+                                          <div className="w-12 h-12 bg-white border rounded-lg p-1 flex items-center justify-center shrink-0">
+                                              <img src={newBank.logo_url} className="max-w-full max-h-full object-contain" alt="preview" />
                                           </div>
-                                          <div className="min-w-0">
-                                              <h4 className={`text-[10px] font-black uppercase tracking-tight truncate ${isSelected ? 'text-orange-900' : 'text-slate-500'}`}>{method.name}</h4>
-                                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{method.type === 'QR' ? 'QRIS' : 'Credit Card'}</span>
+                                      ) : (
+                                          <div className="w-12 h-12 bg-slate-50 border border-dashed rounded-lg flex items-center justify-center shrink-0">
+                                              <span className="material-symbols-outlined text-slate-300">image</span>
                                           </div>
+                                      )}
+                                      <div className="flex-1">
+                                          <input 
+                                            type="file" 
+                                            accept="image/*"
+                                            onChange={(e) => handlePrismalinkLogoUpload(e, 'add')}
+                                            className="block w-full text-[10px] text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                          />
+                                          <p className="text-[8px] text-slate-400 mt-1 font-bold uppercase tracking-tight">Format: PNG, JPG, WebP. Maks 2MB.</p>
                                       </div>
-                                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                                          <input type="checkbox" checked={isSelected} onChange={() => togglePrismalinkMethod(method.id)} className="sr-only peer" />
-                                          <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
-                                      </label>
                                   </div>
-                              );
-                          })}
+                              </div>
+                          </div>
+                          {addError && <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight bg-red-50 p-3 rounded-lg border border-red-100">{addError}</p>}
+                          <div className="flex gap-3">
+                              <button 
+                                onClick={handleAddPrismalinkBank} 
+                                disabled={addLoading}
+                                className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all"
+                              >
+                                {addLoading ? 'Menyimpan...' : 'Simpan Bank'}
+                              </button>
+                          </div>
                       </div>
-                  </div>
+                  )}
+
+                  {loadingPrismalinkChannels ? (
+                      <div className="py-20 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Memuat daftar channel...</div>
+                  ) : (
+                      <>
+                      {/* GROUP: VIRTUAL ACCOUNT */}
+                      <div className="space-y-6">
+                          <div className="flex items-center gap-3">
+                              <div className="px-3 py-1 bg-indigo-50 rounded-lg text-indigo-600 text-[9px] font-bold uppercase tracking-widest">Virtual Account</div>
+                              <div className="h-[1px] flex-1 bg-slate-100"></div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {prismalinkChannels.filter(m => m.method === 'VA').map(method => {
+                                  const isSelected = (prismalinkConfig.enabled_methods || []).includes(method.bank_id);
+                                  const getBankLogo = (code) => {
+                                      const bankCode = code ? String(code).toLowerCase() : '';
+                                      if (bankCode === '014' || bankCode.includes('bca')) return '/image/banks/bca.png';
+                                      if (bankCode === '008' || bankCode.includes('mandiri')) return '/image/banks/mandiri.png';
+                                      if (bankCode === '009' || bankCode.includes('bni')) return '/image/banks/bni.png';
+                                      if (bankCode === '002' || bankCode.includes('bri')) return '/image/banks/bri.png';
+                                      if (bankCode === '013' || bankCode.includes('permata')) return '/image/banks/permata.png';
+                                      if (bankCode === '011' || bankCode.includes('danamon')) return '/image/banks/danamon.png';
+                                      if (bankCode === '451' || bankCode.includes('bsi')) return '/image/banks/bsi.png';
+                                      if (!bankCode) return '/image/banks/generic.png'; 
+                                      return `/image/banks/${bankCode}.png`;
+                                  };
+
+                                  const isEditingThis = editingPrismalinkId === method.bank_id;
+
+                                  if (isEditingThis) {
+                                      return (
+                                          <div key={method.bank_id} className="p-4 rounded-2xl border border-indigo-500 bg-indigo-50/10 shadow-sm col-span-1 md:col-span-2 lg:col-span-3 animate-in fade-in duration-200">
+                                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                                  <div className="space-y-1">
+                                                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Bank</label>
+                                                      <input 
+                                                        type="text" 
+                                                        value={editPrismalinkForm.bank_name} 
+                                                        onChange={e => setEditPrismalinkForm({ ...editPrismalinkForm, bank_name: e.target.value })}
+                                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all"
+                                                      />
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Metode</label>
+                                                      <select 
+                                                        value={editPrismalinkForm.method} 
+                                                        onChange={e => setEditPrismalinkForm({ ...editPrismalinkForm, method: e.target.value })}
+                                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all appearance-none"
+                                                      >
+                                                          <option value="VA">Virtual Account</option>
+                                                          <option value="QR">QRIS</option>
+                                                          <option value="CC">Credit Card</option>
+                                                          <option value="DD">Direct Debit</option>
+                                                      </select>
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Upload Logo</label>
+                                                      <div className="flex gap-3 items-center bg-white border border-slate-200 rounded-xl px-3 py-1.5">
+                                                           {editPrismalinkForm.logo_url ? (
+                                                               <div className="w-8 h-8 bg-white border rounded-lg p-0.5 flex items-center justify-center shrink-0">
+                                                                   <img src={editPrismalinkForm.logo_url} className="max-w-full max-h-full object-contain" alt="preview" />
+                                                               </div>
+                                                           ) : (
+                                                               <div className="w-8 h-8 bg-slate-50 border border-dashed rounded-lg flex items-center justify-center shrink-0">
+                                                                   <span className="material-symbols-outlined text-[14px] text-slate-300">image</span>
+                                                               </div>
+                                                           )}
+                                                           <input 
+                                                             type="file" 
+                                                             accept="image/*"
+                                                             onChange={(e) => handlePrismalinkLogoUpload(e, 'edit')}
+                                                             className="block w-full text-[9px] text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[9px] file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                                           />
+                                                       </div>
+                                                  </div>
+                                              </div>
+                                              <div className="flex justify-end gap-2">
+                                                  <button 
+                                                    onClick={() => setEditingPrismalinkId(null)}
+                                                    className="px-4 py-1.5 text-[9px] font-bold uppercase text-slate-500 hover:bg-slate-100 rounded-lg transition"
+                                                  >
+                                                    Batal
+                                                  </button>
+                                                  <button 
+                                                    onClick={handleUpdatePrismalinkBank}
+                                                    disabled={saving}
+                                                    className="px-6 py-1.5 bg-indigo-600 text-white text-[9px] font-bold uppercase rounded-lg shadow-md shadow-indigo-500/20 hover:bg-indigo-700 transition"
+                                                  >
+                                                    Simpan Perubahan
+                                                  </button>
+                                              </div>
+                                          </div>
+                                      );
+                                  }
+
+                                  return (
+                                      <div key={method.bank_id} className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${isSelected ? 'border-indigo-500 bg-indigo-50/20 shadow-sm' : 'border-slate-100 bg-slate-50/30'}`}>
+                                          <div className="flex items-center gap-3 min-w-0">
+                                              <div className={`w-12 h-10 rounded-xl flex items-center justify-center p-2 shrink-0 shadow-sm transition-all ${isSelected ? 'bg-white' : 'bg-white grayscale opacity-40'}`}>
+                                                  <img src={method.logo_url || getBankLogo(method.bank_id)} alt={method.bank_name} className="w-full h-full object-contain" />
+                                              </div>
+                                              <div className="min-w-0">
+                                                  <h4 className={`text-[10px] font-bold uppercase tracking-tight truncate ${isSelected ? 'text-indigo-900' : 'text-slate-500'}`}>{method.bank_name.replace('Virtual Account', '').trim()}</h4>
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{method.is_custom ? '✏️' : '🔄'} VA</span>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); togglePrismalinkChannelStatus(method.bank_id, method.is_active); }}
+                                                        className={`text-[7px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter ${method.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}
+                                                    >
+                                                        {method.is_active ? 'Online' : 'Offline'}
+                                                    </button>
+                                                    {method.is_custom && (
+                                                      <div className="flex items-center gap-1">
+                                                        <button 
+                                                            onClick={(e) => { 
+                                                                e.stopPropagation(); 
+                                                                setEditingPrismalinkId(method.bank_id);
+                                                                setEditPrismalinkForm({ 
+                                                                    bank_name: method.bank_name, 
+                                                                    method: method.method, 
+                                                                    logo_url: method.logo_url || '' 
+                                                                });
+                                                            }}
+                                                            className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 transition-all"
+                                                        >
+                                                            <span className="material-symbols-outlined text-xs">edit</span>
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleDeletePrismalinkBank(method.bank_id); }}
+                                                            className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                        >
+                                                            <span className="material-symbols-outlined text-xs">delete</span>
+                                                        </button>
+                                                       </div>
+                                                    )}
+                                                  </div>
+                                              </div>
+                                          </div>
+                                          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                              <input type="checkbox" checked={isSelected} onChange={() => togglePrismalinkMethod(method.bank_id)} className="sr-only peer" />
+                                              <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                          </label>
+                                      </div>
+                                  );
+                              })}
+                          </div>
+                      </div>
+
+                      {/* GROUP: QRIS & LAINNYA */}
+                      <div className="space-y-6">
+                          <div className="flex items-center gap-3">
+                              <div className="px-3 py-1 bg-orange-50 rounded-lg text-orange-600 text-[9px] font-bold uppercase tracking-widest">Lainnya (QRIS/CC/DD)</div>
+                              <div className="h-[1px] flex-1 bg-slate-100"></div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {prismalinkChannels.filter(m => m.method !== 'VA').map(method => {
+                                  const isSelected = (prismalinkConfig.enabled_methods || []).includes(method.bank_id);
+                                  const isEditingThis = editingPrismalinkId === method.bank_id;
+
+                                  if (isEditingThis) {
+                                      return (
+                                          <div key={method.bank_id} className="p-4 rounded-2xl border border-orange-400 bg-orange-50/10 shadow-sm col-span-1 md:col-span-2 lg:col-span-3 animate-in fade-in duration-200">
+                                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                                  <div className="space-y-1">
+                                                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nama</label>
+                                                      <input 
+                                                        type="text" 
+                                                        value={editPrismalinkForm.bank_name} 
+                                                        onChange={e => setEditPrismalinkForm({ ...editPrismalinkForm, bank_name: e.target.value })}
+                                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-orange-500 transition-all"
+                                                      />
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Metode</label>
+                                                      <select 
+                                                        value={editPrismalinkForm.method} 
+                                                        onChange={e => setEditPrismalinkForm({ ...editPrismalinkForm, method: e.target.value })}
+                                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-orange-500 transition-all appearance-none"
+                                                      >
+                                                          <option value="VA">Virtual Account</option>
+                                                          <option value="QR">QRIS</option>
+                                                          <option value="CC">Credit Card</option>
+                                                          <option value="DD">Direct Debit</option>
+                                                      </select>
+                                                  </div>
+                                                  <div className="space-y-1">
+                                                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider ml-1">Upload Logo</label>
+                                                      <div className="flex gap-3 items-center bg-white border border-slate-200 rounded-xl px-3 py-1.5">
+                                                           {editPrismalinkForm.logo_url ? (
+                                                               <div className="w-8 h-8 bg-white border rounded-lg p-0.5 flex items-center justify-center shrink-0">
+                                                                   <img src={editPrismalinkForm.logo_url} className="max-w-full max-h-full object-contain" alt="preview" />
+                                                               </div>
+                                                           ) : (
+                                                               <div className="w-8 h-8 bg-slate-50 border border-dashed rounded-lg flex items-center justify-center shrink-0">
+                                                                   <span className="material-symbols-outlined text-[14px] text-slate-300">image</span>
+                                                               </div>
+                                                           )}
+                                                           <input 
+                                                             type="file" 
+                                                             accept="image/*"
+                                                             onChange={(e) => handlePrismalinkLogoUpload(e, 'edit')}
+                                                             className="block w-full text-[9px] text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[9px] file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                                                           />
+                                                       </div>
+                                                  </div>
+                                              </div>
+                                              <div className="flex justify-end gap-2">
+                                                  <button 
+                                                    onClick={() => setEditingPrismalinkId(null)}
+                                                    className="px-4 py-1.5 text-[9px] font-bold uppercase text-slate-500 hover:bg-slate-100 rounded-lg transition"
+                                                  >
+                                                    Batal
+                                                  </button>
+                                                  <button 
+                                                    onClick={handleUpdatePrismalinkBank}
+                                                    disabled={saving}
+                                                    className="px-6 py-1.5 bg-orange-500 text-white text-[9px] font-bold uppercase rounded-lg shadow-md shadow-orange-500/20 hover:bg-orange-600 transition"
+                                                  >
+                                                    Simpan
+                                                  </button>
+                                              </div>
+                                          </div>
+                                      );
+                                  }
+
+                                  return (
+                                      <div key={method.bank_id} className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${isSelected ? 'border-orange-400 bg-orange-50/20 shadow-sm' : 'border-slate-100 bg-slate-50/30'}`}>
+                                          <div className="flex items-center gap-3 min-w-0">
+                                              <div className={`w-12 h-10 rounded-xl flex items-center justify-center p-2 shrink-0 shadow-sm transition-all ${isSelected ? 'bg-white' : 'bg-white grayscale opacity-40'}`}>
+                                                  {method.method === 'QR' ? (
+                                                      <img src="/image/banks/qris.png" className="w-full h-full object-contain" alt="QRIS" />
+                                                  ) : method.method === 'CC' ? (
+                                                      <img src="/image/banks/visa_master.png" className="w-full h-full object-contain" alt="Credit Card" />
+                                                  ) : (
+                                                      <div className="w-full h-full bg-slate-100 flex items-center justify-center rounded-md"><span className="material-symbols-outlined text-slate-400">payments</span></div>
+                                                  )}
+                                              </div>
+                                              <div className="min-w-0">
+                                                  <h4 className={`text-[10px] font-bold uppercase tracking-tight truncate ${isSelected ? 'text-orange-900' : 'text-slate-500'}`}>{method.bank_name}</h4>
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{method.is_custom ? '✏️' : '🔄'} {method.method}</span>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); togglePrismalinkChannelStatus(method.bank_id, method.is_active); }}
+                                                        className={`text-[7px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter ${method.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}
+                                                    >
+                                                        {method.is_active ? 'Online' : 'Offline'}
+                                                    </button>
+                                                    {method.is_custom && (
+                                                      <button 
+                                                        onClick={() => handleDeletePrismalinkBank(method.bank_id)}
+                                                        className="w-5 h-5 rounded-md flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                      >
+                                                        <span className="material-symbols-outlined text-xs">delete</span>
+                                                      </button>
+                                                    )}
+                                                  </div>
+                                              </div>
+                                          </div>
+                                          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                              <input type="checkbox" checked={isSelected} onChange={() => togglePrismalinkMethod(method.bank_id)} className="sr-only peer" />
+                                              <div className="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+                                          </label>
+                                      </div>
+                                  );
+                              })}
+                          </div>
+                      </div>
+                      </>
+                  )}
               </div>
           </div>
       );
@@ -574,7 +964,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
     <div className="space-y-8 pb-20">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Tripay Card */}
-          <div className={`p-6 rounded-2xl border bg-white transition-all duration-300 ${tripayConfig.is_active ? 'border-emerald-200 shadow-lg shadow-emerald-500/5' : 'border-slate-200 opacity-80'}`}>
+          <div className={`p-6 rounded-xl border bg-white transition-all duration-300 ${tripayConfig.is_active ? 'border-emerald-200 shadow-lg shadow-emerald-500/5' : 'border-slate-200 opacity-80'}`}>
             <div className="flex justify-between items-start mb-6">
               <div className="flex gap-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tripayConfig.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
@@ -599,7 +989,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
           </div>
 
           {/* Prismalink Card */}
-          <div className={`p-6 rounded-2xl border bg-white transition-all duration-300 ${prismalinkConfig.is_active ? 'border-indigo-200 shadow-lg shadow-indigo-500/5' : 'border-slate-200 opacity-80'}`}>
+          <div className={`p-6 rounded-xl border bg-white transition-all duration-300 ${prismalinkConfig.is_active ? 'border-indigo-200 shadow-lg shadow-indigo-500/5' : 'border-slate-200 opacity-80'}`}>
             <div className="flex justify-between items-start mb-6">
               <div className="flex gap-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${prismalinkConfig.is_active ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'}`}>
@@ -624,7 +1014,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
           </div>
 
           {/* Manual Card */}
-          <div className={`p-6 rounded-2xl border bg-white transition-all duration-300 ${manualMethods.some(m => m.is_active) ? 'border-blue-200 shadow-lg shadow-blue-500/5' : 'border-slate-200 opacity-80'}`}>
+          <div className={`p-6 rounded-xl border bg-white transition-all duration-300 ${manualMethods.some(m => m.is_active) ? 'border-blue-200 shadow-lg shadow-blue-500/5' : 'border-slate-200 opacity-80'}`}>
             <div className="flex justify-between items-start mb-6">
               <div className="flex gap-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${manualMethods.some(m => m.is_active) ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
@@ -658,8 +1048,8 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                     <h2 className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Teknis Tripay (Otomatis)</h2>
                 </div>
                 <div className="flex bg-white p-1 rounded-lg border border-slate-200">
-                    <button onClick={() => setTripayConfig({ ...tripayConfig, mode: 'sandbox' })} className={`px-3 py-1 rounded-md text-[9px] font-black uppercase ${tripayConfig.mode === 'sandbox' ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>Sandbox</button>
-                    <button onClick={() => setTripayConfig({ ...tripayConfig, mode: 'production' })} className={`px-3 py-1 rounded-md text-[9px] font-black uppercase ${tripayConfig.mode === 'production' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Live</button>
+                    <button onClick={() => setTripayConfig({ ...tripayConfig, mode: 'sandbox' })} className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase ${tripayConfig.mode === 'sandbox' ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>Sandbox</button>
+                    <button onClick={() => setTripayConfig({ ...tripayConfig, mode: 'production' })} className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase ${tripayConfig.mode === 'production' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Live</button>
                 </div>
             </div>
             <div className="p-8 space-y-6">
@@ -741,9 +1131,9 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                 <div className="pt-6 border-t border-slate-100 space-y-4">
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Metode Pembayaran Aktif</label>
-                        <button onClick={() => setActiveView('tripay_channels')} className="w-full flex flex-col bg-white border-2 border-dashed border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 rounded-2xl p-4 transition-all group">
+                        <button onClick={() => setActiveView('tripay_channels')} className="w-full flex flex-col bg-white border-2 border-dashed border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 rounded-xl p-4 transition-all group">
                             <div className="flex items-center justify-between w-full mb-3">
-                                <span className="text-[10px] font-black text-slate-500 group-hover:text-blue-600 uppercase tracking-wider">Atur Channel Pembayaran</span>
+                                <span className="text-[10px] font-bold text-slate-500 group-hover:text-blue-600 uppercase tracking-wider">Atur Channel Pembayaran</span>
                                 <span className="material-symbols-outlined text-slate-400 group-hover:text-blue-500">chevron_right</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -763,7 +1153,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                         </button>
                     </div>
 
-                    <button onClick={saveTripay} disabled={saving} className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all flex items-center gap-3">
+                    <button onClick={saveTripay} disabled={saving} className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all flex items-center gap-3">
                         <span className="material-symbols-outlined text-lg">save</span>
                         {saving ? "Proses..." : "Simpan Konfigurasi"}
                     </button>
@@ -779,8 +1169,8 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                     <h2 className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Teknis Prismalink Gateway</h2>
                 </div>
                 <div className="flex bg-white p-1 rounded-lg border border-slate-200">
-                    <button onClick={() => setPrismalinkConfig({ ...prismalinkConfig, mode: 'sandbox' })} className={`px-3 py-1 rounded-md text-[9px] font-black uppercase ${prismalinkConfig.mode === 'sandbox' ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>Sandbox</button>
-                    <button onClick={() => setPrismalinkConfig({ ...prismalinkConfig, mode: 'production' })} className={`px-3 py-1 rounded-md text-[9px] font-black uppercase ${prismalinkConfig.mode === 'production' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Live</button>
+                    <button onClick={() => setPrismalinkConfig({ ...prismalinkConfig, mode: 'sandbox' })} className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase ${prismalinkConfig.mode === 'sandbox' ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>Sandbox</button>
+                    <button onClick={() => setPrismalinkConfig({ ...prismalinkConfig, mode: 'production' })} className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase ${prismalinkConfig.mode === 'production' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Live</button>
                 </div>
             </div>
             <div className="p-8 space-y-6">
@@ -853,15 +1243,15 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                 <div className="pt-6 border-t border-slate-100 space-y-4">
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Metode Pembayaran Aktif</label>
-                        <button onClick={() => setActiveView('prismalink_channels')} className="w-full flex flex-col bg-white border-2 border-dashed border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 rounded-2xl p-4 transition-all group">
+                        <button onClick={() => setActiveView('prismalink_channels')} className="w-full flex flex-col bg-white border-2 border-dashed border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 rounded-xl p-4 transition-all group">
                             <div className="flex items-center justify-between w-full mb-3">
-                                <span className="text-[10px] font-black text-slate-500 group-hover:text-indigo-600 uppercase tracking-wider">Atur Channel Pembayaran</span>
+                                <span className="text-[10px] font-bold text-slate-500 group-hover:text-indigo-600 uppercase tracking-wider">Atur Channel Pembayaran</span>
                                 <span className="material-symbols-outlined text-slate-400 group-hover:text-indigo-500">chevron_right</span>
                             </div>
                             <div className="flex flex-wrap gap-3">
                                 {(prismalinkConfig.enabled_methods || []).length > 0 ? (
                                     prismalinkConfig.enabled_methods.map(id => {
-                                        const method = PRISMALINK_METHODS.find(m => m.id === id);
+                                        const method = prismalinkChannels.find(m => m.bank_id === id);
                                         if (!method) return null;
 
                                         // Bank Logo Mapping
@@ -876,14 +1266,15 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                                             if (bankCode === '451' || bankCode.includes('bsi')) return '/image/banks/bsi.png';
                                             if (bankCode.includes('qris') || bankCode === 'qr' || bankCode === 'qris') return '/image/banks/qris.png';
                                             if (bankCode === 'cc' || bankCode === 'credit_card') return '/image/banks/visa_master.png';
-                                            if (!bankCode) return '/image/banks/generic.png'; // Fallback jika kode kosong
+                                            if (!bankCode) return '/image/banks/generic.png'; 
                                             return `/image/banks/${bankCode}.png`;
                                         };
 
                                         return (
-                                            <div key={`prismalink-summary-${id}`} className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 opacity-80">
-                                                <img src={getBankLogo(method.bank_id || method.id)} className="h-3 object-contain" alt={method.name} />
-                                                <span className="text-[7px] font-black text-slate-500 uppercase tracking-tight">{method.name.replace('Virtual Account', '').replace('VirtualAccount', '').trim()}</span>
+                                            <div key={`prismalink-summary-${id}`} className={`flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-md border border-slate-100 ${method.is_active ? 'opacity-100' : 'opacity-40'}`}>
+                                                <img src={getBankLogo(method.bank_id)} className="h-3 object-contain" alt={method.bank_name} />
+                                                <span className="text-[7px] font-bold text-slate-500 uppercase tracking-tight">{method.bank_name.replace('Virtual Account', '').replace('VirtualAccount', '').trim()}</span>
+                                                {!method.is_active && <span className="text-[6px] font-black text-red-500 ml-1">OFF</span>}
                                             </div>
                                         );
                                     })
@@ -894,7 +1285,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                         </button>
                     </div>
 
-                    <button onClick={savePrismalink} disabled={saving} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-3">
+                    <button onClick={savePrismalink} disabled={saving} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-3">
                         <span className="material-symbols-outlined text-lg">save</span>
                         {saving ? "Proses..." : "Simpan Konfigurasi"}
                     </button>
@@ -921,7 +1312,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                                     {m.logo_url ? <img src={m.logo_url} className="w-full h-full object-contain" alt="logo" /> : <span className="material-symbols-outlined text-slate-300">account_balance</span>}
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">{m.bank_name}</h4>
+                                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-tight">{m.bank_name}</h4>
                                     <p className="text-[10px] text-slate-500 font-bold">{m.account_number} • {m.account_holder}</p>
                                 </div>
                             </div>
@@ -960,7 +1351,7 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
                                     {m.qris_url ? <img src={m.qris_url} className="w-full h-full object-contain" alt="qris" /> : <span className="material-symbols-outlined text-slate-300">qr_code</span>}
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">{m.bank_name}</h4>
+                                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-tight">{m.bank_name}</h4>
                                     <p className="text-[10px] text-slate-500 font-bold">QRIS • {m.account_holder}</p>
                                 </div>
                             </div>

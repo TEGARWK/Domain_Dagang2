@@ -167,20 +167,41 @@ function Home() {
 
     try {
       // 1. Generate Candidates based on TLDs
-      const candidates = tldList.map((tld) => {
-        const dbRegPrice = tld.rawPrice;
-        const effectivePrice = tld.effectivePrice;
-
-        return {
-          tld: tld.name,
-          domainName: query.toLowerCase().replace(/\s+/g, "") + tld.name,
-          basePrice: effectivePrice,
-          originalPrice: dbRegPrice,
-          renewPrice: parseFloat(tld.price_renew),
-          currentPrice: effectivePrice,
+      const cleanQuery = query.toLowerCase().replace(/\s+/g, "");
+      
+      // Check if user typed a full domain (e.g., pesona.my.id)
+      const matchedTld = tldList.find(t => cleanQuery.endsWith(t.name));
+      
+      let candidates = [];
+      
+      if (matchedTld && cleanQuery.includes(".")) {
+        // User typed a specific domain, only show that one
+        candidates = [{
+          tld: matchedTld.name,
+          domainName: cleanQuery,
+          basePrice: matchedTld.effectivePrice,
+          originalPrice: matchedTld.rawPrice,
+          renewPrice: parseFloat(matchedTld.price_renew),
+          currentPrice: matchedTld.effectivePrice,
           duration: 1,
-        };
-      });
+        }];
+      } else {
+        // Standard keyword search: append all TLDs
+        candidates = tldList.map((tld) => {
+          const dbRegPrice = tld.rawPrice;
+          const effectivePrice = tld.effectivePrice;
+
+          return {
+            tld: tld.name,
+            domainName: cleanQuery + tld.name,
+            basePrice: effectivePrice,
+            originalPrice: dbRegPrice,
+            renewPrice: parseFloat(tld.price_renew),
+            currentPrice: effectivePrice,
+            duration: 1,
+          };
+        });
+      }
 
       // 2. Check Availability for ALL candidates in parallel
       const checkPromises = candidates.map(async (item) => {
@@ -362,7 +383,7 @@ function Home() {
       {cartCount > 0 && (
         <div
           onClick={() => navigate("/cart")}
-          className="fixed bottom-8 right-8 z-40 bg-neutral-900 text-white p-4 rounded-lg shadow-2xl cursor-pointer hover:scale-105 transition transform flex items-center gap-3 border border-neutral-800 animate-bounce-in group"
+          className="fixed bottom-8 right-8 z-40 bg-neutral-900 text-white p-4 rounded-lg shadow-xl cursor-pointer hover:scale-105 transition transform flex items-center gap-3 border border-neutral-800 animate-bounce-in group"
         >
           <div className="relative">
             <svg
@@ -389,14 +410,14 @@ function Home() {
       )}
 
       {/* HERO SECTION */}
-      <header className="relative pt-40 pb-20 overflow-hidden bg-white">
+      <header className="relative pt-32 pb-16 overflow-hidden bg-white">
         {/* Background Mesh/Gradient - subtle but warm */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-orange-50/50 via-white to-white -z-10" />
         
         {/* CONTAINER GRID: TEKS (KIRI) & GAMBAR (KANAN) */}
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 grid lg:grid-cols-2 gap-24 items-center relative z-20">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center relative z-20">
           {/* --- LEFT SIDE: Content & Search --- */}
-          <div className="text-center lg:text-left space-y-8">
+          <div className="text-center lg:text-left space-y-6">
             <div className="animate-fade-in-up">
               <span className="inline-flex items-center gap-2 py-2 px-5 rounded-lg bg-orange-50 text-[#F97316] text-[12px] font-bold uppercase tracking-widest border border-orange-100 shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
@@ -426,8 +447,13 @@ function Home() {
                 placeholder="Cari domain impian..."
                 className="flex-1 pl-6 pr-4 h-12 md:h-[52px] text-sm md:text-base rounded-lg outline-none text-neutral-800 placeholder:text-neutral-400 bg-transparent focus:bg-orange-50/30 transition-colors"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                disabled={showResult}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  if (showResult) {
+                    setShowResult(false);
+                    setResults([]);
+                  }
+                }}
               />
 
               {showResult ? (
@@ -512,7 +538,7 @@ function Home() {
                 <img
                   src="/image/logo/ADTLogo.png"
                   alt="Rocket Logo"
-                  className="w-72 h-auto drop-shadow-2xl filter brightness-105 transform hover:scale-105 transition duration-500"
+                  className="w-72 h-auto drop-shadow-xl filter brightness-105 transform hover:scale-105 transition duration-500"
                 />
                 <style>{`@keyframes fly { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(3deg); } 100% { transform: translateY(0px) rotate(0deg); } }`}</style>
               </div>
@@ -576,9 +602,9 @@ function Home() {
         {showResult && (
           <div
             id="search-results"
-            className="max-w-7xl mx-auto px-6 lg:px-8 mt-16 animate-[fadeIn_0.5s_ease-out] relative z-30 mb-24 scroll-mt-32"
+            className="max-w-7xl mx-auto px-6 lg:px-8 mt-12 animate-[fadeIn_0.5s_ease-out] relative z-30 mb-16 scroll-mt-32"
           >
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1)] overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-100 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1)] overflow-hidden">
               {/* Header Filter */}
               <div className="px-10 py-8 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row justify-between items-center gap-8">
                 <div>
@@ -587,173 +613,209 @@ function Home() {
                   </h3>
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ditemukan {results.length} rekomendasi ketersediaan</p>
                 </div>
-                <div className="flex gap-2 overflow-x-auto no-scrollbar w-full md:w-auto pb-1 md:pb-0">
-                  <button
-                    onClick={() => setActiveFilter("All")}
-                    className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border ${activeFilter === "All" ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100 hover:border-[#F97316] hover:text-[#F97316]"}`}
-                  >
-                    ALL TLDs
-                  </button>
-                  {tldList.map((t) => (
+                {results.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar w-full md:w-auto pb-1 md:pb-0">
                     <button
-                      key={t.name}
-                      onClick={() => setActiveFilter(t.name)}
-                      className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border ${activeFilter === t.name ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100 hover:border-[#F97316] hover:text-[#F97316]"}`}
+                      onClick={() => setActiveFilter("All")}
+                      className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border ${activeFilter === "All" ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100 hover:border-[#F97316] hover:text-[#F97316]"}`}
                     >
-                      {t.name}
+                      ALL TLDs
                     </button>
-                  ))}
-                </div>
+                    {tldList.map((t) => (
+                      <button
+                        key={t.name}
+                        onClick={() => setActiveFilter(t.name)}
+                        className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border ${activeFilter === t.name ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20" : "bg-white text-slate-400 border-slate-100 hover:border-[#F97316] hover:text-[#F97316]"}`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Table Content - Added Horizontal Scroll for Mobile */}
-              <div className="overflow-x-auto min-h-[400px] scrollbar-thin scrollbar-thumb-slate-200">
-                <table className="w-full text-left border-collapse min-w-[700px]">
-                  <thead className="bg-slate-50/50 border-b border-slate-100">
-                    <tr>
-                      <th 
-                        className="px-10 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-[#F97316] transition group select-none"
-                        onClick={() => handleSort('domainName')}
-                      >
-                        <div className="flex items-center gap-2">
-                          Domain
-                          <SortIcon active={sortConfig.key === 'domainName'} direction={sortConfig.direction} />
-                        </div>
-                      </th>
-                      <th 
-                        className="px-10 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-[#F97316] transition group select-none"
-                        onClick={() => handleSort('duration')}
-                      >
-                        <div className="flex items-center gap-2">
-                          Durasi
-                          <SortIcon active={sortConfig.key === 'duration'} direction={sortConfig.direction} />
-                        </div>
-                      </th>
-                      <th 
-                        className="px-10 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#F97316] transition group select-none"
-                        onClick={() => handleSort('currentPrice')}
-                      >
-                         <div className="flex items-center justify-end gap-2">
-                          Harga
-                          <SortIcon active={sortConfig.key === 'currentPrice'} direction={sortConfig.direction} />
-                        </div>
-                      </th>
-                      <th className="px-10 py-5 text-[10px] font-bold text-slate-300 uppercase tracking-widest text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {sortedResults.map((item, idx) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-slate-50/50 transition-all duration-200 group relative z-10"
-                      >
-                        {/* 1. Nama Domain & Status */}
-                        <td className="px-10 py-6">
-                          <div className="flex items-center gap-5">
-                            <div
-                              className={`w-2.5 h-2.5 rounded-full ring-4 ring-white shadow-sm ${item.available ? "bg-success" : "bg-slate-300"}`}
-                            ></div>
-                            <div>
-                              <span
-                                className={`font-bold text-base ${item.available ? "text-neutral-800" : "text-neutral-400"}`}
-                              >
-                                {item.domainName}
-                              </span>
-                              {item.available && item.originalPrice > item.basePrice && (
-                                <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#F97316] text-white shadow-sm shadow-orange-200 animate-pulse">
-                                  PROMO
-                                </span>
-                              )}
-                              {item.available ? (
-                                <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-success-50 text-success border border-success-100">
-                                  TERSEDIA
-                                </span>
-                              ) : (
-                                <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
-                                  TERDAFTAR
-                                </span>
-                              )}
-                            </div>
+              {/* Table Content - Responsive View with Internal Scroll */}
+              <div className="max-h-[700px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+                {/* DESKTOP TABLE VIEW */}
+                <div className="hidden md:block overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200">
+                  <table className="w-full text-left border-collapse min-w-[700px]">
+                    <thead className="bg-slate-50/50 border-b border-slate-100">
+                      <tr>
+                        <th 
+                          className="px-10 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-[#F97316] transition group select-none"
+                          onClick={() => handleSort('domainName')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Domain
+                            <SortIcon active={sortConfig.key === 'domainName'} direction={sortConfig.direction} />
                           </div>
-                        </td>
-
-                        {/* 2. Durasi (Dropdown Clean) */}
-                        <td className="px-8 py-4 relative">
-                          <div className="w-36 relative z-50">
-                            <CustomSelect
-                              value={item.duration}
-                              onChange={(val) =>
-                                handleDurationChange(results.indexOf(item), val) // Find original index since we are mapping sortedResults
-                              }
-                              options={[1, 2, 3, 5, 10].map(y => ({ value: y, label: `${y} Tahun` }))}
-                              className="w-full"
-                            />
+                        </th>
+                        <th 
+                          className="px-10 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-[#F97316] transition group select-none"
+                          onClick={() => handleSort('duration')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Durasi
+                            <SortIcon active={sortConfig.key === 'duration'} direction={sortConfig.direction} />
                           </div>
-                        </td>
-
-                        {/* 3. Harga */}
-                        <td className="px-8 py-4 text-right">
-                          {item.available ? (
-                            <div>
-                                {item.basePrice < item.originalPrice ? (
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-xs text-neutral-400 line-through leading-none">{formatRupiah(item.originalPrice * item.duration)}</span>
-                                        <span className="block font-bold text-lg text-[#F97316]">
-                                            {formatRupiah(item.currentPrice)}
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <span className="block font-bold text-lg text-[#F97316]">
-                                        {formatRupiah(item.currentPrice)}
-                                    </span>
+                        </th>
+                        <th 
+                          className="px-10 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right cursor-pointer hover:text-[#F97316] transition group select-none"
+                          onClick={() => handleSort('currentPrice')}
+                        >
+                          <div className="flex items-center justify-end gap-2">
+                            Harga
+                            <SortIcon active={sortConfig.key === 'currentPrice'} direction={sortConfig.direction} />
+                          </div>
+                        </th>
+                        <th className="px-10 py-5 text-[10px] font-bold text-slate-300 uppercase tracking-widest text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {sortedResults.map((item, idx) => (
+                        <tr
+                          key={idx}
+                          className="hover:bg-slate-50/50 transition-all duration-200 group relative z-10"
+                        >
+                          <td className="px-10 py-6">
+                            <div className="flex items-center gap-5">
+                              <div className={`w-2.5 h-2.5 rounded-full ring-4 ring-white shadow-sm ${item.available ? "bg-success" : "bg-slate-300"}`}></div>
+                              <div>
+                                <span className={`font-bold text-base ${item.available ? "text-neutral-800" : "text-neutral-400"}`}>
+                                  {item.domainName}
+                                </span>
+                                {item.available && item.originalPrice > item.basePrice && (
+                                  <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#F97316] text-white shadow-sm shadow-orange-200 animate-pulse">PROMO</span>
                                 )}
-                              <span className="text-xs text-neutral-400">
-                                @{formatRupiah(item.basePrice)}/thn
-                              </span>
+                                {item.available ? (
+                                  <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-success-50 text-success border border-success-100">TERSEDIA</span>
+                                ) : (
+                                  <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">TERDAFTAR</span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-8 py-4 relative">
+                            <div className="w-36 relative z-50">
+                              <CustomSelect
+                                value={item.duration}
+                                onChange={(val) => handleDurationChange(results.indexOf(item), val)}
+                                options={[1, 2, 3, 5, 10].map(y => ({ value: y, label: `${y} Tahun` }))}
+                                className="w-full"
+                              />
+                            </div>
+                          </td>
+                          <td className="px-8 py-4 text-right">
+                            {item.available ? (
+                              <div>
+                                {item.basePrice < item.originalPrice ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-xs text-neutral-400 line-through leading-none">{formatRupiah(item.originalPrice * item.duration)}</span>
+                                    <span className="block font-bold text-lg text-[#F97316]">{formatRupiah(item.currentPrice)}</span>
+                                  </div>
+                                ) : (
+                                  <span className="block font-bold text-lg text-[#F97316]">{formatRupiah(item.currentPrice)}</span>
+                                )}
+                                <span className="text-xs text-neutral-400">@{formatRupiah(item.basePrice)}/thn</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm font-medium text-neutral-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-10 py-6 text-right">
+                            <div className="flex justify-end gap-3">
+                              <button
+                                disabled={!item.available}
+                                onClick={() => handleAddToCart(item)}
+                                className="p-3 rounded-lg border border-slate-200 text-slate-400 hover:text-[#F97316] hover:border-[#F97316] hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                              </button>
+                              <button
+                                disabled={!item.available}
+                                onClick={() => handleBuyNow(item)}
+                                className={`px-6 py-3 rounded-lg font-bold text-[13px] uppercase tracking-wider transition-all transform active:scale-95 ${item.available ? "bg-[#F97316] text-white hover:bg-orange-600 shadow-xl shadow-orange-500/20" : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none"}`}
+                              >
+                                {item.available ? "Beli Sekarang" : "Whois"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* MOBILE CARD VIEW */}
+                <div className="md:hidden divide-y divide-slate-100">
+                  {sortedResults.map((item, idx) => (
+                    <div key={idx} className="p-6 space-y-5">
+                      {/* Header: Domain & Status */}
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-1">
+                          <h4 className={`font-bold text-lg leading-tight ${item.available ? "text-slate-900" : "text-slate-400"}`}>
+                            {item.domainName}
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                             {item.available ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-success-50 text-success border border-success-100 uppercase tracking-widest">Tersedia</span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-widest">Terdaftar</span>
+                              )}
+                              {item.available && item.originalPrice > item.basePrice && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-[#F97316] text-white uppercase tracking-widest animate-pulse">PROMO</span>
+                              )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {item.available ? (
+                            <div className="flex flex-col items-end">
+                               <span className="font-bold text-lg text-[#F97316] leading-none">{formatRupiah(item.currentPrice)}</span>
+                               <span className="text-[10px] text-slate-400 font-bold mt-1">/{item.duration} Thn</span>
                             </div>
                           ) : (
-                            <span className="text-sm font-medium text-neutral-400">
-                              -
-                            </span>
+                            <span className="text-slate-300 font-bold">-</span>
                           )}
-                        </td>
+                        </div>
+                      </div>
 
-                        {/* 4. Aksi */}
-                        <td className="px-10 py-6 text-right">
-                          <div className="flex justify-end gap-3">
+                      {/* Controls: Duration & Action */}
+                      <div className="flex flex-col gap-4">
+                         <div className="w-full">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Pilih Durasi</label>
+                            <CustomSelect
+                              value={item.duration}
+                              onChange={(val) => handleDurationChange(results.indexOf(item), val)}
+                              options={[1, 2, 3, 5, 10].map(y => ({ value: y, label: `${y} Tahun` }))}
+                              className="w-full"
+                              disabled={!item.available}
+                            />
+                         </div>
+                         <div className="flex gap-2 w-full pt-2">
                             <button
                               disabled={!item.available}
                               onClick={() => handleAddToCart(item)}
-                              className="p-3 rounded-lg border border-slate-200 text-slate-400 hover:text-[#F97316] hover:border-[#F97316] hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:bg-transparent disabled:border-slate-50"
-                              title="Tambah ke Keranjang"
+                              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-slate-200 text-slate-600 font-bold text-xs uppercase tracking-widest active:bg-slate-50 transition-colors disabled:opacity-30"
                             >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2.5}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                                />
-                              </svg>
+                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                               Cart
                             </button>
                             <button
                               disabled={!item.available}
                               onClick={() => handleBuyNow(item)}
-                              className={`px-6 py-3 rounded-lg font-bold text-[13px] uppercase tracking-wider transition-all shadow-sm transform active:scale-95 ${item.available ? "bg-[#F97316] text-white hover:bg-orange-600 border border-transparent shadow-orange-500/30 shadow-xl" : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none"}`}
+                              className={`flex-[2] py-3 rounded-lg font-bold text-xs uppercase tracking-widest shadow-lg transform active:scale-95 transition-all ${item.available ? "bg-[#F97316] text-white shadow-orange-500/20" : "bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed shadow-none"}`}
                             >
                               {item.available ? "Beli Sekarang" : "Whois"}
                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {filteredResults.length === 0 && (
@@ -786,14 +848,14 @@ function Home() {
 
 
       {/* 4. POPULAR EXTENSIONS */}
-      <section className="py-24 bg-white border-y border-neutral-100 relative overflow-hidden">
+      <section className="py-16 bg-white border-y border-neutral-100 relative overflow-hidden">
         {/* Decorative Blob */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
              <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-primary-50/50 rounded-full blur-[100px]" />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <h2 className="text-[36px] lg:text-[44px] font-bold text-slate-900 tracking-tight">Harga Pasar Terbaik</h2>
             <p className="text-slate-500 mt-3 text-[17px] font-medium">
               Transparan dan Kompetitif. Tanpa biaya tersembunyi untuk perpanjangan.
@@ -808,10 +870,10 @@ function Home() {
                 <div
                   key={idx}
                   onClick={() => navigate("/domain")}
-                  className={`p-4 sm:p-5 md:p-8 lg:p-10 border-2 rounded-2xl transition-all duration-500 group text-center cursor-pointer relative overflow-hidden
+                  className={`p-4 sm:p-5 md:p-8 lg:p-10 border-2 rounded-xl transition-all duration-500 group text-center cursor-pointer relative overflow-hidden
                     ${item.status === 'popular' 
-                      ? "border-[#F97316] bg-orange-50/30 shadow-2xl shadow-orange-500/20 -translate-y-2 scale-105 z-10" 
-                      : (item.status === 'promo' ? "border-orange-100 bg-orange-50/10 hover:border-[#F97316] hover:shadow-2xl hover:shadow-orange-200/50 hover:-translate-y-2" : "border-slate-100 bg-white hover:border-[#F97316] hover:shadow-2xl hover:shadow-orange-200/50 hover:-translate-y-2 opacity-90 hover:opacity-100")
+                      ? "border-[#F97316] bg-orange-50/30 shadow-xl shadow-orange-500/20 -translate-y-2 scale-105 z-10" 
+                      : (item.status === 'promo' ? "border-orange-100 bg-orange-50/10 hover:border-[#F97316] hover:shadow-xl hover:shadow-orange-200/50 hover:-translate-y-2" : "border-slate-100 bg-white hover:border-[#F97316] hover:shadow-xl hover:shadow-orange-200/50 hover:-translate-y-2 opacity-90 hover:opacity-100")
                     }
                   `}
                 >
@@ -850,13 +912,13 @@ function Home() {
       </section>
 
       {/* 5. FEATURES */}
-      <section className="py-24 bg-neutral-900 text-white relative overflow-hidden">
+      <section className="py-16 bg-neutral-900 text-white relative overflow-hidden">
         {/* Dark Mode Gradient Decor */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary-900/20 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary-800/10 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-          <div className="grid md:grid-cols-3 gap-10 lg:gap-16">
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-10">
             {[
               {
                 icon: "M13 10V3L4 14h7v7l9-11h-7z",
@@ -876,7 +938,7 @@ function Home() {
             ].map((feat, i) => (
               <div
                 key={i}
-                className="p-10 border border-slate-800 bg-slate-900/50 backdrop-blur-md rounded-2xl hover:border-[#F97316]/50 hover:bg-slate-800 transition-all duration-500 group hover:-translate-y-2 hover:shadow-3xl hover:shadow-orange-900/30"
+                className="p-8 border border-slate-800 bg-slate-900/50 backdrop-blur-md rounded-xl hover:border-[#F97316]/50 hover:bg-slate-800 transition-all duration-500 group hover:-translate-y-2 hover:shadow-3xl hover:shadow-orange-900/30"
               >
                 <div className="w-14 h-14 bg-[#F97316]/10 rounded-lg flex items-center justify-center mb-6 shadow-lg shadow-orange-900/20 group-hover:scale-110 transition group-hover:shadow-orange-500/40 border border-[#F97316]/20">
                   <svg
@@ -902,9 +964,9 @@ function Home() {
       </section>
 
       {/* 6. FAQ SECTION */}
-      <section className="py-32 bg-slate-50">
+      <section className="py-20 bg-slate-50">
         <div className="max-w-3xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-20">
+          <div className="text-center mb-12">
             <h2 className="text-[36px] lg:text-[44px] font-bold text-slate-900 tracking-tight">
               Pertanyaan Umum
             </h2>
@@ -915,7 +977,7 @@ function Home() {
               faqs.map((faq, i) => (
                 <details
                   key={faq.id || i}
-                  className="group p-8 bg-white border border-slate-100 rounded-lg cursor-pointer hover:border-[#F97316] transition-all duration-300 open:shadow-2xl open:shadow-slate-200/50"
+                  className="group p-6 bg-white border border-slate-100 rounded-lg cursor-pointer hover:border-[#F97316] transition-all duration-300 open:shadow-xl open:shadow-slate-200/50"
                 >
                   <summary className="flex justify-between items-center font-bold text-lg text-slate-800 group-hover:text-[#F97316] list-none select-none transition-colors">
                     {faq.question}

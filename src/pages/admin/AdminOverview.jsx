@@ -13,6 +13,7 @@ const AdminOverview = () => {
     totalUsers: 0,
     activeDomains: 0,
     pendingInvoices: 0,
+    paidInvoices: 0,
     totalRevenue: 0,
     sandboxBalance: 0,
   });
@@ -25,126 +26,7 @@ const AdminOverview = () => {
 
   // PDF Report Handler
   const handleDownloadReport = () => {
-    const pdfHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-          body { font-family: 'Helvetica', 'Arial', sans-serif; color: #000; padding: 0; margin: 0; background: #fff; }
-          .paper { width: 800px; margin: 0 auto; padding: 50px; }
-          .full-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-          .header-text { font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 1px; }
-          .bold { font-weight: bold; }
-          .gray { color: #666; font-size: 13px; margin: 2px 0; }
-          
-          /* Stats Grid Simulation with Tables */
-          .stats-table { width: 100%; border-collapse: separate; border-spacing: 15px 0; margin: 0 -15px 40px -15px; }
-          .stat-box { 
-            border: 1px solid #000; 
-            padding: 20px; 
-            text-align: center; 
-            background: #fff;
-          }
-          .stat-label { font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 5px; }
-          .stat-value { font-size: 18px; font-weight: bold; color: #000; }
-
-          .bordered th { background: #f8f9fa; border-top: 2px solid #000; border-bottom: 1px solid #ccc; padding: 12px 10px; text-align: left; font-size: 12px; }
-          .bordered td { padding: 15px 10px; border-bottom: 1px solid #eee; font-size: 13px; }
-          .text-right { text-align: right; }
-          .footer { margin-top: 100px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
-        </style>
-      </head>
-      <body>
-        <div class="paper">
-          <table class="full-table">
-            <tr>
-              <td width="60%">
-                <img src="${window.location.origin}/image/logo/ADTLogo.png" style="width: 70px; height: 70px;" />
-                <p class="bold" style="font-size: 20px; margin: 5px 0;">PT Aplikasi Dagang Teknologi</p>
-                <p class="gray">Business Administrative Report</p>
-              </td>
-              <td width="40%" class="text-right" valign="top">
-                <p class="header-text">RINGKASAN BISNIS</p>
-                <p class="gray">Dicetak: ${new Date().toLocaleString('id-ID')}</p>
-              </td>
-            </tr>
-          </table>
-
-          <div style="height: 2px; background: #000; margin-bottom: 40px;"></div>
-
-          <table class="stats-table">
-            <tr>
-              <td width="33%">
-                <div class="stat-box">
-                  <div class="stat-label">Total Pendapatan</div>
-                  <div class="stat-value">Rp ${stats.totalRevenue?.toLocaleString('id-ID')}</div>
-                </div>
-              </td>
-              <td width="33%">
-                <div class="stat-box">
-                  <div class="stat-label">Invoice Lunas</div>
-                  <div class="stat-value">${stats.paidInvoices}</div>
-                </div>
-              </td>
-              <td width="33%">
-                <div class="stat-box">
-                  <div class="stat-label">Total Domain</div>
-                  <div class="stat-value">${stats.totalDomains}</div>
-                </div>
-              </td>
-            </tr>
-          </table>
-
-          <p class="bold" style="font-size: 14px; margin-top: 40px; border-bottom: 1px solid #000; padding-bottom: 5px;">TRANSAKSI TERBARU</p>
-          <table class="full-table bordered">
-            <thead>
-              <tr>
-                <th>ID Invoice</th>
-                <th>Pelanggan</th>
-                <th align="center">Status</th>
-                <th class="text-right">Total (IDR)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${stats.recentTransactions?.map(tx => `
-                <tr>
-                  <td>#${tx.id}</td>
-                  <td>${tx.user_name}</td>
-                  <td align="center">${tx.status.toUpperCase()}</td>
-                  <td class="text-right">Rp ${tx.total_amount?.toLocaleString('id-ID')}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-
-          <div class="footer">
-            <p>Laporan Bisnis Resmi - Dihasilkan secara otomatis oleh sistem DomainDagang.</p>
-            <p>&copy; ${new Date().getFullYear()} PT Aplikasi Dagang Teknologi</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const opt = {
-      margin:       0,
-      filename:     `Business_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-      image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { 
-        scale: 2, 
-        useCORS: true,
-        logging: false,
-        letterRendering: true,
-        scrollX: 0,
-        scrollY: 0
-      },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(pdfHtml).save().then(() => {
-        success("Laporan PDF berhasil diunduh.");
-    });
+    window.print();
   };
 
   useEffect(() => {
@@ -162,19 +44,20 @@ const AdminOverview = () => {
         }
 
         setStats({ 
-            totalUsers: data.totalUsers,
-            activeDomains: data.activeDomains,
-            pendingInvoices: data.pendingInvoices,
-            totalRevenue: data.totalRevenue,
-            troubledDomains: data.troubledDomains,
+            ...data,
             sandboxBalance: balance 
         });
 
         setRealAnalytics(data.analytics);
 
-        const invRes = await api.get("/billing/all");
-        const sorted = [...invRes.data].sort((a,b) => new Date(b.date) - new Date(a.date));
-        setRecentInvoices(sorted);
+        if (data.recentTransactions) {
+            setRecentInvoices(data.recentTransactions);
+        } else {
+            // Fallback for safety
+            const invRes = await api.get("/billing/all");
+            const sorted = [...invRes.data].sort((a,b) => new Date(b.date) - new Date(a.date));
+            setRecentInvoices(sorted);
+        }
       } catch (err) {
         console.error("Dashboard error:", err);
       } finally {
@@ -246,11 +129,11 @@ const AdminOverview = () => {
   const getCategoryBadge = (cat) => {
     const c = (cat || 'REGISTER').toUpperCase();
     switch(c) {
-        case 'TOPUP': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100 shadow-sm">Top-up</span>;
-        case 'RENEW': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border-indigo-100 shadow-sm">Renew</span>;
-        case 'TRANSFER': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border-amber-100 shadow-sm">Transfer</span>;
-        case 'RESTORE': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-50 text-rose-600 border-rose-100 shadow-sm">Restore</span>;
-        default: return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm">Register</span>;
+        case 'TOPUP': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100 shadow-sm">Top-up</span>;
+        case 'RENEW': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider bg-indigo-50 text-indigo-600 border-indigo-100 shadow-sm">Renew</span>;
+        case 'TRANSFER': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider bg-amber-50 text-amber-600 border-amber-100 shadow-sm">Transfer</span>;
+        case 'RESTORE': return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider bg-rose-50 text-rose-600 border-rose-100 shadow-sm">Restore</span>;
+        default: return <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm">Register</span>;
     }
   };
 
@@ -280,12 +163,12 @@ const AdminOverview = () => {
       path: "/admin/domains"
     },
     {
-      title: "Total Pendapatan",
+      title: "Pendapatan Bulan Ini",
       value: formatRupiah(stats.totalRevenue),
-      trend: "Net Platform Earnings",
+      trend: `${new Date().toLocaleDateString('id-ID', { month: 'long' })} Revenue`,
       icon: "monetization_on",
       color: "amber",
-      path: "/admin/invoices"
+      path: "/admin/finance"
     },
     {
       title: "Domain Issue",
@@ -298,11 +181,105 @@ const AdminOverview = () => {
   ];
 
   return (
-    <div className="space-y-10 animate-[fadeIn_0.5s_ease-out] pb-20">
+    <div className="space-y-4 animate-[fadeIn_0.5s_ease-out] pb-20">
+      {/* --- PRINT SYSTEM OVERRIDE --- */}
+      <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+              @page { size: A4; margin: 0; }
+              body { background: #fff !important; }
+              .print\\:hidden, .sidebar, .navbar, .action-bar, .no-print, .recharts-responsive-container { display: none !important; }
+              .print-area { 
+                  display: block !important; 
+                  width: 210mm !important; 
+                  height: 297mm !important; 
+                  padding: 20mm !important;
+                  position: fixed !important;
+                  top: 0 !important;
+                  left: 0 !important;
+                  background: white !important;
+                  z-index: 9999 !important;
+                  -webkit-print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+              }
+          }
+      `}} />
+
+      {/* ==========================================
+          FORMAL BUSINESS REPORT (A4 Optimized)
+          ========================================== */}
+      <div id="business-report-print-area" className="hidden print-area text-[#0f172a] bg-white relative overflow-hidden">
+        <div className="flex justify-between items-start border-b-4 border-[#0f172a] pb-10 mb-10">
+          <div className="flex items-start gap-4">
+            <img src="/image/logo/ADTLogo.png" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
+            <div>
+              <h1 className="text-2xl font-bold tracking-tighter text-[#0f172a] uppercase leading-none">
+                PT Aplikasi Dagang Teknologi
+              </h1>
+              <p className="text-[9px] font-semibold text-[#64748b] uppercase tracking-[0.4em] mt-1.5">Technology Solution Provider</p>
+              <div className="text-[11px] space-y-1 text-[#475569] font-medium mt-4">
+                <p>Jl. Cigadung Raya Tengah No.52, RT.2</p>
+                <p>Bandung, Jawa Barat, Indonesia</p>
+              </div>
+            </div>
+          </div>
+          <div className="text-right">
+            <h2 className="text-3xl font-bold text-[#e2e8f0] uppercase tracking-tighter leading-none mb-3">RINGKASAN BISNIS</h2>
+            <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest">Periode: {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</p>
+            <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest">Dicetak: {new Date().toLocaleString('id-ID')}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-6 mb-12">
+          <div className="p-6 bg-slate-50 border border-slate-100 rounded-xl text-center">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Total Pendapatan</p>
+            <p className="text-xl font-semibold text-[#0f172a]">
+                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(stats.totalRevenue || 0)}
+            </p>
+          </div>
+          <div className="p-6 bg-slate-50 border border-slate-100 rounded-xl text-center">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Invoice Lunas</p>
+            <p className="text-xl font-semibold text-[#0f172a]">{stats.paidInvoices || 0}</p>
+          </div>
+          <div className="p-6 bg-slate-50 border border-slate-100 rounded-xl text-center">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Total Domain</p>
+            <p className="text-xl font-semibold text-[#0f172a]">{stats.activeDomains || 0}</p>
+          </div>
+        </div>
+
+        <h3 className="text-xs font-semibold text-[#0f172a] uppercase tracking-widest mb-4 border-b-2 border-slate-100 pb-2">Transaksi Terbaru</h3>
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b-2 border-slate-900">
+              <th className="py-3 text-[10px] font-semibold uppercase">ID Invoice</th>
+              <th className="py-3 text-[10px] font-semibold uppercase">Pelanggan</th>
+              <th className="py-3 text-[10px] font-semibold uppercase text-right">Nominal</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {recentInvoices.slice(0, 15).map((inv, i) => (
+              <tr key={i}>
+                <td className="py-4 text-xs font-semibold text-slate-900">#INV-{inv.id}</td>
+                <td className="py-4">
+                  <p className="text-xs font-semibold text-slate-700">{inv.customer_name || inv.user_name || '-'}</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-tighter">Status: {inv.status}</p>
+                </td>
+                <td className="py-4 text-right text-xs font-semibold text-slate-900">
+                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(inv.total || 0)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="mt-20 pt-10 border-t border-slate-100 text-center">
+          <p className="text-[10px] text-slate-400 italic">Laporan ini dihasilkan secara otomatis oleh sistem administrasi DomainDagang.</p>
+          <p className="text-[10px] font-semibold text-slate-900 mt-2">&copy; {new Date().getFullYear()} PT Aplikasi Dagang Teknologi</p>
+        </div>
+      </div>
       {/* 1. Welcome Section */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-bold text-[#f97316] uppercase tracking-[0.2em] leading-none mb-3">
+          <div className="flex items-center gap-2 text-[10px] font-semibold text-[#f97316] uppercase tracking-[0.2em] leading-none mb-2">
             <span className="w-2 h-2 rounded-full bg-[#f97316] animate-pulse"></span>
             Admin Control Center
           </div>
@@ -313,7 +290,7 @@ const AdminOverview = () => {
         <div className="flex items-center gap-3">
             <button 
                 onClick={handleDownloadReport}
-                className="h-11 px-6 bg-white text-[#475569] text-[11px] font-bold uppercase tracking-[0.2em] rounded-lg shadow-sm border border-[#f1f5f9] hover:bg-[#f8fafc] transition-all hover:translate-y-[-2px]"
+                className="h-11 px-6 bg-white text-[#475569] text-[11px] font-semibold uppercase tracking-[0.2em] rounded-lg shadow-sm border border-[#f1f5f9] hover:bg-[#f8fafc] transition-all hover:translate-y-[-2px]"
             >
                 Download Report
             </button>
@@ -325,7 +302,7 @@ const AdminOverview = () => {
                        setLoading(false);
                    }, 1000);
                 }}
-                className="h-11 px-6 bg-[#f97316] text-white text-[11px] font-bold uppercase tracking-[0.2em] rounded-lg shadow-lg shadow-orange-100 hover:bg-[#ea580c] transition-all hover:translate-y-[-2px] flex items-center gap-2"
+                className="h-11 px-6 bg-[#f97316] text-white text-[11px] font-semibold uppercase tracking-[0.2em] rounded-lg shadow-lg shadow-orange-100 hover:bg-[#ea580c] transition-all hover:translate-y-[-2px] flex items-center gap-2"
             >
                 <span className="material-symbols-outlined text-lg">refresh</span>
                 Refresh
@@ -334,12 +311,12 @@ const AdminOverview = () => {
       </header>
 
       {/* 2. Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {cards.map((card, i) => (
           <Link 
             key={i} 
             to={card.path || "/admin"}
-            className="group relative bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-500 overflow-hidden"
+            className="group relative bg-white rounded-xl p-3 shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/40 hover:-translate-y-1 transition-all duration-500 overflow-hidden"
           >
             {/* Background Accent */}
             <div className={`absolute top-0 right-0 w-24 h-24 opacity-[0.03] rounded-bl-full group-hover:opacity-[0.06] transition-opacity ${
@@ -351,7 +328,7 @@ const AdminOverview = () => {
             }`}></div>
             
             <div className="relative z-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-sm border transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6 ${
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 shadow-sm border transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6 ${
                     card.color === 'emerald' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                     card.color === 'blue' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                     card.color === 'orange' ? 'bg-orange-50 text-[#f97316] border-orange-100' :
@@ -362,15 +339,15 @@ const AdminOverview = () => {
                 </div>
                 
                 <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-1.5">{card.title}</p>
-                    <h3 className={`text-2xl font-black tracking-tight ${card.color === 'rose' ? 'text-rose-600' : 'text-slate-900 group-hover:text-[#f97316]'} transition-colors duration-300`}>
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-1.5">{card.title}</p>
+                    <h3 className={`text-2xl font-bold tracking-tight ${card.color === 'rose' ? 'text-rose-600' : 'text-slate-900 group-hover:text-[#f97316]'} transition-colors duration-300`}>
                       {loading ? (
                           <div className="h-8 w-24 bg-slate-100 animate-pulse rounded-md"></div>
                       ) : (card.value || 0)}
                     </h3>
                     
-                    <div className="mt-4 flex items-center justify-between">
-                       <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                    <div className="mt-3 flex items-center justify-between">
+                       <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md ${
                          card.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
                          card.color === 'blue' ? 'bg-blue-50 text-blue-600' :
                          card.color === 'orange' ? 'bg-orange-50 text-orange-600' :
@@ -387,264 +364,186 @@ const AdminOverview = () => {
         ))}
       </div>
 
-      {/* 3. Main Content Grid */}
-      <div className="grid grid-cols-1 gap-8">
-        
-        {/* TOP SECTION: Quick Info */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-orange-100 transition-all duration-300">
-            <div className="w-14 h-14 bg-gradient-to-br from-orange-50 to-orange-100 text-orange-600 rounded-xl flex items-center justify-center transition-all duration-500 shadow-sm">
-                <span className="material-symbols-outlined" style={{ fontSize: 28 }}>verified_user</span>
-            </div>
-            <div>
-                <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.15em]">Admin Control Protected</h4>
-                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tight">Shield Version 4.0 ACTIVE</p>
-            </div>
-        </div>
+      {/* 3. Quick Actions & Alerts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Support Alert */}
+          <Link to="/admin/support-tickets" className={`p-3 rounded-xl border flex items-center gap-3 transition-all duration-300 hover:shadow-md ${stats.pendingTickets > 0 ? 'bg-rose-50 border-rose-100' : 'bg-white border-slate-100'}`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stats.pendingTickets > 0 ? 'bg-rose-500 text-white shadow-lg shadow-rose-200' : 'bg-slate-100 text-slate-400'}`}>
+                  <span className="material-symbols-outlined text-xl">support_agent</span>
+              </div>
+              <div>
+                  <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Tiket Terbuka</h4>
+                  <p className={`text-lg font-semibold ${stats.pendingTickets > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{stats.pendingTickets || 0}</p>
+              </div>
+          </Link>
 
-        {/* MIDDLE SECTION: Large Line Chart */}
-        <div className="bg-[#0b1120] text-white rounded-2xl p-8 shadow-2xl shadow-slate-900/40 relative overflow-hidden group border border-slate-800/50 min-h-[500px] flex flex-col">
-          {/* Decorative Elements */}
+          {/* Manual Payment Verif */}
+          <Link to="/admin/invoices" className={`p-3 rounded-xl border flex items-center gap-3 transition-all duration-300 hover:shadow-md ${stats.manualVerifPending > 0 ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-100'}`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stats.manualVerifPending > 0 ? 'bg-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-slate-100 text-slate-400'}`}>
+                  <span className="material-symbols-outlined text-xl">payments</span>
+              </div>
+              <div>
+                  <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Verif Manual</h4>
+                  <p className={`text-lg font-semibold ${stats.manualVerifPending > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{stats.manualVerifPending || 0}</p>
+              </div>
+          </Link>
+
+          {/* API Health */}
+          <div className="p-3 rounded-xl border border-slate-100 bg-white flex items-center gap-3 group hover:border-emerald-100 transition-all duration-300">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-100 group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-xl">api</span>
+              </div>
+              <div>
+                  <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">API Health</h4>
+                  <p className="text-lg font-semibold text-emerald-600">ONLINE</p>
+              </div>
+          </div>
+
+          {/* Shield Status */}
+          <div className="p-3 rounded-xl border border-slate-100 bg-white flex items-center gap-3 group hover:border-blue-100 transition-all duration-300">
+              <div className="w-10 h-10 rounded-lg bg-[#0f172a] text-white flex items-center justify-center shadow-lg shadow-slate-200 group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-xl">verified_user</span>
+              </div>
+              <div>
+                  <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Shield Protection</h4>
+                  <p className="text-lg font-semibold text-slate-900">v4.0 ACTIVE</p>
+              </div>
+          </div>
+      </div>
+
+      {/* 4. Analytics & Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        
+        {/* Sales Performance Chart (Takes 2 columns) */}
+        <div className="lg:col-span-2 bg-[#0b1120] text-white rounded-xl p-4 md:p-5 shadow-xl shadow-slate-900/30 relative overflow-hidden group border border-slate-800/50 min-h-[440px] flex flex-col">
           <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/10 rounded-full blur-[80px] -mr-20 -mt-20 group-hover:bg-orange-600/20 transition-all duration-700"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-600/5 rounded-full blur-[60px] -ml-16 -mb-16"></div>
           
           <div className="relative z-10 flex-1 flex flex-col">
-              <div className="flex justify-between items-start mb-8">
+              <div className="flex justify-between items-start mb-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">
+                        <h3 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-400">
                             Revenue Streams
                         </h3>
                     </div>
-                    <p className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                    <p className="text-2xl font-semibold text-white tracking-tight flex items-center gap-3">
                          Performa Penjualan
-                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-800/50 px-2 py-1 rounded-md border border-slate-700/50">
-                             {chartOffset === 0 
-                                ? (graphFilter === 'Daily' ? '7 Hari Terakhir' : graphFilter === 'Monthly' ? '12 Bulan Terakhir' : '5 Tahun Terakhir')
-                                : (graphFilter === 'Daily' ? `Minggu Ke-${chartOffset + 1} Sebelumnya` : graphFilter === 'Monthly' ? `Tahun Ke-${chartOffset + 1} Sebelumnya` : `Periode ${chartOffset * 5} Tahun Lalu`)
-                             }
-                         </span>
                     </p>
                   </div>
                   
                   <div className="flex items-center gap-3">
-                      {/* Navigation Buttons */}
                       <div className="flex items-center bg-slate-800/50 rounded-lg backdrop-blur-sm border border-slate-700/50 p-1">
-                          <button 
-                             onClick={() => setChartOffset(prev => prev + 1)}
-                             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-                             title="Periode Sebelumnya"
-                          >
-                             <span className="material-symbols-outlined text-sm">chevron_left</span>
-                          </button>
-                          
-                          <div className="w-[1px] h-4 bg-slate-700 mx-1"></div>
-                          
-                          <button 
-                             onClick={() => setChartOffset(prev => Math.max(0, prev - 1))}
-                             disabled={chartOffset === 0}
-                             className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${chartOffset === 0 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'hover:bg-slate-700 text-slate-300 hover:text-white'}`}
-                             title="Periode Selanjutnya"
-                          >
-                             <span className="material-symbols-outlined text-sm">chevron_right</span>
-                          </button>
+                          <button onClick={() => setChartOffset(prev => prev + 1)} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-slate-700 text-slate-300 transition-colors"><span className="material-symbols-outlined text-sm">chevron_left</span></button>
+                          <button onClick={() => setChartOffset(prev => Math.max(0, prev - 1))} disabled={chartOffset === 0} className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${chartOffset === 0 ? 'opacity-30' : 'hover:bg-slate-700 text-slate-300'}`}><span className="material-symbols-outlined text-sm">chevron_right</span></button>
                       </div>
-
-                      {/* Filter Dropdown */}
                       <div className="w-40 bg-slate-800/50 rounded-lg backdrop-blur-sm border border-slate-700/50">
-                         <CustomSelect 
-                            value={graphFilter}
-                            onChange={val => {
-                                setGraphFilter(val);
-                                setChartOffset(0); // Reset offset when changing filter
-                            }}
-                            options={[
-                                { value: 'Daily', label: 'Harian' },
-                                { value: 'Monthly', label: 'Bulanan' },
-                                { value: 'Yearly', label: 'Tahunan' }
-                            ]}
-                            dark={true}
-                         />
+                         <CustomSelect value={graphFilter} onChange={val => { setGraphFilter(val); setChartOffset(0); }} options={[{ value: 'Daily', label: 'Harian' }, { value: 'Monthly', label: 'Bulanan' }, { value: 'Yearly', label: 'Tahunan' }]} dark={true} />
                       </div>
                   </div>
               </div>
               
-              <div className="w-full h-[350px] mt-4 z-20 overflow-hidden">
-                  {!isChartReady || getActiveData().length === 0 ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-5 opacity-40">
-                          <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
-                               <span className="material-symbols-outlined text-slate-500 text-3xl">analytics</span>
-                          </div>
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                               {!isChartReady ? "Initialising Charts..." : "Data Analytics Empty"}
-                          </p>
-                      </div>
-                  ) : (
-                      <ResponsiveContainer width="100%" height={350}>
-                          <LineChart 
-                              data={getActiveData().map(d => ({ label: d.label, revenue: d.realVal }))}
-                              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                          >
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                              <XAxis 
-                                  dataKey="label" 
-                                  stroke="#64748b" 
-                                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} 
-                                  axisLine={false}
-                                  tickLine={false}
-                                  dy={10}
-                              />
-                              <YAxis 
-                                  stroke="#64748b" 
-                                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }}
-                                  tickFormatter={(value) => `Rp ${value.toLocaleString('id-ID')}`}
-                                  axisLine={false}
-                                  tickLine={false}
-                                  dx={-10}
-                              />
-                              <RechartsTooltip 
-                                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
-                                  itemStyle={{ color: '#f97316', fontWeight: 'bold' }}
-                                  formatter={(value) => [formatRupiah(value), "Pendapatan"]}
-                                  labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '12px' }}
-                              />
-                              <Line 
-                                  type="monotone" 
-                                  dataKey="revenue" 
-                                  stroke="#f97316" 
-                                  strokeWidth={4}
-                                  dot={{ r: 4, fill: '#f97316', strokeWidth: 2, stroke: '#1e293b' }}
-                                  activeDot={{ r: 8, fill: '#fb923c', stroke: '#fff', strokeWidth: 2 }}
-                                  animationDuration={1500}
-                              />
-                          </LineChart>
-                      </ResponsiveContainer>
-                  )}
+              <div className="w-full h-[350px] mt-4 z-20">
+                  <ResponsiveContainer width="100%" height={350}>
+                      <LineChart data={getActiveData().map(d => ({ label: d.label, revenue: d.realVal }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                          <XAxis dataKey="label" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} dy={10} />
+                          <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} tickFormatter={(v) => `Rp ${v.toLocaleString('id-ID')}`} axisLine={false} tickLine={false} dx={-10} />
+                          <RechartsTooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px' }} formatter={(v) => [formatRupiah(v), "Pendapatan"]} />
+                          <Line type="monotone" dataKey="revenue" stroke="#f97316" strokeWidth={4} dot={{ r: 4, fill: '#f97316' }} animationDuration={1500} />
+                      </LineChart>
+                  </ResponsiveContainer>
               </div>
           </div>
         </div>
 
-        {/* BOTTOM SECTION: Recent Invoices */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-            <div className="px-8 py-6 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
-                  <div className="flex items-center gap-3">
-                      <div className="w-2 h-6 bg-[#f97316] rounded-full"></div>
-                      <h3 className="font-black text-slate-800 uppercase tracking-widest text-[11px]">Invoice Terbaru</h3>
-                  </div>
-                  <Link to="/admin/invoices" className="text-[10px] font-black text-[#f97316] uppercase tracking-[0.2em] px-4 py-2 bg-orange-50 rounded-lg hover:bg-orange-100 transition-all">Lihat Semua</Link>
+        {/* TLD Distribution (Takes 1 column) */}
+        <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex flex-col">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                Top Extensions
+            </h3>
+            <div className="flex-1 space-y-4">
+                {(stats.extensionDistribution || []).length > 0 ? stats.extensionDistribution.map((ext, idx) => {
+                    const maxCount = stats.extensionDistribution[0].count;
+                    const percentage = (ext.count / maxCount) * 100;
+                    return (
+                        <div key={idx} className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm font-semibold text-slate-700">{ext.tld}</span>
+                                <span className="text-xs font-semibold text-slate-400">{ext.count} Domains</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
+                                <div className="h-full bg-[#f97316] rounded-full transition-all duration-1000" style={{ width: `${percentage}%` }}></div>
+                            </div>
+                        </div>
+                    )
+                }) : (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-3 italic">
+                        <span className="material-symbols-outlined text-4xl">inventory_2</span>
+                        <p className="text-[10px] font-semibold uppercase">No extension data</p>
+                    </div>
+                )}
             </div>
-            <div className="overflow-x-auto flex-1">
-                   {/* DESKTOP TABLE */}
-                   <table className="w-full text-left border-separate border-spacing-0 hidden md:table">
-                       <thead>
-                           <tr className="text-[10px] text-slate-400 uppercase tracking-[0.15em] bg-slate-50/30">
-                               <th 
-                                   className="px-8 py-5 font-black border-b border-slate-100 cursor-pointer hover:text-slate-600 transition-colors"
-                                   onClick={() => handleSort('id')}
-                               >
-                                   <div className="flex items-center gap-1">
-                                       Invoice ID
-                                       <SortIcon column="id" />
-                                   </div>
-                               </th>
-                               <th 
-                                   className="px-8 py-5 font-black border-b border-slate-100 cursor-pointer hover:text-slate-600 transition-colors"
-                                   onClick={() => handleSort('customer_name')}
-                               >
-                                   <div className="flex items-center gap-1">
-                                       Customer
-                                       <SortIcon column="customer_name" />
-                                   </div>
-                               </th>
-                               <th 
-                                   className="px-8 py-5 font-black border-b border-slate-100 text-center cursor-pointer hover:text-slate-600 transition-colors"
-                                   onClick={() => handleSort('total')}
-                               >
-                                   <div className="flex items-center justify-center gap-1">
-                                       Total
-                                       <SortIcon column="total" />
-                                   </div>
-                               </th>
-                               <th className="px-8 py-5 font-black border-b border-slate-100 text-center">Status</th>
-                           </tr>
-                       </thead>
-                       <tbody className="divide-y divide-slate-50">
-                           {loading ? (
-                               <tr><td colSpan="4" className="py-24 text-center"><div className="animate-spin w-8 h-8 border-4 border-slate-100 border-t-[#f97316] rounded-full mx-auto"></div></td></tr>
-                           ) : recentInvoices.length === 0 ? (
-                               <tr><td colSpan="4" className="py-24 text-center text-slate-400 text-xs font-bold uppercase tracking-widest italic">Belum ada data invoice tercatat</td></tr>
-                           ) : (
-                               recentInvoices.slice(0, 6).map((inv, i) => (
-                                   <tr key={i} className="hover:bg-slate-50/50 transition-all group">
-                                       <td className="px-8 py-5">
-                                           <Link to={`/admin/invoices`} className="block">
-                                              <div className="flex items-center gap-2">
-                                                  <p className="text-sm font-black text-[#f97316] group-hover:underline">#{inv.id}</p>
-                                                  {getCategoryBadge(inv.category)}
-                                              </div>
-                                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Digital Billing</p>
-                                           </Link>
-                                       </td>
-                                       <td className="px-8 py-5">
-                                           <p className="text-sm font-black text-slate-700 leading-tight">{inv.customer_name || "Guest Customer"}</p>
-                                           <p className="text-[10px] text-slate-400 font-bold mt-0.5">{inv.customer_email || "no-email@dagang.com"}</p>
-                                       </td>
-                                       <td className="px-8 py-5 text-sm font-black text-slate-600 text-center">{formatRupiah(inv.total)}</td>
-                                       <td className="px-8 py-5 text-center">
-                                           <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${
-                                               inv.status === 'paid' 
-                                               ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                               : inv.status === 'cancelled'
-                                               ? 'bg-rose-50 text-rose-500 border-rose-100'
-                                               : 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse'
-                                           }`}>
-                                               {inv.status}
-                                           </span>
-                                       </td>
-                                   </tr>
-                               ))
-                           )}
-                       </tbody>
-                   </table>
-
-                   {/* MOBILE CARDS */}
-                   <div className="md:hidden divide-y divide-slate-100">
-                        {loading ? (
-                             <div className="py-12 text-center text-slate-300 font-bold text-xs uppercase animate-pulse">Loading Invoices...</div>
-                        ) : recentInvoices.length === 0 ? (
-                             <div className="py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest italic">Belum ada data</div>
-                        ) : (
-                            recentInvoices.slice(0, 6).map((inv, i) => (
-                                <div key={i} className="p-5 flex flex-col gap-4 hover:bg-slate-50 transition-all">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-xs font-black text-[#f97316]">#{inv.id}</p>
-                                                {getCategoryBadge(inv.category)}
-                                            </div>
-                                            <p className="text-sm font-black text-slate-800 mt-1">{inv.customer_name || "Guest"}</p>
-                                            <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{inv.customer_email || "-"}</p>
-                                        </div>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${
-                                               inv.status === 'paid' 
-                                               ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                               : inv.status === 'cancelled'
-                                               ? 'bg-rose-50 text-rose-500 border-rose-100'
-                                               : 'bg-amber-50 text-amber-600 border-amber-100'
-                                           }`}>
-                                               {inv.status}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-3 border-t border-slate-50">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Tagihan</span>
-                                        <span className="text-sm font-black text-slate-900">{formatRupiah(inv.total)}</span>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                   </div>
-          </div>
+            <div className="mt-6 pt-4 border-t border-slate-50">
+                <Link to="/admin/domains" className="text-[10px] font-semibold text-[#f97316] uppercase tracking-widest flex items-center gap-2 hover:translate-x-1 transition-transform">
+                    Lihat Manajemen Domain
+                    <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                </Link>
+            </div>
         </div>
+      </div>
+
+      {/* 5. Recent Activity Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="px-4 py-3 flex justify-between items-center bg-slate-50/50 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                    <div className="w-2 h-6 bg-[#f97316] rounded-full"></div>
+                    <h3 className="font-bold text-slate-800 uppercase tracking-widest text-[11px]">Aktivitas Penjualan Terbaru</h3>
+                </div>
+                <Link to="/admin/invoices" className="text-[10px] font-semibold text-[#f97316] uppercase tracking-[0.2em] px-4 py-2 bg-orange-50 rounded-lg hover:bg-orange-100 transition-all">Lihat Semua</Link>
+          </div>
+          <div className="overflow-x-auto">
+                 <table className="w-full text-left border-separate border-spacing-0">
+                     <thead>
+                         <tr className="text-[10px] text-slate-400 uppercase tracking-[0.15em] bg-slate-50/30">
+                             <th className="px-4 py-2 font-semibold border-b border-slate-100">Customer</th>
+                             <th className="px-4 py-2 font-semibold border-b border-slate-100">Invoice ID</th>
+                             <th className="px-4 py-2 font-semibold border-b border-slate-100">Category</th>
+                             <th className="px-4 py-2 font-semibold border-b border-slate-100 text-center">Total</th>
+                             <th className="px-4 py-2 font-semibold border-b border-slate-100 text-center">Status</th>
+                         </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-50">
+                         {loading ? (
+                             <tr><td colSpan="5" className="py-20 text-center"><div className="animate-spin w-8 h-8 border-4 border-slate-100 border-t-[#f97316] rounded-full mx-auto"></div></td></tr>
+                         ) : (stats.recentTransactions || []).length === 0 ? (
+                             <tr><td colSpan="5" className="py-20 text-center text-slate-400 italic">No transactions found</td></tr>
+                         ) : (
+                             stats.recentTransactions.map((tx, i) => (
+                                 <tr key={i} className="hover:bg-slate-50/50 transition-all group">
+                                     <td className="px-4 py-1.5">
+                                         <p className="text-sm font-semibold text-slate-700 leading-tight">{tx.customer_name}</p>
+                                         <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{new Date(tx.date).toLocaleString('id-ID')}</p>
+                                     </td>
+                                     <td className="px-4 py-1.5 text-sm font-semibold text-[#f97316]">#{tx.id}</td>
+                                     <td className="px-4 py-1.5">{getCategoryBadge(tx.category)}</td>
+                                     <td className="px-4 py-1.5 text-sm font-semibold text-slate-600 text-center">{formatRupiah(tx.total)}</td>
+                                     <td className="px-4 py-1.5 text-center">
+                                         <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[9px] font-semibold uppercase tracking-[0.2em] border shadow-sm ${
+                                             tx.status === 'paid' 
+                                             ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                             : 'bg-amber-50 text-amber-600 border-amber-100'
+                                         }`}>
+                                             {tx.status}
+                                         </span>
+                                     </td>
+                                 </tr>
+                             ))
+                         )}
+                     </tbody>
+                 </table>
+          </div>
       </div>
 
       {/* 4. HIDDEN PRINT REPORT AREA */}
@@ -659,11 +558,11 @@ const AdminOverview = () => {
             {/* Header Area */}
             <div className="flex justify-between items-start border-b-[3px] border-[#0f172a] pb-6 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold uppercase text-[#0f172a] tracking-tight mb-1">Dagang<span className="text-[#ea580c] font-semibold">Domain</span>.com</h1>
+                    <h1 className="text-3xl font-semibold uppercase text-[#0f172a] tracking-tight mb-1">Dagang<span className="text-[#ea580c] font-semibold">Domain</span>.com</h1>
                     <p className="text-[10px] font-medium text-[#64748b] uppercase tracking-[0.2em]">Platform Layanan Registrasi Domain</p>
                 </div>
                 <div className="text-right">
-                    <h2 className="text-xl font-bold text-[#0f172a] uppercase tracking-widest mb-1">Executive Report</h2>
+                    <h2 className="text-xl font-semibold text-[#0f172a] uppercase tracking-widest mb-1">Executive Report</h2>
                     <p className="text-xs font-medium text-[#64748b]">TGL: {new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                     <p className="text-[10px] font-medium text-[#94a3b8] mt-1">ID: REP-{Date.now().toString().slice(-6)}</p>
                 </div>
@@ -673,17 +572,17 @@ const AdminOverview = () => {
             <div className="bg-[#f8fafc] rounded-xl border border-[#e2e8f0] p-6 mb-8 flex justify-between items-center shadow-sm">
                 <div>
                     <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-widest mb-1">Total Pendapatan Bersih</p>
-                    <p className="text-4xl font-bold text-[#059669] tracking-tight">{formatRupiah(stats.totalRevenue)}</p>
+                    <p className="text-4xl font-semibold text-[#059669] tracking-tight">{formatRupiah(stats.totalRevenue)}</p>
                 </div>
                 <div className="w-[1px] h-16 bg-[#e2e8f0]"></div>
                 <div className="text-right">
                     <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-widest mb-1">Saldo Tersedia (Registrar)</p>
-                    <p className="text-4xl font-bold text-[#2563eb] tracking-tight">{formatRupiah(stats.sandboxBalance)}</p>
+                    <p className="text-4xl font-semibold text-[#2563eb] tracking-tight">{formatRupiah(stats.sandboxBalance)}</p>
                 </div>
             </div>
 
             {/* Platform Metrics */}
-            <h3 className="text-[11px] font-bold text-[#0f172a] uppercase tracking-[0.2em] mb-4 border-l-4 border-[#ea580c] pl-3">Metrik Platform</h3>
+            <h3 className="text-[11px] font-semibold text-[#0f172a] uppercase tracking-[0.2em] mb-4 border-l-4 border-[#ea580c] pl-3">Metrik Platform</h3>
             <div className="grid grid-cols-3 gap-6 mb-10">
                 <div className="p-5 border border-[#e2e8f0] rounded-xl bg-[#ffffff]">
                     <div className="flex items-center gap-3 mb-3">
@@ -692,7 +591,7 @@ const AdminOverview = () => {
                         </div>
                         <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">Total Pengguna</p>
                     </div>
-                    <p className="text-3xl font-bold text-[#0f172a] ml-11">{stats.totalUsers}</p>
+                    <p className="text-3xl font-semibold text-[#0f172a] ml-11">{stats.totalUsers}</p>
                 </div>
                 <div className="p-5 border border-[#e2e8f0] rounded-xl bg-[#ffffff]">
                     <div className="flex items-center gap-3 mb-3">
@@ -701,7 +600,7 @@ const AdminOverview = () => {
                         </div>
                         <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">Domain Aktif</p>
                     </div>
-                    <p className="text-3xl font-bold text-[#0f172a] ml-11">{stats.activeDomains}</p>
+                    <p className="text-3xl font-semibold text-[#0f172a] ml-11">{stats.activeDomains}</p>
                 </div>
                 <div className="p-5 border border-[#e2e8f0] rounded-xl bg-[#ffffff]">
                      <div className="flex items-center gap-3 mb-3">
@@ -710,12 +609,12 @@ const AdminOverview = () => {
                         </div>
                         <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">Invoice Pending</p>
                     </div>
-                    <p className="text-3xl font-bold text-[#0f172a] ml-11">{stats.pendingInvoices}</p>
+                    <p className="text-3xl font-semibold text-[#0f172a] ml-11">{stats.pendingInvoices}</p>
                 </div>
             </div>
 
             {/* Recent Transactions Table */}
-            <h3 className="text-[11px] font-bold text-[#0f172a] uppercase tracking-[0.2em] mb-4 border-l-4 border-[#ea580c] pl-3 flex justify-between items-center">
+            <h3 className="text-[11px] font-semibold text-[#0f172a] uppercase tracking-[0.2em] mb-4 border-l-4 border-[#ea580c] pl-3 flex justify-between items-center">
                 <span>Riwayat Transaksi Terakhir (Lunas)</span>
                 <span className="text-[9px] text-[#94a3b8] font-medium tracking-wider">Max. 10 Transaksi</span>
             </h3>

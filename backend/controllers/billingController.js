@@ -4,6 +4,7 @@ const EmailService = require("../services/EmailService");
 const NotificationService = require("../services/NotificationService");
 const VoucherService = require("../services/VoucherService");
 const WalletService = require("../services/WalletService");
+const FinanceService = require("../services/FinanceService");
 const TransferController = require("./transferController");
 
 // 1. Get All Invoices (By User ID - SECURE)
@@ -324,6 +325,26 @@ exports.payInvoice = async (req, res) => {
               const referralService = require('../services/referralService');
               await referralService.processReferralReward(invoiceId).catch(e => console.error("[Referral] Reward Error:", e));
 
+              // Record to Finance Module (Manual Admin Approval)
+              try {
+                  const now = new Date();
+                  const periodData = await FinanceService.getPeriodData(now.getMonth() + 1, now.getFullYear());
+                  const mainLocRes = await db.query("SELECT id FROM finance_money_locations WHERE is_main = true LIMIT 1");
+                  const locationId = mainLocRes[0]?.id || 1;
+
+                  await FinanceService.addMutation({
+                      period_id: periodData.period.id,
+                      type: 'IN',
+                      category: 'REVENUE',
+                      nominal: parseFloat(invoice.final_amount || invoice.total),
+                      location_id: locationId,
+                      description: `Alokasi Revenue Otomatis (Manual Confirm) - ${invoiceId}`
+                  });
+                  console.log(`💰 [Finance] Recorded Manual Confirm revenue for ${invoiceId}`);
+              } catch (finErr) {
+                  console.error('❌ [Finance Error] Manual confirmation mutation failed:', finErr.message);
+              }
+
           } catch (bgErr) {
               console.error("[payInvoice] Background Processing Error:", bgErr);
           }
@@ -592,7 +613,7 @@ exports.payInvoiceWithWallet = async (req, res) => {
 
         // 5. Update Invoice Status
         await client.query(
-            `UPDATE invoices SET status = 'paid', payment_method = 'WALLET', updated_at = NOW() WHERE id = $1`, 
+            `UPDATE invoices SET status = 'paid', payment_method = 'WALLET', paid_at = NOW(), updated_at = NOW() WHERE id = $1`, 
             [invoiceId]
         );
 
@@ -687,6 +708,35 @@ exports.payInvoiceWithWallet = async (req, res) => {
             console.error("[Billing] Notification Failed:", notifErr);
         }
         // -----------------------------
+
+        // --- REFERRAL REWARD PROCESS ---
+        try {
+            const referralService = require('../services/referralService');
+            await referralService.processReferralReward(invoiceId).catch(e => console.error("[Referral] Reward Error:", e));
+        } catch (refErr) {
+            console.error("[Billing] Referral Process Error:", refErr);
+        }
+        
+        // --- RECORD TO FINANCE (Wallet Payment) ---
+        try {
+            const now = new Date();
+            const periodData = await FinanceService.getPeriodData(now.getMonth() + 1, now.getFullYear());
+            const mainLocRes = await db.pool.query("SELECT id FROM finance_money_locations WHERE is_main = true LIMIT 1");
+            const locationId = mainLocRes.rows[0]?.id || 1;
+
+            await FinanceService.addMutation({
+                period_id: periodData.period.id,
+                type: 'IN',
+                category: 'REVENUE',
+                nominal: amount,
+                location_id: locationId,
+                description: `Alokasi Revenue Otomatis (Wallet) - ${invoiceId}`
+            });
+            console.log(`💰 [Finance] Recorded Wallet payment revenue for ${invoiceId}`);
+        } catch (finErr) {
+            console.error('❌ [Finance Error] Wallet mutation failed:', finErr.message);
+        }
+        // -------------------------------
 
         let message = "Payment Successful";
         if (!activationResult.success) {

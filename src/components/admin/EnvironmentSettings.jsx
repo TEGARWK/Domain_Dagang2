@@ -2,7 +2,7 @@ import React from 'react';
 
 const EnvironmentSettings = ({ settings, onChange, isLoading }) => {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-[scaleIn_0.3s_ease-out]">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-[scaleIn_0.3s_ease-out]">
       <div className="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex items-center gap-3">
         <span className="material-symbols-outlined text-indigo-500">terminal</span>
         <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">App Environment (Ngrok / Production)</h3>

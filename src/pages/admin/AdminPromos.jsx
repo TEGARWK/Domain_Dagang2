@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useNotification } from "../../context/NotificationContext";
 import { useConfirm } from "../../context/ConfirmContext";
 import api from "../../services/api";
+import { exportToExcel, formatDataForExport } from "../../utils/exportUtils";
 import CreateCouponForm from "../../components/admin/CreateCouponForm";
 
 
@@ -141,12 +142,37 @@ const AdminPromos = () => {
   };
 
 
+  const handleExportVouchers = () => {
+    const exportData = formatDataForExport(coupons.filter(c => !c.is_automatic), {
+        code: 'Kode',
+        title: 'Judul',
+        discount_value: 'Diskon',
+        discount_type: 'Tipe',
+        min_transaction: 'Min Blj',
+        quota: 'Kuota',
+        expired_at: 'Kadaluwarsa',
+        is_active: 'Status'
+    });
+    exportToExcel(exportData, 'Daftar_Vocer', 'Vouchers');
+  };
+
+  const handleExportReferrals = () => {
+    const exportData = formatDataForExport(referralData.rewards, {
+        referrer_name: 'Referrer',
+        referee_name: 'Referee',
+        reward_amount: 'Reward',
+        holding_until: 'Holding Until',
+        status: 'Status'
+    });
+    exportToExcel(exportData, 'Data_Rewards_Referral', 'Referrals');
+  };
+
   return (
     <div className="animate-[fadeIn_0.5s_ease-out] relative">
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden min-h-[600px] flex flex-col">
+      <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden min-h-[600px] flex flex-col">
         
         {/* HEADER & TABS */}
-        <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col-reverse md:flex-row justify-between items-start md:items-center gap-6 bg-white shrink-0">
+        <div className="p-3 border-b border-slate-50 flex flex-col-reverse md:flex-row justify-between items-start md:items-center gap-4 bg-white shrink-0">
           
           {/* TABS NAVIGATION */}
           <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 p-1.5 rounded-xl w-full md:w-fit overflow-x-auto no-scrollbar">
@@ -167,6 +193,14 @@ const AdminPromos = () => {
           {/* ACTIONS */}
           <div className="flex gap-3 w-full md:w-auto justify-end">
                {activeTab === 'voucher' && (
+                   <>
+                    <button 
+                        onClick={handleExportVouchers}
+                        className="w-full md:w-auto h-12 px-6 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-100 transition flex items-center justify-center gap-2"
+                    >
+                        <span className="material-symbols-outlined text-lg">download</span>
+                        Export
+                    </button>
                     <button 
                         onClick={() => { setEditingCoupon(null); setIsModalOpen(true); }}
                         className="w-full md:w-auto px-6 py-3 bg-[#F97316] text-white rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-slate-900 transition shadow-lg shadow-orange-600/20 flex items-center justify-center gap-3 group active:scale-95"
@@ -175,7 +209,17 @@ const AdminPromos = () => {
                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
                        </div>
                        Buat Vocer Baru
-                   </button>
+                    </button>
+                   </>
+               )}
+               {activeTab === 'referral' && referralSubTab === 'monitoring' && (
+                    <button 
+                        onClick={handleExportReferrals}
+                        className="w-full md:w-auto h-12 px-6 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-100 transition flex items-center justify-center gap-2"
+                    >
+                        <span className="material-symbols-outlined text-lg">download</span>
+                        Export Rewards
+                    </button>
                )}
           </div>
         </div>
@@ -183,8 +227,8 @@ const AdminPromos = () => {
         {/* CONTENT AREA */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="animate-fade-in flex-1 overflow-y-auto custom-scrollbar">
-              <div className="p-6 md:p-8 bg-white pb-6">
-                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+              <div className="p-3 bg-white pb-1">
+                <h3 className="text-xl font-bold text-slate-900 uppercase tracking-tight">
                      {activeTab === 'referral' ? 'Monitoring Reward Referral' : `Daftar ${activeTab === 'voucher' ? 'Vocer Aktif' : 'Event Diskon'}`}
                 </h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
@@ -196,11 +240,15 @@ const AdminPromos = () => {
              </div>
 
               {loadingCoupons || loadingReferral ? (
-                  <div className="text-center py-32 text-slate-400 italic font-medium tracking-[0.3em]">SEDANG MEMUAT DATA...</div>
+                  <div className="p-6 space-y-4">
+                      {Array(5).fill(0).map((_, i) => (
+                          <div key={i} className="animate-pulse bg-slate-50 h-20 rounded-xl"></div>
+                      ))}
+                  </div>
               ) : activeTab === 'referral' ? (
                   <div className="flex flex-col flex-1 overflow-hidden">
                       {/* SUB-TABS REFERRAL */}
-                      <div className="px-8 flex gap-6 border-b border-slate-50 mb-6 font-bold uppercase tracking-widest text-[10px] overflow-x-auto no-scrollbar">
+                      <div className="px-4 flex gap-4 border-b border-slate-50 mb-4 font-bold uppercase tracking-widest text-[10px] overflow-x-auto no-scrollbar">
                           <button 
                             onClick={() => setReferralSubTab("monitoring")}
                             className={`pb-3 transition-colors whitespace-nowrap ${referralSubTab === 'monitoring' ? 'text-[#F97316] border-b-2 border-[#F97316]' : 'text-slate-400 hover:text-slate-600'}`}
@@ -218,18 +266,18 @@ const AdminPromos = () => {
                       {referralSubTab === 'monitoring' ? (
                         <div>
                             {/* REFERRAL OVERVIEW CARDS */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-6 md:px-8 mb-8">
-                                <div className="p-5 bg-orange-50 rounded-2xl border border-orange-100">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-3 mb-4">
+                                <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
                                       <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Total Rewards</p>
-                                      <p className="text-2xl font-black text-slate-900">{referralData.overview.total_rewards || 0}</p>
+                                      <p className="text-xl font-bold text-slate-900">{referralData.overview.total_rewards || 0}</p>
                                 </div>
-                                <div className="p-5 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
                                       <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Sudah Cair (Paid)</p>
-                                      <p className="text-2xl font-black text-slate-900">Rp {new Intl.NumberFormat('id-ID').format(referralData.overview.total_paid_out || 0)}</p>
+                                      <p className="text-xl font-bold text-slate-900">Rp {new Intl.NumberFormat('id-ID').format(referralData.overview.total_paid_out || 0)}</p>
                                 </div>
-                                <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100">
+                                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                                       <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Tertunda (Pending)</p>
-                                      <p className="text-2xl font-black text-slate-900">Rp {new Intl.NumberFormat('id-ID').format(referralData.overview.total_pending || 0)}</p>
+                                      <p className="text-xl font-bold text-slate-900">Rp {new Intl.NumberFormat('id-ID').format(referralData.overview.total_pending || 0)}</p>
                                 </div>
                             </div>
 
@@ -245,7 +293,7 @@ const AdminPromos = () => {
                                                 className="cursor-pointer group/ref"
                                             >
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Referrer</p>
-                                                <p className="font-black text-slate-900 group-hover/ref:text-[#F97316] transition-colors underline decoration-dotted underline-offset-4">{r.referrer_name}</p>
+                                                <p className="font-bold text-slate-900 group-hover/ref:text-[#F97316] transition-colors underline decoration-dotted underline-offset-4">{r.referrer_name}</p>
                                             </div>
                                             <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border ${
                                                 r.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
@@ -264,7 +312,7 @@ const AdminPromos = () => {
                                             </div>
                                             <div>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reward</p>
-                                                <p className="text-sm font-black text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(r.reward_amount)}</p>
+                                                <p className="text-sm font-bold text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(r.reward_amount)}</p>
                                             </div>
                                         </div>
                                         <div className="flex justify-between items-center pt-2">
@@ -298,12 +346,12 @@ const AdminPromos = () => {
                                 <table className="w-full text-left text-sm border-separate border-spacing-0">
                                     <thead>
                                         <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                                            <th className="px-8 py-5">Referrer (Pengundang)</th>
-                                            <th className="px-8 py-5">Referee (Undangan)</th>
-                                            <th className="px-8 py-5">Reward</th>
-                                            <th className="px-8 py-5">Holding Hingga</th>
-                                            <th className="px-8 py-5">Status</th>
-                                            <th className="px-8 py-5 text-right">Aksi</th>
+                                            <th className="px-4 py-2">Referrer (Pengundang)</th>
+                                            <th className="px-4 py-2">Referee (Undangan)</th>
+                                            <th className="px-4 py-2 text-center">Reward</th>
+                                            <th className="px-4 py-2 text-center">Holding Hingga</th>
+                                            <th className="px-4 py-2 text-center">Status</th>
+                                            <th className="px-4 py-2 text-right">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
@@ -311,7 +359,7 @@ const AdminPromos = () => {
                                             <tr><td colSpan="6" className="text-center py-20 text-slate-400 italic">Belum ada transaksi referral</td></tr>
                                         ) : referralData.rewards.map((r) => (
                                             <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-8 py-5">
+                                                <td className="px-4 py-1.5">
                                                     <div 
                                                         onClick={() => navigate(`/admin/users?search=${r.referrer_name}`)}
                                                         className="font-bold text-slate-900 cursor-pointer hover:text-[#F97316] transition-colors underline decoration-dotted decoration-slate-300 underline-offset-4 w-fit"
@@ -319,7 +367,7 @@ const AdminPromos = () => {
                                                         {r.referrer_name}
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-5">
+                                                <td className="px-4 py-1.5">
                                                     <div 
                                                         onClick={() => navigate(`/admin/users?search=${r.referee_name}`)}
                                                         className="text-slate-500 cursor-pointer hover:text-[#F97316] transition-colors underline decoration-dotted decoration-slate-200 underline-offset-4 w-fit"
@@ -327,11 +375,11 @@ const AdminPromos = () => {
                                                         {r.referee_name}
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-5 font-bold text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(r.reward_amount)}</td>
-                                                <td className="px-8 py-5 text-[10px] font-bold uppercase text-slate-400">
+                                                <td className="px-4 py-1.5 text-center font-bold text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(r.reward_amount)}</td>
+                                                <td className="px-4 py-1.5 text-center text-[10px] font-bold uppercase text-slate-400">
                                                     {new Date(r.holding_until).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                 </td>
-                                                <td className="px-8 py-5">
+                                                <td className="px-4 py-1.5 text-center">
                                                     <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border ${
                                                         r.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
                                                         r.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-100'
@@ -339,7 +387,7 @@ const AdminPromos = () => {
                                                         {r.status}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-right">
+                                                <td className="px-4 py-1.5 text-right">
                                                     {r.status !== 'cancelled' && (
                                                         <button 
                                                             onClick={async () => {
@@ -365,11 +413,11 @@ const AdminPromos = () => {
                             </div>
                         </div>
                       ) : (
-                        <div className="px-8 pb-12 overflow-y-auto">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="px-4 pb-8 overflow-y-auto">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {/* GLOBAL CONFIG FORM */}
-                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                    <h4 className="font-black text-slate-900 uppercase tracking-tight mb-4 flex items-center gap-2">
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <h4 className="font-bold text-slate-900 uppercase tracking-tight mb-4 flex items-center gap-2">
                                         <span className="material-symbols-outlined text-orange-600">settings</span>
                                         Konfigurasi Global
                                     </h4>
@@ -405,7 +453,7 @@ const AdminPromos = () => {
                                 {/* TIERS MANAGEMENT */}
                                 <div>
                                     <div className="flex justify-between items-center mb-4">
-                                        <h4 className="font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                                        <h4 className="font-bold text-slate-900 uppercase tracking-tight flex items-center gap-2">
                                             <span className="material-symbols-outlined text-orange-600">workspace_premium</span>
                                             Tier & Hadiah
                                         </h4>
@@ -418,9 +466,9 @@ const AdminPromos = () => {
                                     </div>
                                     <div className="space-y-3">
                                         {referralTiers.map(t => (
-                                            <div key={t.id} className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between hover:shadow-lg hover:shadow-slate-200/50 transition-all group">
+                                            <div key={t.id} className="p-4 bg-white border border-slate-100 rounded-xl flex items-center justify-between hover:shadow-lg hover:shadow-slate-200/50 transition-all group">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 font-black">
+                                                    <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 font-bold">
                                                         {t.tier_name.charAt(0)}
                                                     </div>
                                                     <div>
@@ -431,7 +479,7 @@ const AdminPromos = () => {
                                                 <div className="flex items-center gap-6">
                                                     <div className="text-right">
                                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Reward</p>
-                                                        <p className="font-black text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(t.reward_amount)}</p>
+                                                        <p className="font-bold text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(t.reward_amount)}</p>
                                                     </div>
                                                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button 
@@ -458,7 +506,7 @@ const AdminPromos = () => {
                   </div>
               ) : coupons.filter(c => !c.is_automatic).length === 0 ? (
                  <div className="text-center py-40 flex flex-col items-center">
-                    <div className="w-24 h-24 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mb-6">
+                    <div className="w-24 h-24 bg-slate-50 rounded-xl flex items-center justify-center text-slate-200 mb-6">
                         <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                     </div>
                     <p className="text-slate-400 font-bold uppercase text-xs tracking-[0.2em] mb-8">Wah, belum ada Vocer nih!</p>
@@ -483,7 +531,7 @@ const AdminPromos = () => {
                                                 <span className="material-symbols-outlined text-lg">confirmation_number</span>
                                             </div>
                                             <div>
-                                                <p className="font-black text-slate-900 text-base tracking-tight">{v.code}</p>
+                                                <p className="font-bold text-slate-900 text-base tracking-tight">{v.code}</p>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{v.title}</p>
                                             </div>
                                         </div>
@@ -506,13 +554,13 @@ const AdminPromos = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Diskon</p>
-                                            <p className="text-sm font-black text-slate-800">
+                                            <p className="text-sm font-bold text-slate-800">
                                                 {v.discount_type === 'percentage' ? `${v.discount_value}%` : `Rp ${new Intl.NumberFormat('id-ID').format(v.discount_value)}`}
                                             </p>
                                         </div>
                                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Berlaku S/D</p>
-                                            <p className="text-sm font-black text-slate-800">
+                                            <p className="text-sm font-bold text-slate-800">
                                                 {new Date(v.expired_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                                             </p>
                                         </div>
@@ -540,13 +588,13 @@ const AdminPromos = () => {
                         <table className="w-full text-left text-sm border-separate border-spacing-0">
                             <thead>
                                 <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                                    <th className="px-8 py-5">Kode & Nama</th>
-                                    <th className="px-8 py-5">Diskon</th>
-                                    <th className="px-8 py-5">Syarat</th>
-                                    <th className="px-8 py-5 text-center">Kuota</th>
-                                    <th className="px-8 py-5">Berlaku</th>
-                                    <th className="px-8 py-5">Status</th>
-                                    <th className="px-8 py-5 text-right">Aksi</th>
+                                    <th className="px-4 py-2">Kode & Nama</th>
+                                    <th className="px-4 py-2">Diskon</th>
+                                    <th className="px-4 py-2">Syarat</th>
+                                    <th className="px-4 py-2 text-center">Kuota</th>
+                                    <th className="px-4 py-2">Berlaku</th>
+                                    <th className="px-4 py-2">Status</th>
+                                    <th className="px-4 py-2 text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
@@ -554,7 +602,7 @@ const AdminPromos = () => {
                                     .filter(c => !c.is_automatic)
                                     .map((v) => (
                                     <tr key={v.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 py-1.5">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F97316] flex items-center justify-center border border-orange-100 shrink-0">
                                                     <span className="material-symbols-outlined text-base">confirmation_number</span>
@@ -565,7 +613,7 @@ const AdminPromos = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 py-1.5">
                                             <div className="flex flex-col">
                                                 <span className={`px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all w-fit ${v.discount_type === 'percentage' ? 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-100' : 'bg-green-50 text-green-600 border-green-100 group-hover:bg-green-100'}`}>
                                                     {v.discount_type === 'percentage' ? `${v.discount_value}%` : `Rp ${new Intl.NumberFormat('id-ID').format(v.discount_value)}`}
@@ -577,7 +625,7 @@ const AdminPromos = () => {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 py-1.5">
                                             <div className="flex flex-col gap-1.5 text-xs">
                                                 <div className="flex items-center gap-1.5">
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Min. Blj:</span>
@@ -590,18 +638,18 @@ const AdminPromos = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5 text-center">
+                                        <td className="px-4 py-1.5 text-center">
                                             <div className="flex items-center justify-center gap-1.5 font-bold">
                                                 <span className="text-xs">{v.quota > 0 ? `${v.quota}x` : '∞'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 py-1.5">
                                             <div className="flex items-center gap-1.5 text-slate-500 font-bold uppercase tracking-tighter text-[10px]">
                                                 <span className="material-symbols-outlined text-[14px]">event</span>
                                                 <span>{new Date(v.expired_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-4 py-1.5">
                                             {(() => {
                                                 const isExpired = new Date(v.expired_at) < new Date();
                                                 const isActive = v.is_active && !isExpired;
@@ -623,7 +671,7 @@ const AdminPromos = () => {
                                                 );
                                             })()}
                                         </td>
-                                        <td className="px-8 py-5 text-right">
+                                        <td className="px-4 py-1.5 text-right">
                                             <div className="flex justify-end gap-1.5">
                                                 <button 
                                                     onClick={() => handleEditClick(v)}
@@ -678,8 +726,8 @@ const AdminPromos = () => {
       {isTierModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsTierModalOpen(false)}></div>
-              <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 animate-fade-in-up">
-                  <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-6">
+              <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl p-4 animate-fade-in-up">
+                  <h4 className="text-xl font-bold text-slate-900 uppercase tracking-tight mb-6">
                       {editingTier.id ? 'Edit Tier Referral' : 'Tambah Tier Baru'}
                   </h4>
                   <form onSubmit={handleSaveTier} className="space-y-5">
