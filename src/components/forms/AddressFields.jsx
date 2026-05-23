@@ -12,7 +12,7 @@ const AddressFields = ({ formData, setFormData, addressHook, required = true }) 
   } = addressHook;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* ROW: PROVINSI */}
       <div className="space-y-2.5">
         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Provinsi</label>
@@ -78,7 +78,7 @@ const AddressFields = ({ formData, setFormData, addressHook, required = true }) 
           placeholder="Misal: 12345"
           value={formData.zip_code}
           onChange={(e) => setFormData({ ...formData, [e.target.name]: e.target.value })}
-          className="w-full max-w-[200px] bg-slate-50/30 border border-slate-200 rounded-lg px-5 py-4 outline-none focus:ring-4 focus:ring-orange-50 focus:border-orange-500 focus:bg-white text-sm transition-all font-medium text-slate-800 shadow-sm"
+          className="w-full max-w-[200px] bg-slate-50/30 border border-slate-200 rounded-lg px-5 py-2 outline-none focus:ring-4 focus:ring-orange-50 focus:border-orange-500 focus:bg-white text-sm transition-all font-medium text-slate-800 shadow-sm"
           required={required}
           maxLength={5}
           pattern="\d*"
@@ -94,7 +94,7 @@ const AddressFields = ({ formData, setFormData, addressHook, required = true }) 
           placeholder="Nama Jalan, Nomor Rumah, RT/RW, Kecamatan..."
           value={formData.address_line1}
           onChange={(e) => setFormData({ ...formData, [e.target.name]: e.target.value })}
-          className="w-full bg-slate-50/30 border border-slate-200 rounded-xl px-5 py-4 outline-none focus:ring-4 focus:ring-orange-50 focus:border-orange-500 focus:bg-white text-sm transition-all font-medium text-slate-800 resize-none leading-relaxed shadow-sm shadow-inner"
+          className="w-full bg-slate-50/30 border border-slate-200 rounded-xl px-5 py-2 outline-none focus:ring-4 focus:ring-orange-50 focus:border-orange-500 focus:bg-white text-sm transition-all font-medium text-slate-800 resize-none leading-relaxed shadow-sm shadow-inner"
           required={required}
         ></textarea>
       </div>

@@ -88,13 +88,13 @@ const TransferDomain = () => {
   };
 
   return (
-    <div className="space-y-8 animate-[fadeIn_0.5s_ease-out] pb-20 relative overflow-hidden">
+    <div className="space-y-6 animate-[fadeIn_0.5s_ease-out] pb-10 relative overflow-hidden">
       {/* --- DECORATIVE BLOBS --- */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-orange-500 rounded-full mix-blend-multiply filter blur-[120px] opacity-10 animate-blob pointer-events-none"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-500 rounded-full mix-blend-multiply filter blur-[120px] opacity-10 animate-blob animation-delay-2000 pointer-events-none"></div>
 
       {/* --- HERO HEADER --- */}
-      <div className="relative bg-slate-900 rounded-xl p-6 md:p-12 overflow-hidden shadow-2xl mt-4 md:mt-0">
+      <div className="relative bg-slate-900 rounded-xl p-4 md:p-6 overflow-hidden shadow-xl mt-4 md:mt-0">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#F97316] rounded-full blur-[120px] opacity-10"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -141,10 +141,10 @@ const TransferDomain = () => {
 
 
       {/* --- CONTENT AREA --- */}
-      <div className="max-w-4xl mx-auto relative z-10">
+      <div className="w-full relative z-10">
         {result === "eligible" ? (
-            <div className="bg-white rounded-2xl p-6 md:p-12 shadow-2xl border border-slate-100 animate-[fadeInUp_0.4s_ease-out]">
-                <div className="flex flex-col md:flex-row gap-12">
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-xl border border-slate-100 animate-[fadeInUp_0.4s_ease-out]">
+                <div className="flex flex-col md:flex-row gap-6">
                     {/* Left: Info */}
                     <div className="flex-1 space-y-8">
                         <div className="space-y-4">
@@ -162,7 +162,7 @@ const TransferDomain = () => {
                             </p>
                         </div>
 
-                        <div className="bg-slate-50/50 p-6 rounded-lg border border-slate-100 space-y-4">
+                        <div className="bg-slate-50/50 p-4 rounded-lg border border-slate-100 space-y-4">
                             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Keuntungan Pindah</h4>
                              <ul className="space-y-4">
                                 {[
@@ -235,7 +235,7 @@ const TransferDomain = () => {
             </div>
         ) : (
             /* --- STEPS PLACEHOLDER (Mirroring Public Transfer Page Style) --- */
-            <div className="max-w-4xl mx-auto mt-16 text-center pb-10">
+            <div className="w-full mt-12 text-center pb-10">
                 <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-3">
                     Cukup <span className="text-[#F97316]">3 Langkah</span> Mudah
                 </h2>
@@ -245,7 +245,7 @@ const TransferDomain = () => {
                     {/* Line Connector */}
                     <div className="hidden md:block absolute top-[28px] left-0 w-full h-[2px] bg-slate-100 -z-10"></div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="grid md:grid-cols-3 gap-4">
                         {[
                             { step: 1, title: "Unlock Domain", desc: "Buka kunci domain (Unlock) di panel provider lama kamu untuk memulai." },
                             { step: 2, title: "EPP Code", desc: "Dapatkan kode otorisasi (Auth Code) dari provider lama kamu." },

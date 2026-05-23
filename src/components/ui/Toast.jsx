@@ -99,7 +99,7 @@ const Toast = ({ id, type = "success", message, title, duration = 3000, onClose 
   return (
     <div
       className={`
-        pointer-events-auto w-full max-w-sm sm:max-w-md overflow-hidden rounded-2xl border shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 backdrop-blur-xl p-4 mb-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
+        pointer-events-auto w-full max-w-sm sm:max-w-md overflow-hidden rounded-xl border shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 backdrop-blur-xl p-4 mb-3 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
         ${theme.container}
         ${isExiting 
           ? "opacity-0 scale-95 translate-y-[-20px] sm:translate-x-full sm:translate-y-0" 
@@ -111,7 +111,7 @@ const Toast = ({ id, type = "success", message, title, duration = 3000, onClose 
       <div className="flex items-start">
         <div className="flex-shrink-0 bg-white/50 p-1.5 rounded-xl shadow-sm border border-white/20">{getIcon()}</div>
         <div className="ml-3 w-0 flex-1 pt-0.5">
-            <p className="text-[10px] uppercase font-black tracking-widest opacity-40 mb-0.5">{theme.label}</p>
+            <p className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-0.5">{theme.label}</p>
             <p className="text-sm font-bold leading-tight">{message}</p>
         </div>
         <div className="ml-4 flex flex-shrink-0">

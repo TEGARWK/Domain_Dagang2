@@ -9,6 +9,9 @@ const db = require('../config/db');
 exports.getMyStats = async (req, res) => {
     try {
         const userId = req.user.id;
+        if (req.user.role === 'admin') {
+            return res.status(403).json({ success: false, message: "Admin tidak diperbolehkan berpartisipasi dalam program referral." });
+        }
         const stats = await referralService.getReferralStats(userId);
         
         return res.status(200).json({
@@ -23,12 +26,13 @@ exports.getMyStats = async (req, res) => {
 exports.getMyCode = async (req, res) => {
     try {
         const userId = req.user.id;
+        if (req.user.role === 'admin') {
+            return res.status(403).json({ success: false, message: "Admin tidak diperbolehkan berpartisipasi dalam program referral." });
+        }
         
-        // Ambil dari DB
         let userRes = await db.pool.query("SELECT referral_code FROM users WHERE id = $1", [userId]);
         let code = userRes.rows[0]?.referral_code;
 
-        // Jika belum punya (user lama), generate on the fly
         if (!code) {
             const userFull = await db.pool.query("SELECT name FROM users WHERE id = $1", [userId]);
             const userName = userFull.rows[0]?.name || "User";
@@ -52,6 +56,9 @@ exports.getMyCode = async (req, res) => {
 exports.getReferralHistory = async (req, res) => {
     try {
         const userId = req.user.id;
+        if (req.user.role === 'admin') {
+            return res.status(403).json({ success: false, message: "Admin tidak diperbolehkan berpartisipasi dalam program referral." });
+        }
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
         const offset = (page - 1) * limit;
@@ -67,7 +74,6 @@ exports.getReferralHistory = async (req, res) => {
 
         const result = await db.pool.query(query, [userId, limit, offset]);
         
-        // Masking logic
         const history = result.rows.map(h => {
             const name = h.referee_name || 'User Member';
             const parts = name.split(' ');
@@ -90,6 +96,9 @@ exports.getReferralHistory = async (req, res) => {
 exports.updateMyCode = async (req, res) => {
     try {
         const userId = req.user.id;
+        if (req.user.role === 'admin') {
+            return res.status(403).json({ success: false, message: "Admin tidak diperbolehkan berpartisipasi dalam program referral." });
+        }
         const { newCode } = req.body;
 
         if (!newCode) {
@@ -103,6 +112,29 @@ exports.updateMyCode = async (req, res) => {
         }
 
         return res.status(200).json(result);
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+exports.checkEligibility = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const query = "SELECT referred_by_id, referee_discount_used FROM users WHERE id = $1";
+        const result = await db.pool.query(query, [userId]);
+        const user = result.rows[0];
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User tidak ditemukan." });
+        }
+
+        // Jika dia hasil referral (referred_by_id ada) DAN belum pake diskon
+        const isEligible = !!user.referred_by_id && !user.referee_discount_used;
+
+        return res.status(200).json({
+            success: true,
+            eligible: isEligible
+        });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }

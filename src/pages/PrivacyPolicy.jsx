@@ -46,7 +46,7 @@ const PrivacyPolicy = () => {
             </ul>
           </section>
 
-          <section className="bg-slate-50 p-8 rounded-2xl border border-slate-100">
+          <section className="bg-slate-50 p-8 rounded-xl border border-slate-100">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">4. Keamanan Data</h2>
             <p>
               Kami menggunakan teknologi enkripsi SSL (Secure Socket Layer) dan protokol keamanan standar industri untuk melindungi data Anda. Kami tidak akan pernah menjual atau memberikan data pribadi Anda kepada pihak ketiga untuk tujuan pemasaran tanpa izin eksplisit dari Anda.

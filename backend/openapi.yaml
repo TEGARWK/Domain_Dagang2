@@ -1,0 +1,100 @@
+openapi: 3.0.0
+info:
+  title: Domain Dagang Finance Waterfall API (V2)
+  description: API untuk sistem pembagian pendapatan berjenjang (Tier 1 Saving, Tier 2 Profit Sharing).
+  version: 2.0.0
+
+servers:
+  - url: /api/finance
+    description: Base path untuk semua endpoint keuangan
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /summary:
+    get:
+      summary: Mendapatkan ringkasan konfigurasi dan histori keuangan
+      responses:
+        '200':
+          description: OK
+  
+  /calculate-preview:
+    post:
+      summary: Simulasi kalkulasi pembagian tanpa menyimpan ke database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                total_revenue:
+                  type: number
+                  example: 10000000
+      responses:
+        '200':
+          description: Berhasil menghitung preview
+        '400':
+          description: Revenue tidak valid
+
+  /saving-categories:
+    get:
+      summary: List kategori Tier 1 (Saving)
+    post:
+      summary: Tambah kategori saving baru
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                percentage: { type: number, minimum: 0.01, maximum: 99.99 }
+                description: { type: string }
+
+  /profit-members:
+    get:
+      summary: List penerima Tier 2 (Sharing)
+    post:
+      summary: Tambah penerima bagi hasil baru
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                party_name: { type: string }
+                role: { type: string }
+                percentage: { type: number }
+
+  /revenue-periods:
+    get:
+      summary: List histori periode revenue
+    post:
+      summary: Buat periode revenue baru (Draft)
+
+  /revenue-periods/{id}/apply:
+    put:
+      summary: Kunci dan terapkan distribusi nominal pada periode tertentu
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Sukses
+        '429':
+          description: Rate limit (1x per menit)
+
+  /audit-logs:
+    get:
+      summary: List riwayat perubahan konfigurasi oleh admin

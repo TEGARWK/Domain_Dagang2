@@ -97,8 +97,8 @@ const AdminFAQs = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto animate-[fadeIn_0.5s_ease-out]">
-      <div className="flex justify-end mb-6">
+    <div className="p-4 w-full animate-[fadeIn_0.5s_ease-out]">
+      <div className="flex justify-end mb-3">
         <button
           onClick={() => handleOpenModal()}
           className="px-6 py-3 bg-[#F97316] text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-orange-600/20 flex items-center gap-3 group active:scale-95"
@@ -112,17 +112,17 @@ const AdminFAQs = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
-        <div className="p-4 sm:p-8 border-b border-slate-50 bg-slate-50/30">
+      <div className="bg-white rounded-xl shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-slate-50 bg-slate-50/30">
           <h3 className="text-xl font-extrabold text-slate-900 uppercase tracking-tight">Daftar Pertanyaan</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-separate border-spacing-0">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-8 py-5">Urutan</th>
-                <th className="px-8 py-5">Pertanyaan & Jawaban</th>
-                <th className="px-8 py-5 text-right">Aksi</th>
+                <th className="px-4 py-2">Urutan</th>
+                <th className="px-4 py-3">Pertanyaan & Jawaban</th>
+                <th className="px-4 py-2 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -142,12 +142,12 @@ const AdminFAQs = () => {
               ) : (
                 faqs.map((faq) => (
                   <tr key={faq.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <span className="px-3 py-1 bg-white border border-slate-200 text-slate-500 rounded-lg text-[10px] font-extrabold uppercase tracking-widest shadow-sm group-hover:bg-orange-50 group-hover:border-orange-100 transition-all">
                         #{faq.order_num}
                       </span>
                     </td>
-                    <td className="px-8 py-5">
+                    <td className="px-4 py-1.5">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-bold uppercase tracking-widest">
                           {faq.category}
@@ -160,21 +160,21 @@ const AdminFAQs = () => {
                         {faq.answer}
                       </p>
                     </td>
-                    <td className="px-8 py-5 text-right">
+                    <td className="px-4 py-1.5 text-right">
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleOpenModal(faq)}
-                          className="w-10 h-10 flex items-center justify-center bg-white text-slate-400 rounded-lg hover:bg-orange-950 hover:text-white border border-slate-100 transition-all shadow-sm active:scale-90"
+                          className="w-8 h-8 flex items-center justify-center bg-white text-slate-400 rounded-lg hover:bg-orange-950 hover:text-white border border-slate-100 transition-all shadow-sm active:scale-90"
                           title="Edit FAQ"
                         >
-                          <span className="material-symbols-outlined text-[20px]">edit_note</span>
+                          <span className="material-symbols-outlined text-[18px]">edit_note</span>
                         </button>
                         <button
                           onClick={() => handleDelete(faq.id)}
-                          className="w-10 h-10 flex items-center justify-center bg-white text-slate-400 rounded-lg hover:bg-rose-50 hover:text-rose-500 border border-slate-100 transition-all shadow-sm active:scale-90"
+                          className="w-8 h-8 flex items-center justify-center bg-white text-slate-400 rounded-lg hover:bg-rose-50 hover:text-rose-500 border border-slate-100 transition-all shadow-sm active:scale-90"
                           title="Hapus FAQ"
                         >
-                          <span className="material-symbols-outlined text-[20px]">delete_sweep</span>
+                          <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
                         </button>
                       </div>
                     </td>
@@ -189,11 +189,11 @@ const AdminFAQs = () => {
       {/* MODAL TAMBAH/EDIT */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl p-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+          <div className="bg-white rounded-xl w-full max-w-2xl shadow-xl p-4">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
               {editingFaq ? "Edit FAQ" : "Tambah FAQ Baru"}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">
                   Pertanyaan (Question)
@@ -203,7 +203,7 @@ const AdminFAQs = () => {
                   required
                   value={formData.question}
                   onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 font-medium text-slate-800 outline-none focus:ring-4 ring-orange-100 transition focus:border-orange-300"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 font-medium text-slate-800 outline-none focus:ring-4 ring-orange-100 transition focus:border-orange-300"
                   placeholder="Contoh: Bagaimana cara transfer domain?"
                 />
               </div>
@@ -216,7 +216,7 @@ const AdminFAQs = () => {
                   rows="4"
                   value={formData.answer}
                   onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 font-medium text-slate-800 outline-none focus:ring-4 ring-orange-100 transition focus:border-orange-300 custom-scrollbar"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 font-medium text-slate-800 outline-none focus:ring-4 ring-orange-100 transition focus:border-orange-300 custom-scrollbar"
                   placeholder="Jawaban lengkap..."
                 />
               </div>
@@ -229,7 +229,7 @@ const AdminFAQs = () => {
                     type="text"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 font-medium text-slate-800 outline-none focus:ring-4 ring-orange-100 transition"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 font-medium text-slate-800 outline-none focus:ring-4 ring-orange-100 transition"
                   />
                 </div>
                 <div>
@@ -240,7 +240,7 @@ const AdminFAQs = () => {
                     type="number"
                     value={formData.order_num}
                     onChange={(e) => setFormData({ ...formData, order_num: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 font-medium text-slate-800 outline-none focus:ring-4 ring-orange-100 transition"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 font-medium text-slate-800 outline-none focus:ring-4 ring-orange-100 transition"
                   />
                 </div>
               </div>

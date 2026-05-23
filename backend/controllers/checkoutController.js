@@ -7,6 +7,7 @@ const InvoiceService = require("../services/InvoiceService");
 const pricingController = require("./pricingController"); // If needed, or just query DB directly
 const EmailService = require("../services/EmailService");
 const voucherService = require("../services/VoucherService");
+const referralService = require("../services/referralService");
 
 exports.processCheckout = async (req, res) => {
   let { userId, items, userVoucherCode, config } = req.body;
@@ -104,12 +105,14 @@ exports.processCheckout = async (req, res) => {
           }
       }
 
-        // --- REFERRAL DISCOUNT INTEGRATION ---
+        // --- REFERRAL DISCOUNT (RE-ENABLED) ---
         let referralDiscount = 0;
-        const refResult = await require('../services/referralService').checkRefereeDiscountEligibility(userId);
-        if (refResult.eligible) {
-            referralDiscount = refResult.discountAmount;
-            console.log(`[Checkout] User ${userId} is eligible for Referral Discount: ${referralDiscount}`);
+        const refEligibility = await referralService.checkRefereeDiscountEligibility(userId);
+        if (refEligibility.eligible) {
+            // Calculate as percentage of subtotal
+            const discountPercent = refEligibility.percent;
+            referralDiscount = Math.floor(subtotal * (discountPercent / 100));
+            console.log(`[Checkout] Applying Referee Discount: ${discountPercent}% of Rp ${subtotal} = Rp ${referralDiscount}`);
         }
 
         const netAmount = Math.max(0, subtotal - totalDiscount - referralDiscount);
@@ -254,6 +257,15 @@ exports.processCheckout = async (req, res) => {
               [invoiceNumber, appliedClaimId]
           );
           console.log(`[Checkout] Claim ${appliedClaimId} linked to invoice ${invoiceNumber}`);
+      }
+
+      // 5. Update Referral Status if used
+      if (referralDiscount > 0) {
+          await client.query(
+              "UPDATE users SET referee_discount_used = TRUE WHERE id = $1",
+              [userId]
+          );
+          console.log(`[Checkout] User ${userId} used referee discount.`);
       }
 
       await client.query('COMMIT');
@@ -426,13 +438,12 @@ exports.calculateCartPreview = async (req, res) => {
             }
         }
 
-        // --- REFERRAL DISCOUNT INTEGRATION ---
+        // --- REFERRAL DISCOUNT (RE-ENABLED) ---
         let referralDiscount = 0;
-        if (activeUserId) {
-            const refResult = await require('../services/referralService').checkRefereeDiscountEligibility(activeUserId);
-            if (refResult.eligible) {
-                referralDiscount = refResult.discountAmount;
-            }
+        const refEligibility = await referralService.checkRefereeDiscountEligibility(activeUserId);
+        if (refEligibility.eligible) {
+            const discountPercent = refEligibility.percent;
+            referralDiscount = Math.floor(subtotal * (discountPercent / 100));
         }
 
         const netAmount = Math.max(0, subtotal - totalDiscount - referralDiscount);

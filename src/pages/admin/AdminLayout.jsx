@@ -5,6 +5,14 @@ import AdminNavbar from "../../components/admin/AdminNavbar";
 
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(() => {
+    return localStorage.getItem("adminSidebarCollapsed") === "true";
+  });
+
+  const toggleSidebarCollapse = (val) => {
+    setIsSidebarCollapsed(val);
+    localStorage.setItem("adminSidebarCollapsed", val);
+  };
   // --- ROLE PROTECTION LOGIC ---
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -15,8 +23,13 @@ const AdminLayout = () => {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans print:bg-white print:overflow-visible print:h-auto">
       {/* Sidebar Container Wrapper - Prevent shift on mobile */}
-      <div className="w-0 lg:w-72 flex-none print:hidden z-50">
-        <AdminSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <div className={`flex-none print:hidden z-50 transition-all duration-300 relative ${isSidebarCollapsed ? "w-0 lg:w-20" : "w-0 lg:w-72"}`}>
+        <AdminSidebar 
+          isOpen={isSidebarOpen} 
+          setIsOpen={setIsSidebarOpen} 
+          isCollapsed={isSidebarCollapsed}
+          setIsCollapsed={toggleSidebarCollapse}
+        />
       </div>
 
       {/* Main Content Area */}
@@ -27,8 +40,8 @@ const AdminLayout = () => {
         </div>
 
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto py-6 sm:py-10 px-4 md:px-8 print:p-0 print:overflow-visible">
-          <div className="max-w-7xl mx-auto print:max-w-none print:m-0">
+        <main className="flex-1 overflow-y-auto py-3 sm:py-4 px-3 md:px-4 print:p-0 print:overflow-visible">
+          <div className="w-full print:max-w-none print:m-0">
             <Outlet />
           </div>
         </main>

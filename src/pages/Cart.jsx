@@ -163,10 +163,10 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-10 pb-20 px-4 font-sans animate-[fadeIn_0.5s_ease-out]">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-slate-50 pt-6 pb-10 px-2 md:px-4 lg:px-6 font-sans animate-[fadeIn_0.5s_ease-out]">
+      <div className="w-full">
         {/* Header Navigasi */}
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center justify-between mb-6">
           <Link
             to={backLink}
             className="flex items-center gap-2 text-slate-500 hover:text-[#F97316] transition font-bold text-sm bg-white px-4 py-2.5 rounded-lg border border-slate-100 shadow-sm"
@@ -184,7 +184,7 @@ const Cart = () => {
           {/* --- LEFT: ITEM LIST --- */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
-              <div className="p-6 border-b border-slate-50 bg-slate-50/30">
+              <div className="p-5 border-b border-slate-50 bg-slate-50/30">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
                     <svg className="w-4 h-4 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor">

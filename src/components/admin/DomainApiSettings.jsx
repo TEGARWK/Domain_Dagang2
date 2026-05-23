@@ -52,7 +52,7 @@ const DomainApiSettings = () => {
             <span className="material-symbols-outlined text-blue-500">language</span>
             <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">DaftarNama.id API Integration</h3>
           </div>
-          <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${settings.domain_api_mode === 'production' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+          <div className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest ${settings.domain_api_mode === 'production' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
             {settings.domain_api_mode} MODE
           </div>
         </div>

@@ -207,9 +207,9 @@ const Settings = () => {
   };
 
   return (
-    <div className="pb-32 animate-[fadeIn_0.5s_ease-out] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 font-sans">
+    <div className="pb-10 animate-[fadeIn_0.5s_ease-out] w-full px-2 md:px-4 lg:px-6 font-sans">
       {/* 1. HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 py-6 border-b border-slate-100">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 py-3 border-b border-slate-100">
         <div>
           <h1 className="text-4xl font-bold text-slate-800 tracking-tight leading-none">
             Pengaturan Akun
@@ -221,28 +221,28 @@ const Settings = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* 2. SIDEBAR NAVIGATION */}
         <div className="lg:col-span-3">
-          <div className="sticky top-8 space-y-2 bg-slate-50/50 p-4 rounded-xl border border-slate-100 shadow-inner">
-            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-[2px] px-3 mb-4">Navigasi Utama</p>
+          <div className="sticky top-4 space-y-1.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100 shadow-inner">
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[2px] px-3 mb-2">Navigasi Utama</p>
             
             <button
               onClick={() => setActiveTab("profile")}
-               className={`w-full text-left px-4 py-3.5 rounded-lg text-sm font-medium transition-all flex items-center gap-3 group ${activeTab === 'profile' ? 'bg-white text-orange-600 shadow-md ring-1 ring-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-white/80'}`}
+               className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-3 group ${activeTab === 'profile' ? 'bg-white text-orange-600 shadow-md ring-1 ring-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-white/80'}`}
             >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${activeTab === 'profile' ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-slate-800 border border-slate-200/50'}`}>
-                 <span className="material-symbols-outlined text-[19px]">person</span>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTab === 'profile' ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-slate-800 border border-slate-200/50'}`}>
+                 <span className="material-symbols-outlined text-[17px]">person</span>
               </div>
               Profil Saya
             </button>
             
             <button
               onClick={() => setActiveTab("security")}
-               className={`w-full text-left px-4 py-3.5 rounded-lg text-sm font-medium transition-all flex items-center gap-3 group ${activeTab === 'security' ? 'bg-white text-blue-600 shadow-md ring-1 ring-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-white/80'}`}
+               className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-3 group ${activeTab === 'security' ? 'bg-white text-blue-600 shadow-md ring-1 ring-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-white/80'}`}
             >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${activeTab === 'security' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-blue-600 border border-slate-200/50'}`}>
-                 <span className="material-symbols-outlined text-[19px]">lock</span>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTab === 'security' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-blue-600 border border-slate-200/50'}`}>
+                 <span className="material-symbols-outlined text-[17px]">lock</span>
               </div>
               Keamanan Akun
             </button>
@@ -262,22 +262,22 @@ const Settings = () => {
         </div>
 
         {/* 3. MAIN CONTENT CARDS */}
-        <div className="lg:col-span-9 space-y-10">
+        <div className="lg:col-span-9 space-y-6">
           
           {/* SECTION: PROFILE */}
           {activeTab === "profile" && (
             <div className="animate-[scaleIn_0.3s_ease-out]">
-              <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 
                 {/* BANNER HEADER */}
-                <div className="h-32 bg-gradient-to-r from-orange-500 to-amber-400 relative">
+                <div className="h-24 bg-gradient-to-r from-orange-500 to-amber-400 relative">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                 </div>
 
-                <div className="px-4 sm:px-8 pb-10 relative">
+                <div className="px-4 sm:px-6 pb-6 relative">
                     {/* AVATAR OVERLAY */}
                     <div className="flex flex-col sm:flex-row sm:justify-between items-center sm:items-end -mt-12 mb-8 gap-4 sm:gap-0">
-                        <div className="relative group z-10 w-24 h-24 rounded-2xl bg-white p-1.5 shadow-xl flex-shrink-0">
+                        <div className="relative group z-10 w-24 h-24 rounded-xl bg-white p-1.5 shadow-xl flex-shrink-0">
                             <div className="w-full h-full rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 relative bg-slate-50 transition-all duration-300">
                                 {profile.avatar ? (
                                     <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
@@ -300,7 +300,7 @@ const Settings = () => {
                     </div>
 
                     {/* TWO COLUMN FORM GRID */}
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                         
                         {/* LEFT: BASIC INFO */}
                         <div className="space-y-6">
@@ -315,7 +315,7 @@ const Settings = () => {
                                         value={profile.firstName}
                                         onChange={handleProfileChange}
                                         placeholder="Budi"
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-2.5">
@@ -326,7 +326,7 @@ const Settings = () => {
                                         value={profile.lastName}
                                         onChange={handleProfileChange}
                                         placeholder="Fulan"
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
                                     />
                                 </div>
                             </div>
@@ -342,7 +342,7 @@ const Settings = () => {
                                     value={profile.email}
                                     onChange={handleProfileChange}
                                     readOnly={!isEmailEditing}
-                                    className={`w-full border rounded-lg px-4 py-3 outline-none text-sm font-medium text-slate-800 transition-all ${isEmailEditing ? 'bg-white border-orange-500 ring-2 ring-orange-50' : 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed'}`}
+                                    className={`w-full border rounded-lg px-4 py-2 outline-none text-sm font-medium text-slate-800 transition-all ${isEmailEditing ? 'bg-white border-orange-500 ring-2 ring-orange-50' : 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed'}`}
                                 />
                             </div>
 
@@ -358,7 +358,7 @@ const Settings = () => {
                                     onChange={handleProfileChange}
                                     readOnly={!isPhoneEditing}
                                     placeholder="081xxx"
-                                    className={`w-full border rounded-lg px-4 py-3 outline-none text-sm font-medium text-slate-800 transition-all ${isPhoneEditing ? 'bg-white border-orange-500 ring-2 ring-orange-50' : 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed'}`}
+                                    className={`w-full border rounded-lg px-4 py-2 outline-none text-sm font-medium text-slate-800 transition-all ${isPhoneEditing ? 'bg-white border-orange-500 ring-2 ring-orange-50' : 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed'}`}
                                 />
                             </div>
 
@@ -370,7 +370,7 @@ const Settings = () => {
                                     value={profile.bio}
                                     onChange={handleProfileChange}
                                     placeholder="Ceritakan sedikit rentang bisnis Anda..."
-                                    className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all resize-none"
+                                    className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all resize-none"
                                 ></textarea>
                             </div>
                         </div>
@@ -394,7 +394,7 @@ const Settings = () => {
                                         placeholder="ID"
                                         value={profile.country}
                                         onChange={handleProfileChange}
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
                                     />
                                 </div>
                             </div>
@@ -432,7 +432,7 @@ const Settings = () => {
           {/* SECTION: SECURITY */}
           {activeTab === "security" && (
             <div className="animate-[scaleIn_0.3s_ease-out] space-y-8">
-              <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="bg-slate-50/50 px-4 sm:px-8 py-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100">
@@ -445,7 +445,7 @@ const Settings = () => {
                   </div>
                 </div>
 
-                <div className="p-4 sm:p-8 space-y-10">
+                <div className="p-4 sm:p-6 space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 sm:gap-y-8 max-w-4xl">
                       <div className="space-y-2.5">
                          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Password Saat Ini</label>
@@ -503,8 +503,8 @@ const Settings = () => {
           {/* SECTION: DANGER ZONE */}
           {activeTab === "danger" && (
             <div className="animate-[scaleIn_0.3s_ease-out]">
-               <section className="bg-rose-50/50 rounded-3xl border-2 border-rose-200 border-dashed p-12 text-center space-y-8">
-                  <div className="w-24 h-24 rounded-2xl bg-rose-600 text-white flex items-center justify-center mx-auto shadow-2xl shadow-rose-200 animate-pulse">
+               <section className="bg-rose-50/50 rounded-xl border-2 border-rose-200 border-dashed p-10 text-center space-y-8">
+                  <div className="w-24 h-24 rounded-xl bg-rose-600 text-white flex items-center justify-center mx-auto shadow-xl shadow-rose-200 animate-pulse">
                       <span className="material-symbols-outlined text-5xl">dangerous</span>
                   </div>
                   

@@ -10,7 +10,7 @@ const Error500 = () => {
       <div className="relative z-10 max-w-2xl w-full">
         {/* Modern 500 Header */}
         <div className="mb-10 relative inline-block">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-orange-50 rounded-3xl flex items-center justify-center mx-auto border border-orange-100 shadow-2xl shadow-orange-100 animate-bounce">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 bg-orange-50 rounded-xl flex items-center justify-center mx-auto border border-orange-100 shadow-xl shadow-orange-100 animate-bounce">
              <span className="material-symbols-outlined text-5xl sm:text-7xl text-[#F97316]">settings_slow_motion</span>
           </div>
         </div>

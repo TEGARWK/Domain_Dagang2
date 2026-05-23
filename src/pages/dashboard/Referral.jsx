@@ -66,22 +66,55 @@ const Referral = () => {
     }
   };
 
-  if (loading) {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAdmin = user.role === "admin";
+
+  if (isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-        <div className="animate-spin w-10 h-10 border-4 border-slate-200 border-t-[#F97316] rounded-full"></div>
-        <p className="text-slate-400 text-sm font-bold animate-pulse uppercase tracking-widest">
-            Menghitung Cuan...
-        </p>
+      <div className="w-full flex items-center justify-center min-h-[60vh] px-4">
+        <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-xl max-w-md w-full text-center space-y-6">
+          <div className="w-20 h-20 bg-orange-50 text-[#F97316] rounded-full flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-4xl">lock_person</span>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-slate-800">Akses Terbatas</h2>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Akun Admin tidak diperbolehkan berpartisipasi dalam program referral pelanggan. Silakan gunakan akun Member untuk mengakses fitur ini.
+            </p>
+          </div>
+          <button 
+            onClick={() => window.location.href = '/admin'}
+            className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition active:scale-[0.98]"
+          >
+            Kembali ke Panel Admin
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && !stats) {
+    return (
+      <div className="w-full space-y-6 pb-10 px-2 md:px-4 lg:px-6 animate-pulse">
+        <div className="h-64 bg-slate-100 rounded-lg shadow-sm"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Array(3).fill(0).map((_, i) => (
+            <div key={i} className="h-24 bg-slate-50 rounded-lg"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 h-96 bg-white border border-slate-100 rounded-lg"></div>
+          <div className="lg:col-span-5 h-96 bg-white border border-slate-100 rounded-lg"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20 animate-[fadeIn_0.5s_ease-out]">
+    <div className="w-full space-y-6 pb-10 px-2 md:px-4 lg:px-6 animate-[fadeIn_0.5s_ease-out]">
       
       {/* --- HEADER AREA --- */}
-      <div className="relative overflow-hidden rounded-lg bg-slate-900 p-8 md:p-12 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-lg bg-slate-900 p-6 md:p-8 text-white shadow-xl">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#F97316]/10 to-transparent pointer-events-none"></div>
         <div className="relative z-10 space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider">
@@ -92,7 +125,7 @@ const Referral = () => {
             Undang Teman & <span className="text-[#F97316]">Dapatkan Reward</span>
           </h1>
           <p className="text-slate-400 font-medium max-w-xl text-base leading-relaxed">
-            Berikan diskon <span className="text-white font-bold">Rp 5.000</span> untuk temanmu, dan dapatkan komisi hingga <span className="text-[#F97316] font-bold">Rp 35.000</span> per orang!
+            Bangun jaringan bisnismu! Berikan <span className="text-white font-bold">diskon {stats?.referee_discount_percent}%</span> untuk temanmu, dan raih komisi hingga <span className="text-[#F97316] font-bold">{stats?.commission_tier_1}%</span>!
           </p>
         </div>
         
@@ -107,8 +140,11 @@ const Referral = () => {
              <span className="material-symbols-outlined text-2xl">group</span>
           </div>
           <div>
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Teman Terdaftar</p>
-            <h3 className="text-2xl font-bold text-slate-800">{stats?.total_referrals}</h3>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Total Undangan</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-2xl font-bold text-slate-800">{stats?.total_referrals}</h3>
+              <span className="text-[10px] font-medium text-slate-400">({stats?.successful_referrals} Berhasil)</span>
+            </div>
           </div>
         </div>
 
@@ -209,6 +245,25 @@ const Referral = () => {
             </div>
           </div>
 
+          {/* Multi-Tier Commission Explanation */}
+          <div className="bg-slate-900 rounded-lg p-6 border border-slate-800 shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#F97316]/5 rounded-full blur-2xl -z-10"></div>
+            <h4 className="font-bold text-[#F97316] text-[10px] uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-xs">account_tree</span>
+              Sistem Komisi Berjenjang
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+              <div className="space-y-1">
+                <p className="text-white font-bold text-lg">{stats?.commission_tier_1}% <span className="text-slate-500 text-xs font-normal">Komisi Tier 1</span></p>
+                <p className="text-[10px] text-slate-400 leading-relaxed italic">Didapatkan dari transaksi teman yang kamu undang langsung.</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-white font-bold text-lg">{stats?.commission_tier_2}% <span className="text-slate-500 text-xs font-normal">Komisi Tier 2</span></p>
+                <p className="text-[10px] text-slate-400 leading-relaxed italic">Didapatkan dari transaksi orang yang diundang oleh temanmu.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Tier Progress */}
           {stats?.next_tier && (
             <div className="bg-slate-50 p-6 rounded-lg border border-slate-100 relative overflow-hidden group">
@@ -254,7 +309,12 @@ const Referral = () => {
                             {item.referee_name_masked.charAt(0)}
                           </div>
                           <div className="truncate">
-                             <p className="font-bold text-slate-800 text-xs truncate">{item.referee_name_masked}</p>
+                             <div className="flex items-center gap-2">
+                                <p className="font-bold text-slate-800 text-xs truncate">{item.referee_name_masked}</p>
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-tighter ${item.reward_tier === 2 ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                                   Tier {item.reward_tier || 1}
+                                </span>
+                             </div>
                              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">
                                 {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                              </p>
@@ -272,7 +332,7 @@ const Referral = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="p-12 text-center">
+                  <div className="p-10 text-center">
                     <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center mx-auto mb-4">
                        <span className="material-symbols-outlined text-slate-200 text-2xl">person_add</span>
                     </div>
@@ -288,7 +348,7 @@ const Referral = () => {
       </div>
 
       {/* --- FAQ SECTION --- */}
-      <div className="bg-white p-10 rounded-lg border border-slate-100 shadow-sm">
+      <div className="bg-white p-6 rounded-lg border border-slate-100 shadow-sm">
         <h3 className="text-xl font-bold text-slate-800 mb-8 text-center uppercase tracking-tight">Cara Kerja Referral</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
            <div className="text-center space-y-3">
@@ -303,8 +363,8 @@ const Referral = () => {
            </div>
            <div className="text-center space-y-3">
               <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mx-auto text-sm font-bold shadow-sm">3</div>
-              <h4 className="font-bold text-slate-800 text-sm">Dapatkan Cuan</h4>
-              <p className="text-xs text-slate-500 leading-relaxed px-4">Bonus masuk ke saldo Walletmu dalam 3 hari kerja.</p>
+              <h4 className="font-bold text-slate-800 text-sm">Passive Income</h4>
+              <p className="text-xs text-slate-500 leading-relaxed px-4">Dapatkan komisi Tier 2 saat temanmu berhasil mengajak orang lain belanja.</p>
            </div>
         </div>
       </div>
@@ -313,7 +373,7 @@ const Referral = () => {
       {showCustomModal && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowCustomModal(false)}></div>
-          <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-[scaleIn_0.2s_ease-out]">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-[scaleIn_0.2s_ease-out]">
             <div className="bg-slate-900 p-6 text-white">
               <h4 className="text-lg font-bold">Custom Kode Referral</h4>
               <p className="text-slate-400 text-xs mt-1">Branding-kan kode unikmu sendiri!</p>

@@ -79,13 +79,13 @@ const Vouchers = () => {
     return (
         <div className="w-full animate-[fadeIn_0.5s_ease-out] pb-24 px-4 sm:px-6">
             {/* 1. PREMIUM HEADER BANNER */}
-            <div className="relative mb-12 p-8 md:p-10 rounded-2xl bg-slate-900 overflow-hidden shadow-2xl shadow-slate-200">
+            <div className="relative mb-12 p-8 md:p-10 rounded-xl bg-slate-900 overflow-hidden shadow-xl shadow-slate-200">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/20 rounded-full blur-[100px] -mr-40 -mt-40"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] -ml-32 -mb-32"></div>
                 
                 <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
                     <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-                        <div className="w-20 h-20 bg-white/10 backdrop-blur-2xl rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl group transition-transform duration-500 hover:rotate-12">
+                        <div className="w-20 h-20 bg-white/10 backdrop-blur-2xl rounded-xl flex items-center justify-center border border-white/10 shadow-xl group transition-transform duration-500 hover:rotate-12">
                             <span className="material-symbols-outlined text-4xl text-white">confirmation_number</span>
                         </div>
                         <div>
@@ -102,7 +102,7 @@ const Vouchers = () => {
                     <div className="shrink-0">
                         <button 
                             onClick={() => navigate('/dashboard/promo')}
-                            className="group bg-orange-500 text-white px-10 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-[0.25em] hover:bg-white hover:text-slate-900 transition-all duration-500 shadow-2xl shadow-orange-500/20 active:scale-95 flex items-center gap-4"
+                            className="group bg-orange-500 text-white px-10 py-5 rounded-xl font-bold text-[11px] uppercase tracking-[0.25em] hover:bg-white hover:text-slate-900 transition-all duration-500 shadow-xl shadow-orange-500/20 active:scale-95 flex items-center gap-4"
                         >
                             Cari Promo Baru
                             <span className="material-symbols-outlined font-bold group-hover:translate-x-1 transition-transform">arrow_forward</span>
@@ -124,7 +124,7 @@ const Vouchers = () => {
                         </button>
                     ))}
                 </div>
-                <div className="flex items-center gap-4 text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] bg-white border border-slate-100 px-6 py-4 rounded-2xl shadow-sm">
+                <div className="flex items-center gap-4 text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] bg-white border border-slate-100 px-6 py-4 rounded-xl shadow-sm">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
                         <span>{myVouchers.length} Koleksi Aktif</span>
@@ -141,8 +141,8 @@ const Vouchers = () => {
             ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                     {filteredVouchers.length === 0 ? (
-                        <div className="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-2xl border-2 border-dashed border-slate-100 gap-8 animate-fade-in">
-                            <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
+                        <div className="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-xl border-2 border-dashed border-slate-100 gap-8 animate-fade-in">
+                            <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100">
                                 <span className="material-symbols-outlined text-slate-200 text-4xl">layers_clear</span>
                             </div>
                             <div className="text-center">
@@ -151,7 +151,7 @@ const Vouchers = () => {
                             </div>
                             <button 
                                 onClick={() => navigate('/dashboard/promo')}
-                                className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-orange-500 transition-all duration-500 shadow-2xl active:scale-95"
+                                className="bg-slate-900 text-white px-10 py-5 rounded-xl font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-orange-500 transition-all duration-500 shadow-xl active:scale-95"
                             >
                                 Ambil Voucher Sekarang
                             </button>
@@ -253,8 +253,8 @@ const Vouchers = () => {
 
             {/* DETAIL MODAL */}
             {selectedVoucher && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in shadow-2xl">
-                    <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-fade-in-up flex flex-col max-h-[90vh] border border-white/20">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in shadow-xl">
+                    <div className="bg-white rounded-xl w-full max-w-lg overflow-hidden shadow-xl animate-fade-in-up flex flex-col max-h-[90vh] border border-white/20">
                         {/* Header */}
                         <div className="p-10 pb-8 border-b border-slate-50 flex justify-between items-start relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 -mr-10 -mt-10 rounded-full blur-3xl opacity-50"></div>
@@ -336,7 +336,7 @@ const Vouchers = () => {
             )}
 
             {/* FOOTER INFO */}
-            <div className="mt-16 p-8 text-center bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="mt-16 p-8 text-center bg-slate-50 rounded-xl border border-slate-100">
                 <p className="text-slate-400 font-bold uppercase text-[9px] tracking-[0.4em] leading-relaxed max-w-xl mx-auto opacity-70">
                     * Voucher yang sudah digunakan atau kedaluwarsa akan otomatis diarsipkan secara berkala untuk menjaga performa akun Anda.
                 </p>

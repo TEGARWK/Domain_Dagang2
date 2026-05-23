@@ -8,6 +8,7 @@ router.use(verifyToken);
 router.get('/my-stats', referralController.getMyStats);
 router.get('/my-code', referralController.getMyCode);
 router.get('/history', referralController.getReferralHistory);
+router.get('/check-eligibility', referralController.checkEligibility);
 router.post('/update-code', referralController.updateMyCode);
 
 module.exports = router;

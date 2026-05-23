@@ -219,18 +219,18 @@ const AdminSettings = () => {
   return (
     <div className="animate-[fadeIn_0.4s_ease-out] pb-20">
       {/* --- HEADER & TAB NAVIGATION --- */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-        <div className="px-8 pt-8 pb-6 border-b border-slate-50">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-3">
+        <div className="px-4 py-3 border-b border-slate-50">
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
             <span className="material-symbols-outlined text-orange-500">settings</span>
             Sistem Konfigurasi
           </h1>
-          <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mt-1">
+          <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mt-0.5">
             Manajemen Identitas, Keamanan & Platform Gateway
           </p>
         </div>
 
-        <div className="flex px-8 border-b border-slate-100 overflow-x-auto no-scrollbar gap-10">
+        <div className="flex px-4 border-b border-slate-100 overflow-x-auto no-scrollbar gap-4">
           {[
             { id: "profile", label: "Profil Admin", icon: "person" },
             { id: "security", label: "Kata Sandi", icon: "lock" },
@@ -245,7 +245,7 @@ const AdminSettings = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center gap-1.5 py-4 px-2 border-b-2 transition-all duration-300 relative group min-w-fit whitespace-nowrap ${activeTab === tab.id
+              className={`flex flex-col items-center gap-1 py-3 px-2 border-b-2 transition-all duration-300 relative group min-w-fit whitespace-nowrap ${activeTab === tab.id
                   ? "border-orange-500 text-orange-600 bg-orange-50/20"
                   : "border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50/50"
                 }`}
@@ -262,18 +262,18 @@ const AdminSettings = () => {
       </div>
 
       {/* --- CONTENT GRID --- */}
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
           {/* MAIN FORM AREA */}
-          <div className="lg:col-span-8 space-y-8">
+          <div className="lg:col-span-8 space-y-3">
 
             {/* ──────────────── TAB: PROFILE ──────────────── */}
             {activeTab === "profile" && (
-              <div className="space-y-8 animate-[scaleIn_0.3s_ease-out]">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-8 flex flex-col md:flex-row items-center gap-8">
+              <div className="space-y-3 animate-[scaleIn_0.3s_ease-out]">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-3 flex flex-col md:flex-row items-center gap-4">
                   <div className="relative group w-32 h-32">
-                    <div className="w-full h-full rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-xl relative transition-transform group-hover:scale-105 duration-300">
+                    <div className="w-full h-full rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-xl relative transition-transform group-hover:scale-105 duration-300">
                       {profile.avatar ? (
                         <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
@@ -296,11 +296,11 @@ const AdminSettings = () => {
                 </div>
 
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
+                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
                     <span className="material-symbols-outlined text-slate-400">person</span>
                     <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Informasi Personal</h3>
                   </div>
-                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nama Depan</label>
                       <input type="text" name="firstName" value={profile.firstName} onChange={handleProfileChange}
@@ -309,26 +309,26 @@ const AdminSettings = () => {
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nama Belakang</label>
                       <input type="text" name="lastName" value={profile.lastName} onChange={handleProfileChange}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 outline-none transition-all" />
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-orange-500 outline-none transition-all" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email (Locked)</label>
-                      <input type="email" value={profile.email} readOnly className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 cursor-not-allowed" />
+                      <input type="email" value={profile.email} readOnly className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-400 cursor-not-allowed" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">WhatsApp</label>
                       <input type="text" name="phone" value={profile.phone} onChange={handleProfileChange}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:border-orange-500 outline-none transition-all" />
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:border-orange-500 outline-none transition-all" />
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
+                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
                     <span className="material-symbols-outlined text-slate-400">location_on</span>
                     <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Alamat & Lokasi</h3>
                   </div>
-                  <div className="p-8">
+                  <div className="p-3">
                     <AddressFields formData={profile} setFormData={setProfile} addressHook={addressHook} />
                   </div>
                 </div>
@@ -337,13 +337,13 @@ const AdminSettings = () => {
 
             {/* ──────────────── TAB: SECURITY ──────────────── */}
             {activeTab === "security" && (
-              <div className="animate-[scaleIn_0.3s_ease-out] space-y-8">
+              <div className="animate-[scaleIn_0.3s_ease-out] space-y-3">
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
+                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
                     <span className="material-symbols-outlined text-slate-400">lock_open</span>
                     <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Ubah Password Akses</h3>
                   </div>
-                  <div className="p-8 space-y-6">
+                  <div className="p-3 space-y-3">
                     <div className="space-y-2 max-w-md">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Password Saat Ini</label>
                       <input type="password" name="currentPassword" value={security.currentPassword} onChange={handleSecurityChange} placeholder="••••••••"
@@ -368,14 +368,14 @@ const AdminSettings = () => {
 
             {/* ──────────────── TAB: CONTACT SUPPORT ──────────────── */}
             {activeTab === "contact" && (
-              <div className="animate-[scaleIn_0.3s_ease-out] space-y-8">
+              <div className="animate-[scaleIn_0.3s_ease-out] space-y-3">
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
+                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
                     <span className="material-symbols-outlined text-slate-400">contact_support</span>
                     <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Konfigurasi Jalur Bantuan</h3>
                   </div>
-                  <div className="p-8 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="p-3 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-3">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nomor WhatsApp Support</label>
                         <div className="relative">
@@ -431,13 +431,13 @@ const AdminSettings = () => {
 
             {/* ──────────────── TAB: SITE SETTINGS ──────────────── */}
             {activeTab === "site" && (
-              <div className="animate-[scaleIn_0.3s_ease-out] space-y-8">
+              <div className="animate-[scaleIn_0.3s_ease-out] space-y-3">
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
+                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
                     <span className="material-symbols-outlined text-slate-400">brush</span>
                     <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Branding & Identitas</h3>
                   </div>
-                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nama Perusahaan</label>
                       <input type="text" name="footer_company_name" value={siteSettings.footer_company_name} onChange={handleSiteSettingChange}
@@ -457,7 +457,7 @@ const AdminSettings = () => {
                 </div>
 
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <span className="material-symbols-outlined text-pink-500">share</span>
                       <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Tautan Sosial Media</h3>
@@ -474,7 +474,7 @@ const AdminSettings = () => {
                     </button>
                   </div>
 
-                  <div className="p-8 space-y-4">
+                  <div className="p-3 space-y-3">
                     {Array.isArray(siteSettings.social_links) && siteSettings.social_links.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {siteSettings.social_links.map((link, index) => (
@@ -527,7 +527,7 @@ const AdminSettings = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="py-10 text-center border-2 border-dashed border-slate-100 rounded-2xl">
+                      <div className="py-10 text-center border-2 border-dashed border-slate-100 rounded-xl">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
                           Belum ada tautan sosial media.
                         </p>
@@ -573,8 +573,8 @@ const AdminSettings = () => {
 
           {/* ACTION SIDEBAR */}
           <div className="lg:col-span-4 space-y-6 sticky top-6">
-            <div className="bg-slate-900 rounded-2xl p-8 text-white shadow-xl shadow-slate-900/20">
-              <h3 className="text-[10px] font-bold uppercase tracking-[3px] text-slate-400 mb-8 flex items-center gap-2">
+            <div className="bg-slate-900 rounded-xl p-4 text-white shadow-xl shadow-slate-900/20">
+              <h3 className="text-[10px] font-bold uppercase tracking-[3px] text-slate-400 mb-6 flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm text-blue-400">task_alt</span>
                 Kontrol Sistem
               </h3>

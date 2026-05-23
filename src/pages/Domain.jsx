@@ -141,9 +141,9 @@ const Domain = () => {
         </div>
 
         {/* Table Container */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1)] overflow-hidden animate-fade-in-up">
+        <div className="bg-white rounded-xl border border-slate-100 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.1)] overflow-hidden animate-fade-in-up">
           {loading ? (
-            <div className="p-12 text-center text-neutral-400">
+            <div className="p-10 text-center text-neutral-400">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#F97316] mx-auto mb-4"></div>
               Memuat data harga...
             </div>
@@ -220,7 +220,7 @@ const Domain = () => {
                     ))
                   ) : (
                       <tr>
-                          <td colSpan="6" className="p-12 text-center text-neutral-400">
+                          <td colSpan="6" className="p-10 text-center text-neutral-400">
                               Ekstensi domain "{searchTerm}" tidak ditemukan.
                           </td>
                       </tr>

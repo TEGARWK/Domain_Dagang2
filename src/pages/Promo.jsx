@@ -122,15 +122,15 @@ const Promo = () => {
   }
 
   return (
-    <div className={`${isDashboard ? 'pb-24' : 'pt-40 pb-24 min-h-screen bg-white font-sans overflow-hidden'}`}>
-      <div className={`max-w-7xl mx-auto px-6 lg:px-8 text-center ${isDashboard ? 'mb-10 mt-4' : 'mb-20'}`}>
+    <div className={`${isDashboard ? 'pb-10' : 'pt-32 pb-16 min-h-screen bg-white font-sans overflow-hidden'}`}>
+      <div className={`w-full px-2 md:px-4 lg:px-6 text-center ${isDashboard ? 'mb-6 mt-2' : 'mb-12'}`}>
         <div className="animate-fade-in-up">
-          <span className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-orange-50 text-[#F97316] text-[12px] font-bold uppercase tracking-widest border border-orange-100 shadow-sm mb-6">
+          <span className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-orange-50 text-[#F97316] text-[12px] font-bold uppercase tracking-widest border border-orange-100 shadow-sm mb-4">
             <span className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
             Penawaran Spesial Terbatas
           </span>
         </div>
-        <h1 className={`${isDashboard ? 'text-3xl md:text-5xl' : 'text-[40px] md:text-[64px]'} font-bold text-slate-900 mb-8 tracking-tight leading-[1.05]`}>
+        <h1 className={`${isDashboard ? 'text-3xl md:text-5xl' : 'text-[40px] md:text-[64px]'} font-bold text-slate-900 mb-6 tracking-tight leading-[1.05]`}>
           Discovery <span className="text-[#F97316]">Promo.</span>
         </h1>
         <p className="text-slate-500 text-[17px] font-medium max-w-2xl mx-auto leading-relaxed">
@@ -139,7 +139,7 @@ const Promo = () => {
         </p>
       </div>
 
-      <div className={`${isDashboard ? 'max-w-full' : 'max-w-6xl'} mx-auto px-4`}>
+      <div className="w-full px-2 md:px-4 lg:px-6">
         {loading ? (
              <div className="flex justify-center py-20">
                 <div className="w-12 h-12 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
@@ -147,7 +147,7 @@ const Promo = () => {
         ) : (
             <>
                 {/* --- CLAIMABLE COUPONS GRID --- */}
-                <div className="flex items-center gap-8 mb-12 max-w-7xl mx-auto px-6 lg:px-8">
+                <div className="flex items-center gap-8 mb-8 w-full px-2 md:px-4 lg:px-6">
                     <div className="h-px bg-slate-100 flex-1"></div>
                     <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] whitespace-nowrap">Klaim Voucher Anda</h2>
                     <div className="h-px bg-slate-100 flex-1"></div>
@@ -161,7 +161,7 @@ const Promo = () => {
                         <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Belum ada kupon tersedia saat ini</p>
                     </div>
                 ) : (
-                    <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-6 lg:px-8">
+                    <div className="grid lg:grid-cols-2 gap-8 w-full px-2 md:px-4 lg:px-6">
                         {claimableCoupons.map((item, index) => (
                             <div key={index} className="group relative">
                                 <div className="flex flex-col md:flex-row bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden relative min-h-[140px] transition-all duration-300 hover:shadow-lg hover:border-orange-200">
@@ -231,7 +231,7 @@ const Promo = () => {
 
       {!isDashboard && (
         <div className="max-w-7xl mx-auto px-6 lg:px-8 mt-32">
-          <div className="bg-slate-900 rounded-[3rem] p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl">
+          <div className="bg-slate-900 rounded-xl p-10 md:p-12 text-center text-white relative overflow-hidden shadow-xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-orange-500/20 via-transparent to-transparent"></div>
             <div className="relative z-10">
               <span className="text-[#F97316] font-bold uppercase tracking-[0.4em] text-[10px] mb-6 block opacity-80">Stay Updated</span>
@@ -242,7 +242,7 @@ const Promo = () => {
                 Jadilah yang pertama tahu tentang promo terbaru, tips manajemen domain, dan penawaran spesial langsung di inbox Anda. Tanpa spam, hanya informasi yang Anda butuhkan.
               </p>
 
-              <div className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto bg-white/5 p-2.5 rounded-2xl backdrop-blur-xl border border-white/10 shadow-2xl">
+              <div className="flex flex-col md:flex-row gap-4 max-w-lg mx-auto bg-white/5 p-2.5 rounded-xl backdrop-blur-xl border border-white/10 shadow-xl">
                 <input
                   type="email"
                   placeholder="Alamat email Anda..."
@@ -260,8 +260,8 @@ const Promo = () => {
 
       {/* --- DETAIL MODAL --- */}
       {selectedPromo && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in shadow-2xl">
-            <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-[0_30px_70px_-10px_rgba(15,23,42,0.3)] animate-fade-in-up flex flex-col max-h-[90vh] border border-white/20">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in shadow-xl">
+            <div className="bg-white rounded-xl w-full max-w-lg overflow-hidden shadow-[0_30px_70px_-10px_rgba(15,23,42,0.3)] animate-fade-in-up flex flex-col max-h-[90vh] border border-white/20">
                 
                 {/* Header */}
                 <div className="p-10 pb-8 border-b border-slate-50 flex justify-between items-start relative overflow-hidden">

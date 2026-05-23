@@ -27,7 +27,7 @@ const TermsOfService = () => {
             </p>
           </section>
 
-          <section className="bg-orange-50 p-8 rounded-2xl border border-orange-100">
+          <section className="bg-orange-50 p-8 rounded-xl border border-orange-100">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">3. Pembayaran dan Perpanjangan</h2>
             <p>
               Semua transaksi bersifat final. Domain yang telah didaftarkan tidak dapat dibatalkan atau direfund kecuali ditentukan lain oleh kebijakan registrar. Anda bertanggung jawab untuk memantau masa aktif domain Anda dan melakukan perpanjangan tepat waktu untuk menghindari kehilangan kepemilikan domain.

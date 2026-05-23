@@ -2,6 +2,47 @@
 
 Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi tim pengembang.
 
+### [2026-05-05] - Modernized Financial Ledger, Domain Pricing Sync & Availability Fixes (Tegar Wira Kesuma)
+- **Domain Pricing Sync Overhaul (Critical Fix)**:
+    - **Smart Standard Price Filter**: Implementasi logika filter harga termurah pada `SyncPricing`. Sistem kini otomatis memilih harga registrasi 1 tahun paling rendah per TLD, efektif mengabaikan harga "Premium" yang jutaan rupiah (Fix bug harga .id & .co.id meledak).
+    - **Forced Update Mechanism**: Penghapusan logika "skip existing records" pada proses sinkronisasi. Seluruh data harga (Modal & Jual) kini diperbarui secara paksa menggunakan `ON CONFLICT` PostgreSQL agar selalu sinkron dengan data terbaru Registrar.
+    - **Margin Consistency**: Pemastian harga jual 1:1 (Margin 1.0) dengan data modal yang sudah terfilter akurat.
+- **Payment Gateway (Prismalink) Resilience**:
+    - **Maintenance Detection**: Implementasi deteksi otomatis halaman pemeliharaan (HTML) pada `PrismaLinkService.js`. Sistem kini mampu memberikan pesan error yang ramah pengguna alih-alih Error 500 saat provider sedang maintenance.
+    - **Error Handling Refinement**: Refactor `prismalinkController.js` untuk mengembalikan status 400 dengan pesan yang jelas saat terjadi kegagalan inisialisasi.
+- **Referral System (Backend & Database)**:
+    - **Database Rebuild Strategy**: Penyusunan skema SQL lengkap untuk membangun ulang tabel `referrals`, `referral_rewards`, `referral_tiers`, dan penambahan kolom krusial di tabel `users` yang hilang pada server produksi.
+- **Upload System & Production Routing**:
+    - **API Path Correction**: Perbaikan Error 404 pada gambar yang diunggah (Gateway Logo, Proof, Banner). Sistem kini otomatis menambahkan prefix `/api` pada setiap `imageUrl` yang dihasilkan (`/api/uploads/...`) agar request diteruskan dengan benar oleh Nginx ke folder statis backend.
+- **Domain Availability & Debugging**:
+    - **Enhanced Error Logging**: Penambahan sistem log debug file-based (`debug_registrar.log`) pada `domainController.js` untuk menangkap stack trace lengkap dan respon mentah API Registrar saat terjadi Error 500.
+    - **Production API Alignment**: Verifikasi dan standarisasi endpoint API Registrar untuk menjamin kelancaran pengecekan domain di lingkungan produksi.
+- **Financial Mutation Ledger Modernization**:
+    - **Premium UI Overhaul**: Redesign total dashboard mutasi dengan layout kartu statistik, filter multi-kategori, dan tipografi modern yang lebih bersih.
+    - **Real-time Rupiah Formatting**: Implementasi auto-separator ribuan pada seluruh input nominal (Mutasi & Konfigurasi) untuk meningkatkan akurasi data dan UX.
+    - **Audit-Ready Receipt System**: Integrasi sistem upload bukti transfer (struk) yang terpusat dengan link akses otomatis bagi admin dan stakeholder.
+- **WhatsApp Notification System (Semi-Automatic)**:
+    - **Hybrid Automation**: Implementasi fitur buka WhatsApp otomatis sesaat setelah mutasi "Ambil Hak" ditambahkan. Pesan sudah terisi otomatis (Nama, Nominal, Tanggal) beserta **Link Bukti Transfer**.
+    - **Stakeholder Registry**: Penambahan kolom WhatsApp pada profil penerima laba (Tim IT, Marketing, Investor, dll) yang dapat dikelola langsung dari tab Konfigurasi Bulanan.
+- **Backend Integrity & Balance Sync**:
+    - **Strict Numerical Casting**: Perbaikan bug sinkronisasi saldo dengan implementasi `CAST(balance AS NUMERIC)` pada level database untuk menjamin setiap mutasi memotong/menambah saldo dengan akurasi 100%.
+    - **Auto-Registration**: Peningkatan logika `saveConfigs` agar otomatis mendaftarkan stakeholder baru ke database saat konfigurasi laba disimpan.
+- **UI/UX & Bug Fixes**:
+    - **Button Layout Optimization**: Perbaikan bug "tombol bertumpuk" pada bagian Lokasi Uang dan pemisahan fungsi Export Excel agar navigasi lebih intuitif.
+    - **Advanced Excel Export**: Optimalisasi laporan Excel dengan rincian data transaksi yang lebih komplit, termasuk link bukti transfer yang dapat diklik langsung dari file laporan.
+
+- **Universal Document Modernization & Native Print Engine**:
+    - **Native Print Engine Migration**: Migrasi total dari `html2pdf.js` ke **Native Browser Print API** untuk hasil ekspor dokumen (PDF/Cetak) yang lebih tajam, stabil, dan beresolusi tinggi.
+    - **Standardized A4 Templates**: Implementasi template formal A4 dengan branding resmi PT Aplikasi Dagang Teknologi pada modul:
+        - **Admin Invoice Detail**: Layout invoice formal dengan stempel "LUNAS" dinamis.
+        - **Admin Business Report**: Ringkasan statistik pendapatan dan transaksi terbaru yang rapi.
+        - **Customer Invoice**: Invoice pelanggan dengan desain premium dan informasi pembayaran lengkap.
+        - **Customer Wallet Statement**: Fitur baru "Download Statement" untuk mencetak riwayat mutasi saldo resmi.
+        - **Customer Asset List**: Fitur baru "Download Asset List" untuk laporan portofolio domain yang dimiliki.
+    - **Backend Analytics Accuracy**: Update `adminController.js` (API `/admin/stats`) untuk menyertakan data "Invoice Lunas" yang akurat guna menghindari angka nol (0) pada laporan bisnis.
+    - **Enhanced Data Mapping**: Perbaikan mapping nama pelanggan dan format mata uang Rupiah (Rp) pada seluruh dokumen ekspor.
+
+
 ### [2026-05-03] - Voucher Saya UI, Checkout Sync & Admin Pricing Simplification (Tegar Wira Kesuma)
 - **Voucher Management (Member Dashboard)**:
     - **UI Overhaul (Voucher Saya)**: Redesign total halaman `Vouchers.jsx` dengan estetika "Ticket Style" yang konsisten dengan halaman Promo. Implementasi garis putus-putus (*dashed border*), ikon dinamis, dan efek hover premium.
@@ -16,6 +57,18 @@ Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi ti
     - **Promo Field Removal**: Penghapusan fitur "Harga Promo (Opsional)" dari form pendaftaran TLD untuk menyederhanakan alur penetapan harga.
     - **UI/UX Admin**: Redesign total modal Tambah & Edit TLD dengan layout grid yang lebih bersih, ikon representatif, dan tipografi yang lebih tegas (`font-black` untuk angka harga).
     - **Table Optimization**: Pembersihan tabel utama dari kolom Margin dan Cost yang tidak diperlukan, menyisakan daftar harga jual yang bersih dan mudah dibaca.
+
+### [1.2.0] - 2024-05-04
+#### Added
+- **Revenue Split & Profit Sharing System**: Automated fund allocation based on dynamic percentages.
+- **Admin Finance Dashboard**: Visual monitoring of digital fund "pockets" (Operational, Tax, Zakat, etc.).
+- **Automatic Allocation Hooks**: Integrated distribution logic into Tripay, Wallet, and Manual payment flows.
+- **Financial Ledger**: Detailed tracking of every revenue split transaction.
+
+### [1.1.5] - 2024-05-02
+#### Added
+- **"Nuclear" PDF Strategy**: New high-precision HTML string template for Invoice & Reports.
+- Refined A4-centered layout for professional print-ready administrative documents.
 
 ### [2026-05-03] - Voucher System 2.1 & Segmented Claim & Collect (Tegar Wira Kesuma)
 - **Voucher & Promo Improvements**:

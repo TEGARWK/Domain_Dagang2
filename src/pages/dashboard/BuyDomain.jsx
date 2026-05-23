@@ -4,6 +4,46 @@ import CustomSelect from "../../components/ui/CustomSelect";
 import { useNotification } from "../../context/NotificationContext";
 import { checkDomainAvailability } from "../../services/domainService";
 import api from "../../services/api";
+import { 
+  ShieldCheckIcon, 
+  ZapIcon, 
+  GlobeIcon, 
+  HeadphonesIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
+} from "lucide-react";
+
+// --- SUB-COMPONENT: FEATURE CARD ---
+const FeatureCard = ({ icon: Icon, title, desc }) => (
+  <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+    <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center text-[#F97316] mb-4 group-hover:bg-[#F97316] group-hover:text-white transition-colors">
+      <Icon size={24} />
+    </div>
+    <h4 className="font-bold text-slate-800 mb-2">{title}</h4>
+    <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+  </div>
+);
+
+// --- SUB-COMPONENT: FAQ ITEM ---
+const FAQItem = ({ question, answer }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  return (
+    <div className="border-b border-slate-100 last:border-0">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full py-4 flex justify-between items-center text-left hover:text-[#F97316] transition-colors"
+      >
+        <span className="font-bold text-slate-700 text-sm">{question}</span>
+        {isOpen ? <ChevronUpIcon size={18} className="text-[#F97316]" /> : <ChevronDownIcon size={18} className="text-slate-400" />}
+      </button>
+      {isOpen && (
+        <div className="pb-4 animate-[fadeIn_0.3s_ease-out]">
+          <p className="text-xs text-slate-500 leading-relaxed">{answer}</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const BuyDomain = () => {
   const { success, error } = useNotification();
@@ -20,41 +60,45 @@ const BuyDomain = () => {
 
   // Daftar TLD & Harga Dasar (Fetch dari DB)
   const [tldList, setTldList] = useState([]);
+  const [faqs, setFaqs] = useState([]);
 
-   useEffect(() => {
-    const fetchPricing = async () => {
+  // Fetch FAQ & Pricing
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const response = await api.get("/pricing/all");
-        const data = response.data;
-        
-        // Database: tld, price_register, price_renew, price_transfer
-        const prioritized = [".com", ".net", ".id", ".org", ".info", ".biz"];
-        
-        const formatted = data
-          .map(item => ({
-            name: item.tld,
-            price: parseFloat(item.price_register),
-            price_renew: parseFloat(item.price_renew),
-            price_transfer: parseFloat(item.price_transfer),
-            category: item.category || "Populer"
-          }))
-          .sort((a, b) => {
-             const idxA = prioritized.indexOf(a.name);
-             const idxB = prioritized.indexOf(b.name);
-             
-             if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-             if (idxA !== -1) return -1;
-             if (idxB !== -1) return 1;
-             
-             return a.name.localeCompare(b.name);
-          });
-          
-        setTldList(formatted);
+        // Fetch Pricing
+        const pricingRes = await api.get("/pricing/all");
+        if (pricingRes.data) {
+          const prioritized = [".com", ".net", ".id", ".org", ".info", ".biz"];
+          const formatted = pricingRes.data
+            .map(item => ({
+              name: item.tld,
+              price: parseFloat(item.price_register),
+              price_renew: parseFloat(item.price_renew),
+              price_transfer: parseFloat(item.price_transfer),
+              category: item.category || "Populer"
+            }))
+            .sort((a, b) => {
+               const idxA = prioritized.indexOf(a.name);
+               const idxB = prioritized.indexOf(b.name);
+               if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+               if (idxA !== -1) return -1;
+               if (idxB !== -1) return 1;
+               return a.name.localeCompare(b.name);
+            });
+          setTldList(formatted);
+        }
+
+        // Fetch FAQs (Category: domain)
+        const faqRes = await api.get("/faqs?category=domain");
+        if (Array.isArray(faqRes)) {
+          setFaqs(faqRes);
+        }
       } catch (err) {
-        console.error("Failed to load dynamic pricing:", err);
+        console.error("Failed to load dashboard data:", err);
       }
     };
-    fetchPricing();
+    fetchData();
   }, []);
 
   // Formatter Rupiah
@@ -75,21 +119,39 @@ const BuyDomain = () => {
 
     try {
         // 1. Generate Candidates based on query + TLD list
-        // Note: Using candidates pattern from Home.jsx for consistency
-        const candidates = tldList.map((tld) => {
-            const regPrice = tld.price;
-            const renewPrice = tld.price_renew;
+        const cleanQuery = query.toLowerCase().replace(/\s+/g, "");
+        const matchedTld = tldList.find(t => cleanQuery.endsWith(t.name));
+        
+        let candidates = [];
+        
+        if (matchedTld && cleanQuery.includes(".")) {
+          // User typed a specific domain, only show that one
+          candidates = [{
+            tld: matchedTld.name,
+            domain: cleanQuery,
+            basePrice: matchedTld.price,
+            renewPrice: matchedTld.price_renew,
+            currentPrice: matchedTld.price,
+            category: matchedTld.category,
+            duration: 1,
+          }];
+        } else {
+          // Standard keyword search: append all TLDs
+          candidates = tldList.map((tld) => {
+              const regPrice = tld.price;
+              const renewPrice = tld.price_renew;
 
-            return {
-                tld: tld.name,
-                domain: query.toLowerCase().replace(/\s+/g, "") + tld.name,
-                basePrice: regPrice,
-                renewPrice: renewPrice,
-                currentPrice: regPrice, // Initial price for 1 year
-                category: tld.category,
-                duration: 1,
-            };
-        });
+              return {
+                  tld: tld.name,
+                  domain: cleanQuery + tld.name,
+                  basePrice: regPrice,
+                  renewPrice: renewPrice,
+                  currentPrice: regPrice, // Initial price for 1 year
+                  category: tld.category,
+                  duration: 1,
+              };
+          });
+        }
 
         // 2. Import service inside or at top (better at top)
         // I'll add the import in a separate tool call to be safe, or just use it if imported.
@@ -259,9 +321,9 @@ const BuyDomain = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-[fadeIn_0.5s_ease-out] pb-20">
+    <div className="w-full space-y-6 animate-[fadeIn_0.5s_ease-out] pb-8 px-0">
       {/* 1. HERO HEADER (Tampilan Premium) */}
-      <div className="relative bg-slate-900 rounded-xl p-6 md:p-12 overflow-hidden shadow-2xl mt-4 md:mt-0">
+      <div className="relative bg-slate-900 rounded-xl p-4 md:p-6 overflow-hidden shadow-xl mt-4 md:mt-0">
         {/* Dekorasi Background */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#F97316] rounded-full blur-[120px] opacity-10"></div>
         <div className="absolute bottom-0 left-10 w-64 h-64 bg-blue-600 rounded-full blur-[100px] opacity-10"></div>
@@ -290,7 +352,10 @@ const BuyDomain = () => {
                 placeholder="Cari domain impian..."
                 className="w-full px-5 py-3 md:py-4 rounded-lg bg-slate-800/50 text-white placeholder:text-slate-500 font-bold outline-none focus:bg-slate-800 transition border border-transparent focus:border-[#F97316]/50 text-sm md:text-base"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  if (results.length > 0) setResults([]);
+                }}
               />
                <button
                  type="submit"
@@ -310,32 +375,35 @@ const BuyDomain = () => {
 
       {/* 2. RESULTS TABLE */}
       {results.length > 0 ? (
-        <div className="mt-10 md:mt-20 space-y-6">
-          {/* Filter Kategori */}
-          <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-100 rounded-lg w-fit">
-            {["Semua", "Populer", "Lokal", "Promo"].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${
-                  activeCategory === cat
-                    ? "bg-white text-[#F97316] shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+        <div className="mt-8 md:mt-12 space-y-6">
+          {/* Filter Kategori - Only show if more than 1 result */}
+          {results.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-100 rounded-lg w-fit">
+              {["Semua", "Populer", "Lokal", "Promo"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${
+                    activeCategory === cat
+                      ? "bg-white text-[#F97316] shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              {/* Header dengan Sorting */}
+            <div className="overflow-y-auto">
+              {/* DESKTOP VIEW (Table) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>
                   <th
-                    className="px-6 py-5 font-bold text-slate-600 cursor-pointer hover:text-[#F97316] transition select-none"
+                    className="px-4 py-4 font-bold text-slate-600 cursor-pointer hover:text-[#F97316] transition select-none"
                     onClick={() => handleSort("domain")}
                   >
                     <div className="flex items-center gap-1">
@@ -343,23 +411,23 @@ const BuyDomain = () => {
                     </div>
                   </th>
                   <th
-                    className="px-6 py-5 font-bold text-slate-600 cursor-pointer hover:text-[#F97316] transition select-none"
+                    className="px-4 py-4 font-bold text-slate-600 cursor-pointer hover:text-[#F97316] transition select-none"
                     onClick={() => handleSort("category")}
                   >
                     <div className="flex items-center gap-1">
                       Kategori <SortIcon colKey="category" />
                     </div>
                   </th>
-                  <th className="px-6 py-5 font-bold text-slate-600">Durasi</th>
+                  <th className="px-4 py-4 font-bold text-slate-600">Durasi</th>
                   <th
-                    className="px-6 py-5 font-bold text-slate-600 text-right cursor-pointer hover:text-[#F97316] transition select-none"
+                    className="px-4 py-4 font-bold text-slate-600 text-right cursor-pointer hover:text-[#F97316] transition select-none"
                     onClick={() => handleSort("price")}
                   >
                     <div className="flex items-center justify-end gap-1">
                       Harga <SortIcon colKey="price" />
                     </div>
                   </th>
-                  <th className="px-6 py-5 font-bold text-slate-600 text-center">
+                  <th className="px-4 py-4 font-bold text-slate-600 text-center">
                     Aksi
                   </th>
                 </tr>
@@ -368,12 +436,12 @@ const BuyDomain = () => {
               {/* Body Data */}
               <tbody className="divide-y divide-slate-100">
                 {filteredResults.map((item, idx) => (
-                  <tr
-                    key={idx}
-                    className="hover:bg-orange-50/30 transition group"
-                  >
-                    {/* 1. Nama Domain */}
-                    <td className="px-6 py-4">
+                    <tr
+                      key={idx}
+                      className="hover:bg-orange-50/30 transition group"
+                    >
+                      {/* 1. Nama Domain */}
+                      <td className="px-4 py-2">
                       <div className="flex items-center gap-4">
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${item.available ? "bg-green-50 text-green-600" : "bg-red-50 text-red-400"}`}
@@ -430,7 +498,7 @@ const BuyDomain = () => {
                     </td>
 
                     {/* 2. Kategori Badge */}
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <span
                         className={`-lg text-xs font-bold border ${
                           item.category === "Promo"
@@ -445,7 +513,7 @@ const BuyDomain = () => {
                     </td>
 
                     {/* 3. Pilihan (Durasi) */}
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <div className="relative w-28">
                         <CustomSelect
                           disabled={!item.available}
@@ -475,7 +543,7 @@ const BuyDomain = () => {
                     </td>
 
                     {/* 4. Harga */}
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-2 text-right">
                       {item.available ? (
                         <span className="font-bold text-slate-800 text-base block">
                           {formatRupiah(item.currentPrice)}
@@ -486,7 +554,7 @@ const BuyDomain = () => {
                     </td>
 
                     {/* 5. Aksi (DUA TOMBOL) */}
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <div className="flex items-center justify-center gap-2">
                         {/* Tombol Keranjang */}
                          <button
@@ -546,13 +614,62 @@ const BuyDomain = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
+
+            {/* MOBILE VIEW (Cards) */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredResults.map((item, idx) => (
+                <div key={idx} className="p-5 space-y-4">
+                  <div className="flex justify-between items-start gap-4">
+                    <div>
+                      <p className={`font-bold text-base leading-tight ${item.available ? "text-slate-800" : "text-slate-400"}`}>{item.domain}</p>
+                      <div className="flex gap-2 mt-1">
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${item.category === "Promo" ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-slate-50 text-slate-500 border-slate-200"}`}>{item.category}</span>
+                        {!item.available && (
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded border bg-red-50 text-red-600 border-red-100 uppercase tracking-wider">Terpakai</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {item.available ? (
+                        <div className="flex flex-col">
+                          <span className="font-bold text-[#F97316] text-lg leading-none">{formatRupiah(item.currentPrice)}</span>
+                          <span className="text-[10px] text-slate-400 font-bold mt-1">/{item.duration} Thn</span>
+                        </div>
+                      ) : <span className="text-slate-300 font-bold">-</span>}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <div className="w-full">
+                       <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 block ml-1">Durasi</label>
+                       <CustomSelect
+                        disabled={!item.available}
+                        value={item.duration}
+                        onChange={(val) => handleDurationChange(idx, val)}
+                        options={[1, 2, 3, 5, 10].map(y => ({ value: y, label: `${y} Tahun` }))}
+                        className="w-full relative z-30"
+                      />
+                    </div>
+                    <div className="flex gap-2 w-full">
+                       <button disabled={!item.available} onClick={() => handleAddToCart(item)} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-slate-200 text-slate-500 active:bg-slate-50 disabled:opacity-30 transition-colors">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                       </button>
+                       <button disabled={!item.available} onClick={() => handleBuyNow(item)} className={`flex-[3] py-3 rounded-lg font-bold text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 ${item.available ? "bg-[#F97316] text-white shadow-orange-500/20" : "bg-slate-100 text-slate-300 cursor-not-allowed shadow-none"}`}>
+                          {item.available ? "Beli Sekarang" : "Sold Out"}
+                       </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
       ) : (
         // Empty State (Clean Icon)
-        <div className="flex flex-col items-center justify-center py-24 opacity-60">
+        <div className="flex flex-col items-center justify-center py-16 opacity-60">
           <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
             <svg
               className="w-10 h-10 text-slate-400"
@@ -576,6 +693,91 @@ const BuyDomain = () => {
           </p>
         </div>
       )}
+
+      {/* 3. FITUR UNGGULAN & FAQ SECTION */}
+      <div className="mt-12 space-y-10">
+        {/* Fitur Unggulan Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <FeatureCard 
+            icon={ZapIcon} 
+            title="Aktivasi Instan" 
+            desc="Domain Anda akan aktif secara otomatis sesaat setelah pembayaran dikonfirmasi."
+          />
+          <FeatureCard 
+            icon={ShieldCheckIcon} 
+            title="Keamanan Penuh" 
+            desc="Proteksi WHOIS dan penguncian domain (Domain Lock) untuk keamanan aset digital Anda."
+          />
+          <FeatureCard 
+            icon={GlobeIcon} 
+            title="DNS Management" 
+            desc="Kelola record DNS (A, CNAME, MX, TXT) dengan mudah melalui panel dashboard."
+          />
+          <FeatureCard 
+            icon={HeadphonesIcon} 
+            title="Bantuan Ahli" 
+            desc="Tim support kami siap membantu kendala teknis Anda kapan saja dibutuhkan."
+          />
+        </div>
+
+        {/* FAQ Section */}
+        <div className="bg-slate-50 rounded-2xl p-5 md:p-8 border border-slate-100">
+          <div className="flex flex-col md:flex-row gap-10">
+            <div className="md:w-1/3">
+              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Pertanyaan <br className="hidden md:block" /> Populer</h2>
+              <p className="text-sm text-slate-500 mt-3">Segala hal yang perlu Anda ketahui tentang pendaftaran domain di DomainDagang.</p>
+              <button 
+                onClick={() => navigate("/dashboard/support")}
+                className="mt-6 text-xs font-bold text-[#F97316] hover:underline flex items-center gap-2"
+              >
+                Lihat Semua Bantuan →
+              </button>
+            </div>
+            <div className="md:w-2/3 bg-white rounded-xl p-6 shadow-sm">
+              {faqs.length > 0 ? (
+                faqs.map((faq, index) => (
+                  <FAQItem 
+                    key={faq.id || index}
+                    question={faq.question} 
+                    answer={faq.answer} 
+                  />
+                ))
+              ) : (
+                /* Fallback if no FAQs in DB */
+                <>
+                  <FAQItem 
+                    question="Berapa lama proses aktivasi domain?" 
+                    answer="Hampir seluruh TLD (seperti .com, .id, .net) aktif secara instan (real-time) setelah pembayaran berhasil divalidasi oleh sistem kami."
+                  />
+                  <FAQItem 
+                    question="Apakah saya mendapatkan akses DNS penuh?" 
+                    answer="Ya! Anda memiliki kontrol penuh atas DNS Management."
+                  />
+                  <FAQItem 
+                    question="Bagaimana cara perpanjang domain saya?" 
+                    answer="Sistem akan mengirimkan notifikasi 30 hari sebelum domain kadaluarsa."
+                  />
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Support Banner */}
+        <div className="bg-[#F97316] rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 text-white shadow-xl shadow-orange-500/20 overflow-hidden relative">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+           <div className="relative z-10 text-center md:text-left">
+              <h3 className="text-xl font-bold mb-1">Butuh bantuan memilih domain?</h3>
+              <p className="text-white/80 text-sm">Tim ahli kami siap membantu mencarikan nama terbaik untuk bisnis Anda.</p>
+           </div>
+           <button 
+              onClick={() => navigate("/dashboard/support")}
+              className="relative z-10 bg-slate-900 text-white px-8 py-3 rounded-lg font-bold text-sm hover:bg-white hover:text-slate-900 transition-all"
+           >
+              Hubungi CS Kami
+           </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -6,14 +6,17 @@ const { verifyToken } = require("../middleware/authMiddleware");
 // Semua Rute Bantuan butuh Login
 router.use(verifyToken);
 
-// Actions Untuk Member
+// Actions Untuk Admin 
+router.get("/all", supportTicketController.getAllTickets);
+
+// Actions Untuk Member & Shared
 router.post("/", supportTicketController.createTicket);
 router.get("/my-tickets", supportTicketController.getMyTickets);
+router.get("/:id", supportTicketController.getTicketDetails);
+router.post("/:id/replies", supportTicketController.createReply);
 
-// Actions Untuk Admin 
-// (Asumsinya kalau ada checking admin roles, bisa ditaruh di sini atau di index.js)
-router.get("/all", supportTicketController.getAllTickets);
-router.put("/:id", supportTicketController.updateTicket);
+// Administrative Actions
+router.put("/:id/status", supportTicketController.updateStatus);
 router.delete("/:id", supportTicketController.deleteTicket);
 
 module.exports = router;

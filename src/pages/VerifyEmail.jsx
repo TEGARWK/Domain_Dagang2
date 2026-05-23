@@ -67,7 +67,7 @@ const VerifyEmail = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 font-sans">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-2xl p-10 text-center animate-in fade-in zoom-in duration-500">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-10 text-center animate-in fade-in zoom-in duration-500">
         
         {/* ICON / SPINNER */}
         <div className="mb-8 flex justify-center">

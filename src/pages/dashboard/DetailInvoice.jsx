@@ -88,223 +88,7 @@ const DetailInvoice = () => {
   };
 
   const handleDownloadPdf = () => {
-    // 1. SUSUN HTML MENTAH DENGAN LAYOUT YANG LEBIH LUANG & RAPI
-    const pdfHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          /* CSS Reset & Basic Setup */
-          * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-          body { font-family: 'Helvetica', 'Arial', sans-serif; color: #000; padding: 0; margin: 0; background: #fff; }
-          
-          /* Container Utama - Simulasi Kertas A4 */
-          .paper { 
-            width: 800px; 
-            margin: 0 auto; 
-            padding: 50px; 
-            background: #fff;
-          }
-
-          /* Header Layout */
-          .header-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-          .logo-img { width: 80px; height: 80px; object-fit: contain; }
-          .company-name { font-size: 22px; font-weight: bold; margin: 5px 0 0 0; color: #1a1a1a; }
-          .gray-text { color: #666; font-size: 13px; margin: 2px 0; }
-          
-          .invoice-label { font-size: 36px; font-weight: bold; margin: 0; color: #000; letter-spacing: 2px; }
-          .invoice-id { font-size: 18px; font-weight: bold; margin: 5px 0; color: #333; }
-
-          /* Info Section */
-          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-          .section-title { 
-            font-size: 11px; 
-            font-weight: bold; 
-            color: #888; 
-            text-transform: uppercase; 
-            border-bottom: 1px solid #eee; 
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-          }
-          .info-content { font-size: 14px; line-height: 1.5; padding-top: 10px; }
-
-          /* Items Table */
-          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-          .items-table th { 
-            background: #f8f9fa; 
-            border-top: 2px solid #333; 
-            border-bottom: 1px solid #ccc; 
-            padding: 12px 10px; 
-            text-align: left;
-            font-size: 12px;
-            text-transform: uppercase;
-          }
-          .items-table td { 
-            padding: 15px 10px; 
-            border-bottom: 1px solid #eee; 
-            font-size: 14px; 
-            vertical-align: top;
-          }
-
-          /* Summary & Totals */
-          .summary-container { width: 100%; margin-top: 20px; }
-          .summary-table { width: 300px; float: right; border-collapse: collapse; }
-          .summary-table td { padding: 8px 0; font-size: 14px; }
-          .total-row td { 
-            border-top: 2px solid #000; 
-            padding-top: 15px; 
-            font-size: 20px; 
-            font-weight: bold; 
-          }
-
-          /* Stamp & Footer */
-          .stamp-container { clear: both; text-align: left; padding-top: 20px; }
-          .paid-stamp { 
-            border: 5px solid #000; 
-            color: #000; 
-            padding: 10px 25px; 
-            display: inline-block; 
-            font-size: 28px; 
-            font-weight: bold; 
-            transform: rotate(-12deg);
-            margin: 40px 0;
-            opacity: 0.8;
-          }
-          .footer { 
-            margin-top: 100px; 
-            text-align: center; 
-            font-size: 12px; 
-            color: #999; 
-            border-top: 1px solid #eee; 
-            padding-top: 30px; 
-          }
-          .text-right { text-align: right; }
-        </style>
-      </head>
-      <body>
-        <div class="paper">
-          <!-- HEADER -->
-          <table class="header-table">
-            <tr>
-              <td width="60%" valign="top">
-                <img src="${window.location.origin}/image/logo/ADTLogo.png" class="logo-img" />
-                <p class="company-name">PT Aplikasi Dagang Teknologi</p>
-                <p class="gray-text">Technology Solution Provider</p>
-              </td>
-              <td width="40%" class="text-right" valign="top">
-                <p class="invoice-label">INVOICE</p>
-                <p class="invoice-id">#${invoice.id}</p>
-                <p class="gray-text">Tanggal: ${invoice.date}</p>
-              </td>
-            </tr>
-          </table>
-
-          <div style="height: 2px; background: #000; margin-bottom: 40px;"></div>
-
-          <!-- INFO -->
-          <table class="info-table">
-            <tr>
-              <td width="50%" valign="top" style="padding-right: 40px;">
-                <div class="section-title">Diterbitkan Oleh:</div>
-                <div class="info-content">
-                  <strong>PT Aplikasi Dagang Teknologi</strong><br/>
-                  Jl. Cigadung Raya Tengah No.52, RT.2,<br/>
-                  Cigadung, Kec. Cibeunying Kaler, Kota Bandung,<br/>
-                  Jawa Barat 40191<br/>
-                  Email: admin@aplikasidagang.co.id
-                </div>
-              </td>
-              <td width="50%" valign="top" class="text-right">
-                <div class="section-title">Ditujukan Kepada:</div>
-                <div class="info-content">
-                  <strong>${invoice.customer.name}</strong><br/>
-                  ${invoice.customer.email}<br/>
-                  ${invoice.customer.phone || "-"}<br/>
-                  Metode: ${invoice.payment_method || "Transfer Bank"}
-                </div>
-              </td>
-            </tr>
-          </table>
-
-          <!-- ITEMS -->
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th width="70%">Deskripsi Layanan</th>
-                <th width="30%" class="text-right">Total (IDR)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${invoice.items.map(item => `
-                <tr>
-                  <td>
-                    <strong>${item.name}</strong><br/>
-                    <span class="gray-text">${item.description}</span>
-                  </td>
-                  <td class="text-right">Rp ${item.price.toLocaleString('id-ID')}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-
-          <!-- SUMMARY -->
-          <div class="summary-container">
-            <table class="summary-table">
-              <tr>
-                <td>Subtotal</td>
-                <td class="text-right">Rp ${invoice.subtotal.toLocaleString('id-ID')}</td>
-              </tr>
-              ${invoice.discount > 0 ? `
-                <tr>
-                  <td>Diskon</td>
-                  <td class="text-right" style="color: #d00;">- Rp ${invoice.discount.toLocaleString('id-ID')}</td>
-                </tr>
-              ` : ''}
-              ${invoice.tax > 0 ? `
-                <tr>
-                  <td>Pajak (PPN 11%)</td>
-                  <td class="text-right">+ Rp ${invoice.tax.toLocaleString('id-ID')}</td>
-                </tr>
-              ` : ''}
-              <tr class="total-row">
-                <td>TOTAL</td>
-                <td class="text-right">Rp ${invoice.total.toLocaleString('id-ID')}</td>
-              </tr>
-            </table>
-          </div>
-
-          <!-- STAMP -->
-          <div class="stamp-container">
-            ${invoice.status === 'paid' ? '<div class="paid-stamp">LUNAS / PAID</div>' : ''}
-          </div>
-
-          <!-- FOOTER -->
-          <div class="footer">
-            <p>Terima kasih telah menggunakan layanan dari <strong>DomainDagang</strong>.</p>
-            <p>Invoice ini diterbitkan secara otomatis dan sah tanpa tanda tangan basah.</p>
-            <p>&copy; ${new Date().getFullYear()} PT Aplikasi Dagang Teknologi</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const opt = {
-      margin:       0,
-      filename:     `Invoice_DomainDagang_${invoice.id}.pdf`,
-      image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false,
-        letterRendering: true,
-        scrollX: 0,
-        scrollY: 0
-      },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(pdfHtml).save();
+    window.print();
   };
 
   // Tampilan Loading
@@ -353,7 +137,29 @@ const DetailInvoice = () => {
   return (
     <div className="pb-20">
       {/* --- ACTION BAR (Tombol Balik & Print) --- */}
-      <div className="max-w-3xl mx-auto mb-6 flex flex-col md:flex-row justify-between items-center gap-4 print:hidden px-4 sm:px-0">
+      <div className="max-w-3xl mx-auto mb-4 flex flex-col md:flex-row justify-between items-center gap-4 print:hidden px-4 sm:px-0">
+        {/* --- PRINT SYSTEM OVERRIDE --- */}
+        <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+                @page { size: A4; margin: 0; }
+                body { background: #fff !important; }
+                .print\\:hidden, .sidebar, .navbar, .action-bar, footer { display: none !important; }
+                .print-area { 
+                    display: block !important; 
+                    width: 210mm !important; 
+                    height: 297mm !important; 
+                    padding: 20mm !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    background: white !important;
+                    z-index: 9999 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    color-adjust: exact !important;
+                }
+                .no-print { display: none !important; }
+            }
+        `}} />
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-[#64748b] hover:text-[#F97316] font-bold text-sm transition self-start md:self-auto"
@@ -447,7 +253,7 @@ const DetailInvoice = () => {
         }
       ` }} />
       <div className="max-w-3xl mx-auto classic-shadow-lg rounded-lg bg-white print:shadow-none sm:mx-4 md:mx-auto">
-        <div id="invoice-print-area" className="bg-white p-5 sm:p-8 rounded-lg border border-[#f1f5f9] print:border-none print:p-0 relative overflow-hidden">
+        <div id="invoice-print-area" className="bg-white p-4 sm:p-6 rounded-lg border border-[#f1f5f9] print:border-none print-area print:p-0 relative overflow-hidden">
         
         {/* WATERMARK / STAMP LUNAS */}
         {invoice.status === "paid" && (
@@ -465,22 +271,18 @@ const DetailInvoice = () => {
         )}
 
         {/* HEADER: LOGO & STATUS */}
-        <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b-2 border-[#1e293b] pb-8 mb-8 relative z-10">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-[#F97316] rounded-lg flex items-center justify-center">
-                <img
-                  src="/image/logo/ADTLogo.png"
-                  alt="Logo"
-                  className="w-6 h-6 brightness-0 invert"
-                />
-              </div>
-              <div>
-                  <h1 className="font-bold text-xl text-[#1e293b] tracking-tight leading-none">
-                    PT Aplikasi Dagang Teknologi
-                  </h1>
-                  <span className="text-[#64748b] text-[10px] font-semibold tracking-widest uppercase">Technology Solution Provider</span>
-              </div>
+        <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b-2 border-[#1e293b] pb-4 mb-4 relative z-10">
+          <div className="flex items-start gap-4">
+            <img
+              src="/image/logo/ADTLogo.png"
+              alt="Logo"
+              style={{ width: '70px', height: '70px', objectFit: 'contain' }}
+            />
+            <div>
+                <h1 className="font-bold text-xl text-[#1e293b] tracking-tight leading-none">
+                  PT Aplikasi Dagang Teknologi
+                </h1>
+                <span className="text-[#64748b] text-[10px] font-semibold tracking-widest uppercase">Technology Solution Provider</span>
             </div>
           </div>
           <div className="text-left md:text-right w-full md:w-auto flex flex-col items-start md:items-end gap-2">
@@ -511,7 +313,7 @@ const DetailInvoice = () => {
         </div>
         {/* ALASAN PENOLAKAN (Jika Ada) */}
         {invoice.status === 'failed' && invoice.refund_reason && (
-          <div className="mx-5 sm:mx-8 mb-8 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-4 animate-[fadeIn_0.5s_ease-out]">
+          <div className="mx-5 sm:mx-8 mb-4 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-4 animate-[fadeIn_0.5s_ease-out]">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-rose-600 shadow-sm shrink-0">
               <span className="material-symbols-outlined font-bold text-lg">error</span>
             </div>
@@ -523,7 +325,7 @@ const DetailInvoice = () => {
         )}
 
         {/* INFO PENGIRIM & PENERIMA */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
           <div className="relative z-10">
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-2">
               Diterbitkan Oleh:
@@ -551,7 +353,7 @@ const DetailInvoice = () => {
         </div>
 
         {/* INFO TANGGAL */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8 bg-[#0f172a] p-5 rounded-lg border border-[#1e293b] relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6 bg-[#0f172a] p-4 rounded-lg border border-[#1e293b] relative z-10">
           <div>
             <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-widest mb-1">
               Tanggal Tagihan
@@ -589,14 +391,14 @@ const DetailInvoice = () => {
         </div>
 
         {/* TABEL ITEM */}
-        <div className="mb-8">
+        <div className="mb-4">
           <table className="w-full text-left text-sm">
             <thead className="border-b-2 border-[#f1f5f9]">
               <tr>
-                <th className="py-3 font-bold text-[#64748b] uppercase text-xs">
+                <th className="py-2 font-bold text-[#64748b] uppercase text-xs">
                   Deskripsi Layanan
                 </th>
-                <th className="py-3 font-bold text-[#64748b] uppercase text-xs text-right">
+                <th className="py-2 font-bold text-[#64748b] uppercase text-xs text-right">
                   Harga
                 </th>
               </tr>
@@ -604,11 +406,11 @@ const DetailInvoice = () => {
             <tbody className="divide-y divide-[#f8fafc]">
               {invoice.items.map((item, idx) => (
                 <tr key={idx}>
-                  <td className="py-3">
+                  <td className="py-2">
                     <p className="font-semibold text-[#1e293b]">{item.name}</p>
                     <p className="text-xs text-[#64748b] mt-0.5">{item.description}</p>
                   </td>
-                  <td className="py-3 text-right font-semibold text-[#334155]">
+                  <td className="py-2 text-right font-semibold text-[#334155]">
                     {item.price === 0 ? "GRATIS" : formatRupiah(item.price)}
                   </td>
                 </tr>
@@ -619,7 +421,7 @@ const DetailInvoice = () => {
 
 
         {/* SUMMARY & SIGNATURE */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 relative z-10 px-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 relative z-10 px-2">
           <div className="space-y-4">
              {invoice.status === 'failed' && invoice.refund_reason && (
                 <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 mb-4 animate-[fadeIn_0.5s_ease-out]">
@@ -683,7 +485,7 @@ const DetailInvoice = () => {
           </div>
         </div>
 
-        <div className="flex justify-end relative z-10 mb-8">
+        <div className="flex justify-end relative z-10 mb-4">
              <div className="text-center w-40">
                  <p className="text-[9px] text-[#64748b] font-semibold uppercase tracking-widest mb-10">Authorized By</p>
                  <div className="border-t border-[#1e293b] pt-2">
@@ -695,7 +497,7 @@ const DetailInvoice = () => {
 
         {/* --- ACTIVITY LOGS (NEW) --- */}
         {invoice.logs && invoice.logs.length > 0 && (
-          <div className="mt-10 border-t-2 border-dashed border-[#f1f5f9] pt-10">
+          <div className="mt-6 border-t-2 border-dashed border-[#f1f5f9] pt-6">
             <h3 className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest mb-6 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />

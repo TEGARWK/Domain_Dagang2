@@ -75,6 +75,25 @@ async function run() {
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );`,
+        `CREATE TABLE IF NOT EXISTS support_tickets (
+            id SERIAL PRIMARY KEY,
+            user_id INT REFERENCES users(id) ON DELETE SET NULL,
+            subject VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            status VARCHAR(50) DEFAULT 'open',
+            priority VARCHAR(20) DEFAULT 'medium',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );`,
+        `CREATE TABLE IF NOT EXISTS ticket_replies (
+            id SERIAL PRIMARY KEY,
+            ticket_id INT NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+            user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            message TEXT NOT NULL,
+            is_admin BOOLEAN DEFAULT FALSE,
+            attachments JSONB DEFAULT '[]',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );`,
         `CREATE TABLE IF NOT EXISTS user_vouchers (
             id SERIAL PRIMARY KEY,
             user_id INT REFERENCES users(id) ON DELETE CASCADE,

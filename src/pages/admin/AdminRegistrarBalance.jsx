@@ -57,12 +57,12 @@ const AdminRegistrarBalance = () => {
   const isLow = currentBal < threshold;
 
   return (
-    <div className="space-y-8 animate-[fadeIn_0.5s_ease-out] pb-10">
+    <div className="space-y-3 animate-[fadeIn_0.5s_ease-out] pb-10">
       <div className="flex justify-end">
         <button 
           onClick={handleSync}
           disabled={syncing}
-          className="px-8 py-3.5 bg-slate-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#F97316] transition-all shadow-xl shadow-slate-900/10 active:scale-95 disabled:opacity-50 flex items-center gap-3 group"
+          className="px-6 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#F97316] transition-all shadow-xl shadow-slate-900/10 active:scale-95 disabled:opacity-50 flex items-center gap-3 group"
         >
           <div className={`w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center ${syncing ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform`}>
             <span className="material-symbols-outlined text-base">sync</span>
@@ -72,67 +72,67 @@ const AdminRegistrarBalance = () => {
       </div>
 
       {/* BALANCE CARD */}
-      <div className={`relative overflow-hidden p-10 rounded-2xl shadow-xl border transition-all duration-500 ${
+      <div className={`relative overflow-hidden p-6 rounded-xl shadow-xl border transition-all duration-500 ${
         isLow ? 'bg-rose-50 border-rose-100 shadow-rose-200/50' : 'bg-white border-slate-100 shadow-slate-200/40'
       }`}>
-         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${isLow ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`}></span>
                   Saldo Tersedia Saat Ini
                </h3>
-               <div className={`text-5xl font-bold tracking-tighter ${isLow ? 'text-rose-600' : 'text-slate-900'}`}>
+               <div className={`text-4xl font-bold tracking-tighter ${isLow ? 'text-rose-600' : 'text-slate-900'}`}>
                    {fmt(currentBal)}
                </div>
                {isLow && (
-                   <div className="flex items-center gap-2 text-rose-600 mt-6 bg-white/60 px-4 py-2 rounded-lg border border-rose-100 w-fit">
-                       <ExclamationTriangleIcon className="w-5 h-5" />
-                       <span className="text-[11px] font-bold uppercase tracking-wide text-rose-500">Saldo Sangat Rendah! Harap segera isi di Daftarnama.</span>
+                   <div className="flex items-center gap-2 text-rose-600 mt-2 bg-white/60 px-3 py-1.5 rounded-lg border border-rose-100 w-fit">
+                       <ExclamationTriangleIcon className="w-4 h-4" />
+                       <span className="text-[10px] font-bold uppercase tracking-wide text-rose-500">Saldo Rendah! Isi segera di Daftarnama.</span>
                    </div>
                )}
             </div>
             
-            <div className={`w-24 h-24 rounded-lg flex items-center justify-center text-4xl shadow-inner ${
+            <div className={`w-16 h-16 rounded-lg flex items-center justify-center text-2xl shadow-inner ${
                 isLow ? 'bg-rose-100 text-rose-500' : 'bg-orange-50 text-orange-500'
             }`}>
-               <WalletIcon className="w-12 h-12" />
+               <WalletIcon className="w-8 h-8" />
             </div>
          </div>
          
          <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50/50 rounded-full blur-3xl -mr-32 -mt-32 -z-0"></div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* HISTORY TABLE */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
-          <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-lg shadow-slate-200/40 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-slate-400 shadow-sm">
-                   <ClockIcon className="w-6 h-6" />
+                <div className="w-8 h-8 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-slate-400 shadow-sm">
+                   <ClockIcon className="w-4 h-4" />
                 </div>
                 <div>
-                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight leading-none mb-1">Riwayat Mutasi Saldo</h3>
-                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Transaksi Akun Registrar</p>
+                   <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-tight leading-none mb-0.5">Riwayat Mutasi Saldo</h3>
+                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Transaksi Akun</p>
                 </div>
               </div>
           </div>
           <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-separate border-spacing-0">
+              <table className="w-full text-left text-xs border-separate border-spacing-0">
                   <thead>
-                      <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                          <th className="px-8 py-5">Tanggal & Waktu</th>
-                          <th className="px-6 py-5">Tipe</th>
-                          <th className="px-6 py-5">Keterangan</th>
-                          <th className="px-8 py-5 text-right">Nominal</th>
+                      <tr className="bg-slate-50 text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                          <th className="px-4 py-2">Tanggal & Waktu</th>
+                          <th className="px-4 py-2">Tipe</th>
+                          <th className="px-4 py-2">Keterangan</th>
+                          <th className="px-4 py-2 text-right">Nominal</th>
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
                       {history.length === 0 ? (
-                          <tr><td colSpan="4" className="px-8 py-16 text-center text-slate-300 font-bold italic uppercase tracking-widest">Belum ada catatan aktivitas saldo.</td></tr>
+                          <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-300 font-bold italic uppercase tracking-widest text-[10px]">Belum ada catatan aktivitas saldo.</td></tr>
                       ) : (
                           history.map((item) => (
                               <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                                  <td className="px-8 py-4">
+                                  <td className="px-4 py-2">
                                       <p className="text-[11px] font-bold text-slate-800">
                                           {new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
                                       </p>
@@ -140,7 +140,7 @@ const AdminRegistrarBalance = () => {
                                           {new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                                       </p>
                                   </td>
-                                  <td className="px-6 py-4">
+                                  <td className="px-4 py-2">
                                       <span className={`inline-flex px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border shadow-sm ${
                                           item.type === 'credit' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
                                           item.type === 'debit' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-blue-50 text-blue-600 border-blue-100'
@@ -148,11 +148,11 @@ const AdminRegistrarBalance = () => {
                                           {item.type}
                                       </span>
                                   </td>
-                                  <td className="px-6 py-4">
+                                  <td className="px-4 py-2">
                                       <p className="text-xs font-bold text-slate-700 tracking-tight">{item.description}</p>
                                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">Ref: {item.reference_id || '-'}</p>
                                   </td>
-                                  <td className={`px-8 py-4 text-right font-bold text-sm ${item.type === 'credit' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  <td className={`px-4 py-2 text-right font-bold text-sm ${item.type === 'credit' ? 'text-emerald-500' : 'text-rose-500'}`}>
                                       {item.type === 'debit' ? '-' : '+'}{fmt(item.amount)}
                                   </td>
                               </tr>
@@ -164,13 +164,13 @@ const AdminRegistrarBalance = () => {
         </div>
 
         {/* INFO SIDEBAR */}
-        <div className="space-y-8">
-            <div className="bg-slate-900 rounded-2xl p-8 text-white shadow-xl shadow-slate-900/20">
-                <div className="flex items-center gap-3 mb-6">
+        <div className="space-y-3">
+            <div className="bg-slate-900 rounded-xl p-4 text-white shadow-xl shadow-slate-900/20">
+                <div className="flex items-center gap-3 mb-4">
                     <span className="material-symbols-outlined text-orange-400">info</span>
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400">Informasi Penting</h3>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <p className="text-[11px] text-slate-400 font-medium leading-relaxed italic">
                         * Saldo ini adalah nominal saldo Anda di <strong>Daftarnama</strong>.
                     </p>
@@ -183,8 +183,8 @@ const AdminRegistrarBalance = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-xl shadow-slate-200/40">
-                 <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-6">Last Synced</h4>
+            <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-xl shadow-slate-200/40">
+                 <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-4">Last Synced</h4>
                  <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-slate-500">
                         {balanceData?.updated_at ? new Date(balanceData.updated_at).toLocaleString("id-ID") : "-"}

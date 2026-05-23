@@ -49,7 +49,7 @@ const ConfirmModal = ({
       ></div>
 
       {/* Modal Card */}
-      <div className="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+      <div className="relative bg-white w-full max-w-sm rounded-xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
         <div className="p-8 text-center">
           {/* Icon */}
           <div className={`w-20 h-20 ${styles.iconBg} ${styles.iconColor} rounded-lg flex items-center justify-center mx-auto mb-6`}>

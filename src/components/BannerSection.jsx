@@ -46,7 +46,7 @@ const BannerSection = () => {
 
     return (
         <section className="py-12 px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto rounded-[2rem] relative overflow-hidden shadow-2xl group border border-slate-900/5">
+            <div className="max-w-7xl mx-auto rounded-xl relative overflow-hidden shadow-xl group border border-slate-900/5">
                 {/* Background Image Container with Aspect Ratio/Height */}
                 <div className="absolute inset-0 bg-slate-900">
                     {(banner.imageUrl || banner.banner_image) ? (
@@ -81,7 +81,7 @@ const BannerSection = () => {
                     <div className="flex flex-wrap items-center gap-3 mb-6">
                         <span 
                             style={{ backgroundColor: banner.color || "#F97316" }}
-                            className="text-white px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-900/50 flex items-center gap-2"
+                            className="text-white px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-orange-900/50 flex items-center gap-2"
                         >
                             <span className="w-1.5 h-1.5 rounded-full bg-white opacity-80 animate-pulse"></span>
                             Hot Deal
@@ -94,7 +94,7 @@ const BannerSection = () => {
                         )}
                     </div>
                     
-                    <h2 className="text-4xl md:text-[3.5rem] font-black text-white leading-[1.1] tracking-tight drop-shadow-2xl mb-5">
+                    <h2 className="text-4xl md:text-[3.5rem] font-bold text-white leading-[1.1] tracking-tight drop-shadow-xl mb-5">
                         {banner.title}
                     </h2>
                     {banner.subtitle && (
@@ -162,7 +162,7 @@ const BannerSection = () => {
                 ></div>
                 
                 {/* Outline highlight inside for depth */}
-                <div className="absolute inset-0 rounded-[2rem] border border-white/5 pointer-events-none z-20" />
+                <div className="absolute inset-0 rounded-xl border border-white/5 pointer-events-none z-20" />
             </div>
         </section>
     );

@@ -153,7 +153,7 @@ const AdminManageUser = () => {
     if (!user) return null;
 
     return (
-        <div className="space-y-8 animate-[fadeIn_0.5s_ease-out] pb-10">
+        <div className="space-y-3 animate-[fadeIn_0.5s_ease-out] pb-10">
             {/* High-Impact Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="flex items-center gap-5">
@@ -197,8 +197,8 @@ const AdminManageUser = () => {
             </div>
 
             {/* Premium Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="relative overflow-hidden bg-white p-6 rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="relative overflow-hidden bg-white p-3 rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                     <div className="flex items-center gap-4 relative z-10">
                         <div className="w-12 h-12 bg-orange-50 text-[#F97316] rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                             <span className="material-symbols-outlined text-2xl font-bold">domain</span>
@@ -210,7 +210,7 @@ const AdminManageUser = () => {
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden bg-white p-6 rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                <div className="relative overflow-hidden bg-white p-3 rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                     <div className="flex items-center gap-4 relative z-10">
                         <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                             <span className="material-symbols-outlined text-2xl font-bold">account_balance_wallet</span>
@@ -222,7 +222,7 @@ const AdminManageUser = () => {
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden bg-white p-6 rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                <div className="relative overflow-hidden bg-white p-3 rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                     <div className="flex items-center gap-4 relative z-10">
                         <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
                             <span className="material-symbols-outlined text-2xl font-bold">description</span>
@@ -234,7 +234,7 @@ const AdminManageUser = () => {
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden bg-[#F97316] p-6 rounded-xl shadow-xl shadow-orange-200/50 group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                <div className="relative overflow-hidden bg-[#F97316] p-3 rounded-xl shadow-xl shadow-orange-200/50 group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-12 -mt-12"></div>
                     <div className="flex items-center gap-4 relative z-10">
                         <div className="w-12 h-12 bg-white/20 backdrop-blur-md text-white rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 border border-white/30">
@@ -248,13 +248,13 @@ const AdminManageUser = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                 {/* Main Content Area */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-3">
                     
                     {/* Standardized Domain Table (SOP) */}
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
-                        <div className="p-8 border-b border-slate-50 bg-slate-50/30">
+                    <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+                        <div className="p-3 border-b border-slate-50 bg-slate-50/30">
                             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest flex items-center gap-3">
                                 <span className="w-2 h-4 bg-[#F97316] rounded-full"></span>
                                 Daftar Kepemilikan Domain ({domains.length})
@@ -264,20 +264,20 @@ const AdminManageUser = () => {
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50/100 sticky top-0 z-10">
                                     <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] border-b border-slate-100">
-                                        <th className="px-8 py-5">Domain & Extension</th>
-                                        <th className="px-6 py-5">Status</th>
-                                        <th className="px-6 py-5">Expiration</th>
-                                        <th className="px-8 py-5 text-center">Aksi</th>
+                                        <th className="px-4 py-2">Domain & Extension</th>
+                                        <th className="px-4 py-2">Status</th>
+                                        <th className="px-4 py-2">Expiration</th>
+                                        <th className="px-4 py-2 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {domains.map((domain) => (
                                         <tr key={domain.id} className="hover:bg-slate-50/30 transition group">
-                                            <td className="px-8 py-4">
+                                            <td className="px-4 py-1.5">
                                                 <p className="font-bold text-slate-800 text-sm tracking-tight">{domain.name}</p>
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">DID: #{domain.id}</p>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-4 py-1.5">
                                                 <span className={`inline-flex px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border transition-all ${
                                                     domain.status === 'active' 
                                                     ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
@@ -288,12 +288,12 @@ const AdminManageUser = () => {
                                                     {domain.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-4 py-1.5">
                                                 <p className="text-[11px] font-bold text-slate-600 uppercase tracking-tighter">
                                                     {domain.expiration_date ? new Date(domain.expiration_date).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
                                                 </p>
                                             </td>
-                                            <td className="px-8 py-4 text-center">
+                                            <td className="px-4 py-1.5 text-center">
                                                 <Link 
                                                     to={`/admin/domains/${domain.id}`} 
                                                     className="w-9 h-9 flex items-center justify-center bg-white text-slate-400 border border-slate-100 rounded-lg hover:bg-orange-50 hover:text-[#F97316] hover:border-orange-100 transition-all shadow-sm active:scale-90 mx-auto"
@@ -314,20 +314,20 @@ const AdminManageUser = () => {
                     </div>
 
                     {/* Profile Information Form */}
-                    <div className="bg-white rounded-2xl p-10 border border-slate-100 shadow-xl shadow-slate-200/40">
-                        <h3 className="text-lg font-bold text-slate-900 mb-10 uppercase tracking-tight flex items-center gap-3 font-outfit">
+                    <div className="bg-white rounded-xl p-4 md:p-6 border border-slate-100 shadow-xl shadow-slate-200/40">
+                        <h3 className="text-sm font-bold text-slate-900 mb-6 uppercase tracking-tight flex items-center gap-3 font-outfit">
                             <span className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center">
                                 <span className="material-symbols-outlined text-sm">edit_note</span>
                             </span>
                             Edit Informasi Profil
                         </h3>
-                        <form onSubmit={handleSave} className="space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <form onSubmit={handleSave} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2.5">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Nama Lengkap</label>
                                     <input 
                                         type="text" name="name" value={formData.name} onChange={handleChange}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-[1.25rem] text-sm font-bold text-slate-700 outline-none focus:border-[#F97316] focus:bg-white focus:shadow-lg focus:shadow-orange-500/5 transition-all"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm font-bold text-slate-700 outline-none focus:border-[#F97316] focus:bg-white transition-all"
                                         placeholder="Tulis nama lengkap user..."
                                     />
                                 </div>
@@ -335,7 +335,7 @@ const AdminManageUser = () => {
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Nomor Telepon</label>
                                     <input 
                                         type="text" name="phone" value={formData.phone} onChange={handleChange}
-                                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-[1.25rem] text-sm font-bold text-slate-700 outline-none focus:border-[#F97316] focus:bg-white focus:shadow-lg focus:shadow-orange-500/5 transition-all"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm font-bold text-slate-700 outline-none focus:border-[#F97316] focus:bg-white transition-all"
                                         placeholder="Contoh: 0812..."
                                     />
                                 </div>
@@ -344,7 +344,7 @@ const AdminManageUser = () => {
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Bio / Catatan Internal</label>
                                 <textarea 
                                     name="bio" value={formData.bio} onChange={handleChange} rows="4"
-                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-[1.25rem] text-sm font-bold text-slate-700 outline-none focus:border-[#F97316] focus:bg-white focus:shadow-lg focus:shadow-orange-500/5 transition-all resize-none"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm font-bold text-slate-700 outline-none focus:border-[#F97316] focus:bg-white transition-all resize-none"
                                     placeholder="Berikan catatan internal mengenai user ini (tidak terlihat di sisi user)..."
                                 ></textarea>
                             </div>
@@ -363,10 +363,10 @@ const AdminManageUser = () => {
                 </div>
 
                 {/* Sidebar Areas */}
-                <div className="space-y-8">
+                <div className="space-y-3">
                     {/* Role & Security Card */}
-                    <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-xl shadow-slate-200/40">
-                        <div className="flex items-center gap-3 mb-8">
+                    <div className="bg-white rounded-xl p-3 md:p-4 border border-slate-100 shadow-xl shadow-slate-200/40">
+                        <div className="flex items-center gap-3 mb-6">
                              <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center">
                                 <span className="material-symbols-outlined text-xl">shield_person</span>
                              </div>
@@ -398,8 +398,8 @@ const AdminManageUser = () => {
                     </div>
 
                     {/* Recent Activities Breakdown */}
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
-                        <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                    <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                             <div>
                                 <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Tagihan Terbaru</h3>
                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">History Pembayaran</p>
@@ -409,7 +409,7 @@ const AdminManageUser = () => {
                         <div className="divide-y divide-slate-50 max-h-[400px] overflow-y-auto custom-scrollbar">
                             {invoices.length > 0 ? (
                                 invoices.slice(0, 10).map((inv) => (
-                                    <div key={inv.id} className="p-5 hover:bg-slate-50/80 transition-all border-l-4 border-transparent hover:border-orange-400 group">
+                                    <div key={inv.id} className="px-4 py-3 hover:bg-slate-50/80 transition-all border-l-4 border-transparent hover:border-orange-400 group">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="flex items-center gap-2">
                                                 <Link to={`/admin/invoices/${inv.id}`} className="text-[11px] font-bold text-slate-800 hover:text-[#F97316] transition tracking-tight">#{inv.id}</Link>
@@ -444,7 +444,7 @@ const AdminManageUser = () => {
                     </div>
 
                     {/* Quick Tips / Meta */}
-                    <div className="p-8 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl shadow-slate-900/10">
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl shadow-slate-900/10">
                         <div className="flex items-center gap-3 mb-4">
                             <span className="material-symbols-outlined text-orange-400">info</span>
                             <h3 className="text-[10px] font-bold uppercase tracking-widest">Catatan Sistem</h3>

@@ -11,6 +11,7 @@ const Overview = () => {
   const [wallet, setWallet] = useState(null);
   const [activities, setActivities] = useState([]);
   const [referralInfo, setReferralInfo] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // --- FETCH DATA REALTIME ---
@@ -26,12 +27,13 @@ const Overview = () => {
       }
 
       try {
-        const user = JSON.parse(storedUser);
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
 
         // 2. Fetch Domains, Invoices, Wallet & Activities Parallel
         const [domainRes, invoiceRes, walletRes, activityRes, referralRes] = await Promise.all([
-          api.get(`/domains/user/${user.id}`).catch(e => ({ data: [] })), 
-          api.get(`/billing/user/${user.id}`).catch(e => ({ data: [] })),
+          api.get(`/domains/user/${userData.id}`).catch(e => ({ data: [] })), 
+          api.get(`/billing/user/${userData.id}`).catch(e => ({ data: [] })),
           api.get(`/wallet`).catch(e => ({ data: null })),
           api.get(`/users/activities/me?limit=5`).catch(e => ({ data: [] })),
           api.get(`/referral/my-stats`).catch(e => ({ data: null }))
@@ -81,6 +83,7 @@ const Overview = () => {
       ) : (
         // B. Jika User BELUM PUNYA Domain -> Tampilkan Dashboard Kosong (Jualan)
         <EmptyDashboard 
+          user={user}
           wallet={wallet}
           referralInfo={referralInfo}
         />
