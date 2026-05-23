@@ -293,7 +293,8 @@ class DaftarnamaService {
 
     async listDomains() {
         try {
-            const response = await this.client.post("/domains", {});
+            const client = await this.getClient();
+            const response = await client.post("/domains", {});
             return response.data; // Usually { success: true, data: [...] }
         } catch (error) {
             console.error("[DaftarnamaService] Error listing domains:", error.response?.data || error.message);

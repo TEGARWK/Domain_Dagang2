@@ -68,7 +68,7 @@ const Footer = () => {
     <footer className="bg-white border-t border-slate-100 pt-20 pb-10">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* GRID CONTAINER */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
           {/* 1. BRAND & INFO */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center gap-3 group cursor-pointer">
@@ -240,28 +240,36 @@ const Footer = () => {
             </p>
             <div className="grid grid-cols-3 gap-2">
               {payments.length > 0 ? (
-                payments.slice(0, 9).map((pay) => {
-                   const getBankLogo = (code) => {
+                payments.slice(0, 9).map((pay, i) => {
+                   const getBankLogo = (code, name) => {
                       const bankCode = code ? String(code).toLowerCase() : '';
-                      if (bankCode === '014' || bankCode.includes('bca')) return '/image/banks/bca.png';
-                      if (bankCode === '008' || bankCode.includes('mandiri')) return '/image/banks/mandiri.png';
-                      if (bankCode === '009' || bankCode.includes('bni')) return '/image/banks/bni.png';
-                      if (bankCode === '002' || bankCode.includes('bri')) return '/image/banks/bri.png';
-                      if (bankCode === '013' || bankCode.includes('permata')) return '/image/banks/permata.png';
-                      if (bankCode === '011' || bankCode.includes('danamon')) return '/image/banks/danamon.png';
-                      if (bankCode === '451' || bankCode.includes('bsi')) return '/image/banks/bsi.png';
-                      if (bankCode.includes('qris') || bankCode === 'qr' || bankCode === 'qris') return '/image/banks/qris.png';
-                      if (bankCode === 'cc' || bankCode === 'credit_card') return '/image/banks/visa_master.png';
+                      const bankName = name ? String(name).toLowerCase() : '';
+                      
+                      if (bankCode === '014' || bankCode.includes('bca') || bankName.includes('bca')) return '/image/banks/bca.png';
+                      if (bankCode === '008' || bankCode.includes('mandiri') || bankName.includes('mandiri')) return '/image/banks/mandiri.png';
+                      if (bankCode === '009' || bankCode.includes('bni') || bankName.includes('bni')) return '/image/banks/bni.png';
+                      if (bankCode === '002' || bankCode.includes('bri') || bankName.includes('bri')) return '/image/banks/bri.png';
+                      if (bankCode === '013' || bankCode.includes('permata') || bankName.includes('permata')) return '/image/banks/permata.png';
+                      if (bankCode === '011' || bankCode.includes('danamon') || bankName.includes('danamon')) return '/image/banks/danamon.png';
+                      if (bankCode === '451' || bankCode.includes('bsi') || bankName.includes('bsi')) return '/image/banks/bsi.png';
+                      if (bankCode.includes('qris') || bankCode === 'qr' || bankCode === 'qris' || bankName.includes('qris') || bankName.includes('qr')) return '/image/banks/qris.png';
+                      if (bankCode.includes('dana') || bankName.includes('dana')) return '/image/banks/dana.png';
+                      if (bankCode.includes('gopay') || bankName.includes('gopay')) return '/image/banks/gopay.png';
+                      if (bankCode.includes('ovo') || bankName.includes('ovo')) return '/image/banks/ovo.png';
+                      if (bankCode.includes('shopeepay') || bankName.includes('shopeepay') || bankName.includes('shopee')) return '/image/banks/shopeepay.png';
+                      if (bankCode.includes('linkaja') || bankName.includes('linkaja')) return '/image/banks/linkaja.png';
+                      if (bankCode === 'cc' || bankCode === 'credit_card' || bankName.includes('cc') || bankName.includes('card')) return '/image/banks/visa_master.png';
+                      
                       if (!bankCode) return '/image/banks/generic.png'; // Fallback jika kode kosong
                       return `/image/banks/${bankCode}.png`;
                   };
                   return (
                     <div
-                      key={pay.code}
+                      key={pay.id || pay.code || i}
                       className="bg-white border border-slate-100 p-2 rounded-lg flex items-center justify-center hover:border-orange-200 transition shadow-sm h-10"
                       title={pay.name}
                     >
-                      <img src={getBankLogo(pay.code)} className="h-4 object-contain" alt={pay.name} />
+                      <img src={getBankLogo(pay.code, pay.name)} className="h-4 object-contain" alt={pay.name} />
                     </div>
                   );
                 })
