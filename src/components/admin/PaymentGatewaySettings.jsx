@@ -534,9 +534,8 @@ const PaymentGatewaySettings = ({ systemSettings }) => {
               </div>
 
                <div className="bg-white rounded-xl border border-slate-200 p-8 space-y-10 shadow-sm">
-                  {tripayConfig.enabled_methods.map(group => {
-                      // Normalize group name for matching
-                      const groupChannels = allTripayChannels.filter(ch => (ch.group || '').toUpperCase().replace(/\s+/g, '') === group.toUpperCase().replace(/\s+/g, ''));
+                  {[...new Set(allTripayChannels.map(ch => ch.group))].map(group => {
+                      const groupChannels = allTripayChannels.filter(ch => ch.group === group);
                       if (groupChannels.length === 0) return null;
                       
                       return (
