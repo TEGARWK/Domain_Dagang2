@@ -2,6 +2,11 @@
 
 Semua pembaruan sistem dan konfigurasi admin dicatat di sini untuk koordinasi tim pengembang.
 
+### [2026-06-11] - Pricing Sync & TLD Visibility Fixes (Tegar Wira Kesuma)
+- **Domain Pricing Sync Update**:
+    - **1:1 Pricing Synchronization**: Menyesuaikan logika `ON CONFLICT DO UPDATE` pada `syncPricing` di `pricingController.js` agar Harga Jual (`price_*`) selalu tertimpa dan tersinkronisasi 100% sama persis dengan Harga Modal (`cost_*`) dari API Daftarnama sesuai kebijakan terbaru.
+    - **Missing TLDs Fallback Mechanism**: Mengatasi bug ekstensi domain hilang (`.us`, `.agency`, `.design`, `.online`, `.store`, `.dev`) saat sinkronisasi dengan mengimplementasikan fallback pengambilan durasi *pricing* pertama apabila durasi spesifik 1 tahun tidak ditemukan dari respons API Daftarnama.
+
 ### [2026-05-05] - Modernized Financial Ledger, Domain Pricing Sync & Availability Fixes (Tegar Wira Kesuma)
 - **Domain Pricing Sync Overhaul (Critical Fix)**:
     - **Smart Standard Price Filter**: Implementasi logika filter harga termurah pada `SyncPricing`. Sistem kini otomatis memilih harga registrasi 1 tahun paling rendah per TLD, efektif mengabaikan harga "Premium" yang jutaan rupiah (Fix bug harga .id & .co.id meledak).

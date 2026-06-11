@@ -27,19 +27,22 @@ exports.syncPricing = async (req, res) => {
         // 1. Group by TLD and select the CHEAPEST 1-year registration price
         // This filters out "Premium" domain entries from the registrar response
         for (const item of rawData) {
-            const price1Year = item.pricings?.find(p => p.duration == 1);
-            if (!price1Year) continue;
+            let basePricing = item.pricings?.find(p => p.duration == 1);
+            if (!basePricing && item.pricings && item.pricings.length > 0) {
+                basePricing = item.pricings[0]; // Fallback to first available duration if 1 year is not found
+            }
+            if (!basePricing) continue;
 
             const tld = item.tld.startsWith('.') ? item.tld : `.${item.tld}`;
-            const currentRegPrice = parseFloat(price1Year.register_price) || 0;
+            const currentRegPrice = parseFloat(basePricing.register_price) || 0;
 
             if (!bestPricings[tld] || currentRegPrice < bestPricings[tld].cReg) {
                 bestPricings[tld] = {
                     tld,
                     cReg: currentRegPrice,
-                    cRen: parseFloat(price1Year.renewal_price) || 0,
-                    cTra: parseFloat(price1Year.transfer_price) || 0,
-                    cRes: parseFloat(price1Year.restore_price || 0) || 0
+                    cRen: parseFloat(basePricing.renewal_price) || 0,
+                    cTra: parseFloat(basePricing.transfer_price) || 0,
+                    cRes: parseFloat(basePricing.restore_price || 0) || 0
                 };
             }
         }
