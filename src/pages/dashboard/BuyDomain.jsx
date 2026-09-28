@@ -1,45 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import CustomSelect from "../../components/ui/CustomSelect";
 import { useNotification } from "../../context/NotificationContext";
 import { checkDomainAvailability } from "../../services/domainService";
 import api from "../../services/api";
-import { 
-  ShieldCheckIcon, 
-  ZapIcon, 
-  GlobeIcon, 
-  HeadphonesIcon,
-  ChevronDownIcon,
-  ChevronUpIcon
-} from "lucide-react";
 
-// --- SUB-COMPONENT: FEATURE CARD ---
-const FeatureCard = ({ icon: Icon, title, desc }) => (
-  <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-    <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center text-[#F97316] mb-4 group-hover:bg-[#F97316] group-hover:text-white transition-colors">
-      <Icon size={24} />
+const FeatureCard = ({ icon, title, desc }) => (
+  <div className="card group">
+    <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center text-primary-500 mb-4 group-hover:bg-primary-500 group-hover:text-white transition-colors">
+      <span className="material-symbols-outlined text-[24px]">{icon}</span>
     </div>
-    <h4 className="font-bold text-slate-800 mb-2">{title}</h4>
-    <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+    <h4 className="text-[13px] font-semibold text-neutral-900 mb-1">{title}</h4>
+    <p className="text-[12px] text-neutral-500 leading-relaxed">{desc}</p>
   </div>
 );
 
-// --- SUB-COMPONENT: FAQ ITEM ---
 const FAQItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   return (
-    <div className="border-b border-slate-100 last:border-0">
-      <button 
+    <div className="border-b border-neutral-100 last:border-0">
+      <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-4 flex justify-between items-center text-left hover:text-[#F97316] transition-colors"
+        className="w-full py-3 flex justify-between items-center text-left hover:text-primary-500 transition-colors"
       >
-        <span className="font-bold text-slate-700 text-sm">{question}</span>
-        {isOpen ? <ChevronUpIcon size={18} className="text-[#F97316]" /> : <ChevronDownIcon size={18} className="text-slate-400" />}
+        <span className="text-[12px] font-medium text-neutral-700">{question}</span>
+        <span className={`material-symbols-outlined text-neutral-400 text-[18px] transition-transform ${isOpen ? 'rotate-180 text-primary-500' : ''}`}>expand_more</span>
       </button>
       {isOpen && (
-        <div className="pb-4 animate-[fadeIn_0.3s_ease-out]">
-          <p className="text-xs text-slate-500 leading-relaxed">{answer}</p>
-        </div>
+        <p className="pb-3 text-[11px] text-neutral-500 leading-relaxed">{answer}</p>
       )}
     </div>
   );
@@ -274,508 +261,275 @@ const BuyDomain = () => {
   // Komponen Icon Panah Sorting
   const SortIcon = ({ colKey }) => {
     if (sortConfig.key !== colKey)
-      return (
-        <svg
-          className="w-3 h-3 text-slate-400 ml-1 opacity-50"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-          />
-        </svg>
-      );
-    return sortConfig.direction === "asc" ? (
-      <svg
-        className="w-3 h-3 text-[#F97316] ml-1"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={3}
-          d="M5 15l7-7 7 7"
-        />
-      </svg>
-    ) : (
-      <svg
-        className="w-3 h-3 text-[#F97316] ml-1"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={3}
-          d="M19 9l-7 7-7-7"
-        />
-      </svg>
-    );
+      return <span className="material-symbols-outlined text-[14px] text-neutral-300 opacity-50">unfold_more</span>;
+    return sortConfig.direction === "asc"
+      ? <span className="material-symbols-outlined text-[14px] text-primary-500">arrow_upward</span>
+      : <span className="material-symbols-outlined text-[14px] text-primary-500">arrow_downward</span>;
   };
 
   return (
-    <div className="w-full space-y-6 animate-[fadeIn_0.5s_ease-out] pb-8 px-0">
-      {/* 1. HERO HEADER (Tampilan Premium) */}
-      <div className="relative bg-slate-900 rounded-xl p-4 md:p-6 overflow-hidden shadow-xl mt-4 md:mt-0">
-        {/* Dekorasi Background */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#F97316] rounded-full blur-[120px] opacity-10"></div>
-        <div className="absolute bottom-0 left-10 w-64 h-64 bg-blue-600 rounded-full blur-[100px] opacity-10"></div>
-
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="text-center md:text-left max-w-xl">
-            <div className="inline-flex items-center gap-2 -lg bg-white/10 border border-white/20 text-[#F97316] text-[10px] font-bold uppercase tracking-wider mb-4">
-              <span className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
-              Domain Finder
+    <div className="px-6 pb-20 animate-fade-in space-y-6">
+      {/* HERO — Search Domain */}
+      <div className="card p-5">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="badge badge-neutral">Domain Finder</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></span>
             </div>
-            <h1 className="text-2xl md:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight">
-              Bangun Identitas <br className="hidden md:block" />{" "}
-              <span className="text-[#F97316]">Digital</span> Anda.
+            <h1 className="text-[20px] md:text-[24px] font-bold text-neutral-900 leading-tight mb-2">
+              Bangun Identitas <span className="text-primary-500">Digital</span> Anda
             </h1>
-            <p className="text-slate-400 text-xs md:text-base leading-relaxed max-w-lg">
-              Ketik satu kata kunci, sistem kami akan mencarikan kombinasi TLD
-              terbaik dengan harga paling kompetitif untuk bisnis Anda.
+            <p className="text-[12px] text-neutral-500 leading-relaxed max-w-lg">
+              Ketik satu kata kunci, sistem akan mencarikan kombinasi TLD terbaik dengan harga paling kompetitif.
             </p>
           </div>
 
-          {/* Search Box Floating */}
-          <div className="w-full md:w-auto md:min-w-[350px] bg-white/5 backdrop-blur-md border border-white/10 p-2 rounded-xl">
-            <form onSubmit={handleSearch} className="flex flex-col gap-2">
-              <input
-                type="text"
-                placeholder="Cari domain impian..."
-                className="w-full px-5 py-3 md:py-4 rounded-lg bg-slate-800/50 text-white placeholder:text-slate-500 font-bold outline-none focus:bg-slate-800 transition border border-transparent focus:border-[#F97316]/50 text-sm md:text-base"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  if (results.length > 0) setResults([]);
-                }}
-              />
-               <button
-                 type="submit"
-                 disabled={isSearching}
-                 className="w-full bg-[#F97316] text-white py-3 md:py-4 px-6 rounded-lg font-bold hover:bg-white hover:text-slate-900 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 text-xs md:text-sm uppercase tracking-widest"
-               >
-                {isSearching ? (
-                  <span className="animate-spin">⏳</span>
-                ) : (
-                  "Cari Sekarang"
-                )}
+          <div className="w-full md:w-[360px]">
+            <form onSubmit={handleSearch} className="space-y-3">
+              <div className="form-group">
+                <label className="form-label">Cari Domain</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: startup"
+                  className="form-input"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    if (results.length > 0) setResults([]);
+                  }}
+                />
+              </div>
+              <button type="submit" disabled={isSearching} className="btn btn-primary w-full">
+                {isSearching ? "Mencari..." : "Cari Sekarang"}
               </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* 2. RESULTS TABLE */}
-      {results.length > 0 ? (
-        <div className="mt-8 md:mt-12 space-y-6">
-          {/* Filter Kategori - Only show if more than 1 result */}
-          {results.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-100 rounded-lg w-fit">
-              {["Semua", "Populer", "Lokal", "Promo"].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${
-                    activeCategory === cat
-                      ? "bg-white text-[#F97316] shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* CATEGORY FILTER */}
+      {results.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2 p-1 bg-neutral-100 rounded-lg w-fit">
+          {["Semua", "Populer", "Lokal", "Promo"].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-4 py-2 rounded-lg text-[11px] font-semibold transition ${
+                activeCategory === cat
+                  ? "bg-white text-primary-600 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-700"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
 
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div className="overflow-y-auto">
-              {/* DESKTOP VIEW (Table) */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-100">
+      {/* RESULTS */}
+      {results.length > 0 ? (
+        <div className="card p-0 overflow-hidden">
+          {/* DESKTOP TABLE */}
+          <div className="table-wrap rounded-none border-0">
+            <table>
+              <thead>
                 <tr>
-                  <th
-                    className="px-4 py-4 font-bold text-slate-600 cursor-pointer hover:text-[#F97316] transition select-none"
-                    onClick={() => handleSort("domain")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Nama Domain <SortIcon colKey="domain" />
-                    </div>
+                  <th className="cursor-pointer hover:text-primary-500 select-none" onClick={() => handleSort("domain")}>
+                    <span className="flex items-center gap-1">Nama Domain <SortIcon colKey="domain" /></span>
                   </th>
-                  <th
-                    className="px-4 py-4 font-bold text-slate-600 cursor-pointer hover:text-[#F97316] transition select-none"
-                    onClick={() => handleSort("category")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Kategori <SortIcon colKey="category" />
-                    </div>
+                  <th className="cursor-pointer hover:text-primary-500 select-none" onClick={() => handleSort("category")}>
+                    <span className="flex items-center gap-1">Kategori <SortIcon colKey="category" /></span>
                   </th>
-                  <th className="px-4 py-4 font-bold text-slate-600">Durasi</th>
-                  <th
-                    className="px-4 py-4 font-bold text-slate-600 text-right cursor-pointer hover:text-[#F97316] transition select-none"
-                    onClick={() => handleSort("price")}
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      Harga <SortIcon colKey="price" />
-                    </div>
+                  <th>Durasi</th>
+                  <th className="text-right cursor-pointer hover:text-primary-500 select-none" onClick={() => handleSort("price")}>
+                    <span className="flex items-center justify-end gap-1">Harga <SortIcon colKey="price" /></span>
                   </th>
-                  <th className="px-4 py-4 font-bold text-slate-600 text-center">
-                    Aksi
-                  </th>
+                  <th className="text-center">Aksi</th>
                 </tr>
               </thead>
-
-              {/* Body Data */}
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {filteredResults.map((item, idx) => (
-                    <tr
-                      key={idx}
-                      className="hover:bg-orange-50/30 transition group"
-                    >
-                      {/* 1. Nama Domain */}
-                      <td className="px-4 py-2">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${item.available ? "bg-green-50 text-green-600" : "bg-red-50 text-red-400"}`}
-                        >
-                          {item.available ? (
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          ) : (
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          )}
+                  <tr key={idx} className="hover:bg-neutral-50">
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${item.available ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-400"}`}>
+                          <span className="material-symbols-outlined text-[18px]">
+                            {item.available ? "check" : "close"}
+                          </span>
                         </div>
                         <div>
-                          <p
-                            className={`font-bold text-base ${item.available ? "text-slate-800" : "text-slate-400"}`}
-                          >
-                            {item.domain}
-                          </p>
+                          <p className={`text-[13px] font-semibold ${item.available ? "text-neutral-900" : "text-neutral-400"}`}>{item.domain}</p>
                           {!item.available && (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-tighter ${
-                                item.error?.includes('422') || item.error?.toLowerCase().includes('not supported')
-                                ? "text-orange-600 bg-orange-50 border-orange-100"
-                                : "text-red-600 bg-red-50 border-red-100"
-                            }`}>
-                              {item.error?.includes('422') || item.error?.toLowerCase().includes('not supported') 
-                               ? "Belum Aktif" 
-                               : "Terpakai"}
+                            <span className={`badge ${item.error?.includes('422') || item.error?.toLowerCase().includes('not supported') ? 'badge-warning' : 'badge-danger'}`}>
+                              {item.error?.includes('422') || item.error?.toLowerCase().includes('not supported') ? "Belum Aktif" : "Terpakai"}
                             </span>
                           )}
                         </div>
                       </div>
                     </td>
-
-                    {/* 2. Kategori Badge */}
-                    <td className="px-4 py-2">
-                      <span
-                        className={`-lg text-xs font-bold border ${
-                          item.category === "Promo"
-                            ? "bg-purple-50 text-purple-600 border-purple-100"
-                            : item.category === "Lokal"
-                              ? "bg-blue-50 text-blue-600 border-blue-100"
-                              : "bg-slate-100 text-slate-500 border-slate-200"
-                        }`}
-                      >
+                    <td>
+                      <span className={`badge ${item.category === "Promo" ? "badge-warning" : item.category === "Lokal" ? "badge-info" : "badge-neutral"}`}>
                         {item.category}
                       </span>
                     </td>
-
-                    {/* 3. Pilihan (Durasi) */}
-                    <td className="px-4 py-2">
-                      <div className="relative w-28">
-                        <CustomSelect
-                          disabled={!item.available}
-                          value={item.duration}
-                          onChange={(val) =>
-                            handleDurationChange(idx, val)
-                          }
-                          options={[1, 2, 3, 5, 10].map(y => ({ value: y, label: `${y} Tahun` }))}
-                          className="w-full relative z-30"
-                        />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                          <svg
-                            className="w-3 h-3"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 9l-7 7-7-7"
-                            />
-                          </svg>
-                        </div>
-                      </div>
+                    <td>
+                      <select
+                        disabled={!item.available}
+                        value={item.duration}
+                        onChange={(e) => handleDurationChange(idx, e.target.value)}
+                        className="form-select w-28"
+                      >
+                        {[1, 2, 3, 5, 10].map(y => (
+                          <option key={y} value={y}>{y} Tahun</option>
+                        ))}
+                      </select>
                     </td>
-
-                    {/* 4. Harga */}
-                    <td className="px-4 py-2 text-right">
+                    <td className="text-right">
                       {item.available ? (
-                        <span className="font-bold text-slate-800 text-base block">
-                          {formatRupiah(item.currentPrice)}
-                        </span>
+                        <span className="text-[14px] font-bold text-neutral-900">{formatRupiah(item.currentPrice)}</span>
                       ) : (
-                        <span className="text-slate-300 font-bold">-</span>
+                        <span className="text-neutral-300 font-bold">-</span>
                       )}
                     </td>
-
-                    {/* 5. Aksi (DUA TOMBOL) */}
-                    <td className="px-4 py-2">
+                    <td>
                       <div className="flex items-center justify-center gap-2">
-                        {/* Tombol Keranjang */}
-                         <button
+                        <button
                           disabled={!item.available}
                           onClick={() => handleAddToCart(item)}
-                          className={`p-2.5 rounded-lg border transition ${
-                            item.available
-                              ? "border-slate-200 text-slate-400 hover:border-[#F97316] hover:text-[#F97316] hover:bg-orange-50"
-                              : "border-slate-100 text-slate-200 cursor-not-allowed bg-slate-50"
-                          }`}
+                          className="btn-icon btn-default btn-sm"
                           title="Tambah ke Keranjang"
                         >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                            />
-                          </svg>
+                          <span className="material-symbols-outlined text-[16px]">shopping_cart</span>
                         </button>
-
-                        {/* Tombol Beli */}
-                         <button
+                        <button
                           disabled={!item.available}
                           onClick={() => handleBuyNow(item)}
-                          className={`px-5 py-2.5 rounded-lg font-bold text-xs transition transform active:scale-95 shadow-md flex items-center gap-2 ${
-                            item.available
-                              ? "bg-[#F97316] text-white hover:bg-slate-900 shadow-orange-950/20"
-                              : "bg-slate-100 text-slate-300 cursor-not-allowed shadow-none"
-                          }`}
+                          className={`btn btn-sm ${item.available ? 'btn-primary' : 'btn-default opacity-50'}`}
                         >
                           {item.available ? "Beli" : "Sold"}
-                          {item.available && (
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M14 5l7 7m0 0l-7 7m7-7H3"
-                              />
-                            </svg>
-                          )}
                         </button>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
-              </table>
-            </div>
+            </table>
+          </div>
 
-            {/* MOBILE VIEW (Cards) */}
-            <div className="md:hidden divide-y divide-slate-100">
-              {filteredResults.map((item, idx) => (
-                <div key={idx} className="p-5 space-y-4">
-                  <div className="flex justify-between items-start gap-4">
+          {/* MOBILE CARDS */}
+          <div className="block md:hidden divide-y divide-neutral-100">
+            {filteredResults.map((item, idx) => (
+              <div key={idx} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.available ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-400"}`}>
+                      <span className="material-symbols-outlined text-[16px]">{item.available ? "check" : "close"}</span>
+                    </div>
                     <div>
-                      <p className={`font-bold text-base leading-tight ${item.available ? "text-slate-800" : "text-slate-400"}`}>{item.domain}</p>
-                      <div className="flex gap-2 mt-1">
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${item.category === "Promo" ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-slate-50 text-slate-500 border-slate-200"}`}>{item.category}</span>
-                        {!item.available && (
-                          <span className="text-[9px] font-bold px-2 py-0.5 rounded border bg-red-50 text-red-600 border-red-100 uppercase tracking-wider">Terpakai</span>
-                        )}
+                      <p className={`text-[13px] font-semibold ${item.available ? "text-neutral-900" : "text-neutral-400"}`}>{item.domain}</p>
+                      <div className="flex gap-1 mt-0.5">
+                        <span className={`badge ${item.category === "Promo" ? "badge-warning" : item.category === "Lokal" ? "badge-info" : "badge-neutral"}`}>{item.category}</span>
+                        {!item.available && <span className="badge badge-danger">Terpakai</span>}
                       </div>
                     </div>
-                    <div className="text-right">
-                      {item.available ? (
-                        <div className="flex flex-col">
-                          <span className="font-bold text-[#F97316] text-lg leading-none">{formatRupiah(item.currentPrice)}</span>
-                          <span className="text-[10px] text-slate-400 font-bold mt-1">/{item.duration} Thn</span>
-                        </div>
-                      ) : <span className="text-slate-300 font-bold">-</span>}
-                    </div>
                   </div>
-
-                  <div className="flex flex-col gap-3">
-                    <div className="w-full">
-                       <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 block ml-1">Durasi</label>
-                       <CustomSelect
-                        disabled={!item.available}
-                        value={item.duration}
-                        onChange={(val) => handleDurationChange(idx, val)}
-                        options={[1, 2, 3, 5, 10].map(y => ({ value: y, label: `${y} Tahun` }))}
-                        className="w-full relative z-30"
-                      />
-                    </div>
-                    <div className="flex gap-2 w-full">
-                       <button disabled={!item.available} onClick={() => handleAddToCart(item)} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-slate-200 text-slate-500 active:bg-slate-50 disabled:opacity-30 transition-colors">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                       </button>
-                       <button disabled={!item.available} onClick={() => handleBuyNow(item)} className={`flex-[3] py-3 rounded-lg font-bold text-xs uppercase tracking-widest shadow-md transition-all active:scale-95 ${item.available ? "bg-[#F97316] text-white shadow-orange-500/20" : "bg-slate-100 text-slate-300 cursor-not-allowed shadow-none"}`}>
-                          {item.available ? "Beli Sekarang" : "Sold Out"}
-                       </button>
-                    </div>
+                  <div className="text-right flex-shrink-0">
+                    {item.available ? (
+                      <span className="text-[14px] font-bold text-neutral-900">{formatRupiah(item.currentPrice)}</span>
+                    ) : <span className="text-neutral-300 font-bold">-</span>}
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <label className="text-[10px] font-semibold text-neutral-400 mb-1 block">Durasi</label>
+                    <select
+                      disabled={!item.available}
+                      value={item.duration}
+                      onChange={(e) => handleDurationChange(idx, e.target.value)}
+                      className="form-select w-full"
+                    >
+                      {[1, 2, 3, 5, 10].map(y => (
+                        <option key={y} value={y}>{y} Tahun</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    disabled={!item.available}
+                    onClick={() => handleAddToCart(item)}
+                    className="btn-icon btn-default btn-sm mt-5"
+                    title="Tambah ke Keranjang"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">shopping_cart</span>
+                  </button>
+                  <button
+                    disabled={!item.available}
+                    onClick={() => handleBuyNow(item)}
+                    className={`btn btn-sm mt-5 ${item.available ? 'btn-primary' : 'btn-default opacity-50'}`}
+                  >
+                    {item.available ? "Beli" : "Sold"}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
       ) : (
-        // Empty State (Clean Icon)
-        <div className="flex flex-col items-center justify-center py-16 opacity-60">
-          <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-            <svg
-              className="w-10 h-10 text-slate-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+        <div className="empty-state">
+          <div className="w-14 h-14 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="material-symbols-outlined text-3xl text-neutral-300">search</span>
           </div>
-          <p className="text-slate-500 font-bold text-lg">
-            Belum ada pencarian.
-          </p>
-          <p className="text-slate-400 text-sm">
-            Gunakan kolom pencarian di atas.
-          </p>
+          <p className="text-[14px] font-semibold text-neutral-900 mb-1">Belum ada pencarian</p>
+          <p className="text-[12px] text-neutral-500">Gunakan kolom pencarian di atas untuk menemukan domain impian Anda.</p>
         </div>
       )}
 
-      {/* 3. FITUR UNGGULAN & FAQ SECTION */}
-      <div className="mt-12 space-y-10">
-        {/* Fitur Unggulan Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <FeatureCard 
-            icon={ZapIcon} 
-            title="Aktivasi Instan" 
-            desc="Domain Anda akan aktif secara otomatis sesaat setelah pembayaran dikonfirmasi."
-          />
-          <FeatureCard 
-            icon={ShieldCheckIcon} 
-            title="Keamanan Penuh" 
-            desc="Proteksi WHOIS dan penguncian domain (Domain Lock) untuk keamanan aset digital Anda."
-          />
-          <FeatureCard 
-            icon={GlobeIcon} 
-            title="DNS Management" 
-            desc="Kelola record DNS (A, CNAME, MX, TXT) dengan mudah melalui panel dashboard."
-          />
-          <FeatureCard 
-            icon={HeadphonesIcon} 
-            title="Bantuan Ahli" 
-            desc="Tim support kami siap membantu kendala teknis Anda kapan saja dibutuhkan."
-          />
+      {/* FEATURES + FAQ + SUPPORT */}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <FeatureCard icon="bolt" title="Aktivasi Instan" desc="Domain aktif secara otomatis setelah pembayaran dikonfirmasi." />
+          <FeatureCard icon="shield" title="Keamanan Penuh" desc="Proteksi WHOIS dan Domain Lock untuk keamanan aset digital Anda." />
+          <FeatureCard icon="dns" title="DNS Management" desc="Kelola record A, CNAME, MX, TXT dengan mudah melalui panel dashboard." />
+          <FeatureCard icon="headset_mic" title="Bantuan Ahli" desc="Tim support kami siap membantu kendala teknis Anda kapan saja." />
         </div>
 
-        {/* FAQ Section */}
-        <div className="bg-slate-50 rounded-2xl p-5 md:p-8 border border-slate-100">
-          <div className="flex flex-col md:flex-row gap-10">
+        <div className="card p-5">
+          <div className="flex flex-col md:flex-row gap-6">
             <div className="md:w-1/3">
-              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Pertanyaan <br className="hidden md:block" /> Populer</h2>
-              <p className="text-sm text-slate-500 mt-3">Segala hal yang perlu Anda ketahui tentang pendaftaran domain di DomainDagang.</p>
-              <button 
-                onClick={() => navigate("/dashboard/support")}
-                className="mt-6 text-xs font-bold text-[#F97316] hover:underline flex items-center gap-2"
-              >
-                Lihat Semua Bantuan →
+              <h2 className="text-[16px] font-bold text-neutral-900 mb-1">Pertanyaan Populer</h2>
+              <p className="text-[12px] text-neutral-500 mb-4">Segala hal yang perlu Anda ketahui tentang pendaftaran domain.</p>
+              <button onClick={() => navigate("/dashboard/support")} className="text-[12px] font-semibold text-primary-600 hover:underline flex items-center gap-1">
+                Lihat Semua Bantuan
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </button>
             </div>
-            <div className="md:w-2/3 bg-white rounded-xl p-6 shadow-sm">
+            <div className="md:w-2/3">
               {faqs.length > 0 ? (
                 faqs.map((faq, index) => (
-                  <FAQItem 
-                    key={faq.id || index}
-                    question={faq.question} 
-                    answer={faq.answer} 
-                  />
+                  <FAQItem key={faq.id || index} question={faq.question} answer={faq.answer} />
                 ))
               ) : (
-                /* Fallback if no FAQs in DB */
                 <>
-                  <FAQItem 
-                    question="Berapa lama proses aktivasi domain?" 
-                    answer="Hampir seluruh TLD (seperti .com, .id, .net) aktif secara instan (real-time) setelah pembayaran berhasil divalidasi oleh sistem kami."
-                  />
-                  <FAQItem 
-                    question="Apakah saya mendapatkan akses DNS penuh?" 
-                    answer="Ya! Anda memiliki kontrol penuh atas DNS Management."
-                  />
-                  <FAQItem 
-                    question="Bagaimana cara perpanjang domain saya?" 
-                    answer="Sistem akan mengirimkan notifikasi 30 hari sebelum domain kadaluarsa."
-                  />
+                  <FAQItem question="Berapa lama proses aktivasi domain?" answer="Hampir seluruh TLD (seperti .com, .id, .net) aktif secara instan (real-time) setelah pembayaran berhasil divalidasi oleh sistem kami." />
+                  <FAQItem question="Apakah saya mendapatkan akses DNS penuh?" answer="Ya! Anda memiliki kontrol penuh atas DNS Management." />
+                  <FAQItem question="Bagaimana cara perpanjang domain saya?" answer="Sistem akan mengirimkan notifikasi 30 hari sebelum domain kadaluarsa." />
                 </>
               )}
             </div>
           </div>
         </div>
 
-        {/* Support Banner */}
-        <div className="bg-[#F97316] rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 text-white shadow-xl shadow-orange-500/20 overflow-hidden relative">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-           <div className="relative z-10 text-center md:text-left">
-              <h3 className="text-xl font-bold mb-1">Butuh bantuan memilih domain?</h3>
-              <p className="text-white/80 text-sm">Tim ahli kami siap membantu mencarikan nama terbaik untuk bisnis Anda.</p>
-           </div>
-           <button 
-              onClick={() => navigate("/dashboard/support")}
-              className="relative z-10 bg-slate-900 text-white px-8 py-3 rounded-lg font-bold text-sm hover:bg-white hover:text-slate-900 transition-all"
-           >
+        <div className="card p-5 bg-primary-500 border-primary-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-left">
+              <h3 className="text-[14px] font-bold text-white mb-0.5">Butuh bantuan memilih domain?</h3>
+              <p className="text-[12px] text-white/80">Tim ahli kami siap membantu mencarikan nama terbaik untuk bisnis Anda.</p>
+            </div>
+            <button onClick={() => navigate("/dashboard/support")} className="btn bg-white text-primary-600 hover:bg-neutral-100 border-0 flex-shrink-0">
               Hubungi CS Kami
-           </button>
+            </button>
+          </div>
         </div>
       </div>
     </div>

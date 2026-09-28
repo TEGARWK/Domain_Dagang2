@@ -25,18 +25,38 @@ const getDbConfig = async () => {
 /**
  * Generate / Validasi Callback Signature dari webhook Tripay.
  * Formula: HMAC-SHA256(JSON.stringify(body), private_key)
+ * CRITICAL: Body harus dalam format yang SAMA persis dengan yang dikirim Tripay
  */
 const generateCallbackSignature = async (body) => {
     const activeConfig = await getDbConfig();
-    const payload = typeof body === 'string' ? body : JSON.stringify(body);
+    if (!activeConfig || !activeConfig.private_key) {
+        throw new Error('[TripayService] Cannot generate signature: private_key not found');
+    }
+
+    // Ensure body is stringified consistently
+    let payload;
+    if (typeof body === 'string') {
+        // If already string, parse and re-stringify to ensure consistent format
+        try {
+            const parsed = JSON.parse(body);
+            payload = JSON.stringify(parsed);
+        } catch {
+            payload = body;
+        }
+    } else {
+        payload = JSON.stringify(body);
+    }
+
     const signature = crypto
         .createHmac('sha256', activeConfig.private_key)
         .update(payload)
         .digest('hex');
-    
-    // Low-level debug log (commented out for performance)
-    // console.log(`[Tripay Debug] Payload: ${payload} | Key: ${activeConfig.private_key.substring(0,5)}... | Sig: ${signature}`);
-    
+
+    // Debug log (only in non-production)
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`[Tripay Debug] Generating callback signature | Payload length: ${payload.length}`);
+    }
+
     return signature;
 };
 

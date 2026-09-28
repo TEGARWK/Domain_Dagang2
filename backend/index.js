@@ -15,15 +15,48 @@ app.use(express.json({
   }
 })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+// --- CORS CONFIGURATION ---
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? (process.env.CLIENT_URL ? [process.env.CLIENT_URL] : [])
+  : [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'https://5804-2404-8000-1024-5c35-957d-e8fd-a080-1807.ngrok-free.app'
+    ];
+
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    // In production, strictly check origin
+    if (process.env.NODE_ENV === 'production') {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS] Blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    } else {
+      // Development: allow all origins
+      callback(null, true);
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'ngrok-skip-browser-warning']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'ngrok-skip-browser-warning', 'x-api-key'],
 }));
 app.use(cookieParser());
+
+// --- LOGGING CONFIGURATION ---
+// Only use detailed logging in development mode
 const morgan = require('morgan');
-app.use(morgan('dev'));
+if (process.env.NODE_ENV === 'production') {
+    // In production, use combined format (standard Apache format) instead of dev
+    app.use(morgan('combined'));
+} else {
+    // Development: detailed logging
+    app.use(morgan('dev'));
+}
 
 // --- VIEW ENGINE SETUP ---
 app.set('view engine', 'ejs');
@@ -33,13 +66,16 @@ app.set('layout', 'admin/layout');
 
 
 // --- IMPORT ROUTES ---
+// Note: Prismalink is DEPRECATED and disabled
+// To re-enable, uncomment the import and route below
+// const prismalinkRoutes = require("./routes/prismalink");
+
 const authRoutes = require("./routes/auth");
 const domainRoutes = require("./routes/domains");
 const checkoutRoutes = require("./routes/checkout");
 const billingRoutes = require("./routes/billing");
 const daftarnamaRoutes = require("./routes/daftarnama");
 const transferRoutes = require("./routes/transferRoutes");
-const prismalinkRoutes = require("./routes/prismalink");
 const pricingRoutes = require('./routes/pricing');
 
 
@@ -49,7 +85,7 @@ app.use("/api/domains", domainRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/tripay", require("./routes/tripay"));
-app.use("/api/prismalink", prismalinkRoutes);
+// app.use("/api/prismalink", prismalinkRoutes); // DEPRECATED
 app.use("/api/daftarnama", daftarnamaRoutes);
 app.use("/api/transfers", transferRoutes);
 app.use("/api/users", require("./routes/users"));
@@ -79,9 +115,26 @@ app.use("/api/finance", require("./routes/financeRoutes"));
 
 const { errorHandler, notFound } = require("./middleware/errorMiddleware");
 
-// Health Check
-app.get("/", (req, res) => {
-  res.json("Backend Server Version 2.2 (Stability Update) 🚀");
+// --- ENHANCED HEALTH CHECK ---
+app.get("/", async (req, res) => {
+  const db = require("./config/db");
+  let dbStatus = 'disconnected';
+
+  try {
+    await db.pool.query('SELECT 1');
+    dbStatus = 'connected';
+  } catch (err) {
+    dbStatus = 'error: ' + err.message;
+  }
+
+  res.json({
+    status: 'ok',
+    version: '2.2',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    environment: process.env.NODE_ENV || 'development',
+    database: dbStatus
+  });
 });
 
 

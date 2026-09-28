@@ -209,13 +209,13 @@ const Settings = () => {
   return (
     <div className="pb-10 animate-[fadeIn_0.5s_ease-out] w-full px-2 md:px-4 lg:px-6 font-sans">
       {/* 1. HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 py-3 border-b border-slate-100">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 py-3 border-b border-neutral-100">
         <div>
-          <h1 className="text-4xl font-bold text-slate-800 tracking-tight leading-none">
+          <h1 className="text-4xl font-bold text-neutral-800 tracking-tight leading-none">
             Pengaturan Akun
           </h1>
-          <p className="text-sm font-medium text-slate-500 mt-3 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+          <p className="text-sm font-medium text-neutral-500 mt-3 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></span>
             Kelola data personal dan preferensi keamanan Anda secara aman.
           </p>
         </div>
@@ -224,14 +224,14 @@ const Settings = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* 2. SIDEBAR NAVIGATION */}
         <div className="lg:col-span-3">
-          <div className="sticky top-4 space-y-1.5 bg-slate-50/50 p-3 rounded-xl border border-slate-100 shadow-inner">
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-[2px] px-3 mb-2">Navigasi Utama</p>
+          <div className="sticky top-4 space-y-1.5 bg-neutral-50/50 p-3 rounded-xl border border-neutral-100 shadow-inner">
+            <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-[2px] px-3 mb-2">Navigasi Utama</p>
             
             <button
               onClick={() => setActiveTab("profile")}
-               className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-3 group ${activeTab === 'profile' ? 'bg-white text-orange-600 shadow-md ring-1 ring-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-white/80'}`}
+               className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-3 group ${activeTab === 'profile' ? 'bg-white text-primary-600 shadow-md ring-1 ring-neutral-100' : 'text-neutral-500 hover:text-neutral-800 hover:bg-white/80'}`}
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTab === 'profile' ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-slate-800 border border-slate-200/50'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTab === 'profile' ? 'bg-primary-500 text-white shadow-lg shadow-primary-200' : 'bg-neutral-100 text-neutral-400 group-hover:bg-white group-hover:text-neutral-800 border border-neutral-200/50'}`}>
                  <span className="material-symbols-outlined text-[17px]">person</span>
               </div>
               Profil Saya
@@ -239,20 +239,20 @@ const Settings = () => {
             
             <button
               onClick={() => setActiveTab("security")}
-               className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-3 group ${activeTab === 'security' ? 'bg-white text-blue-600 shadow-md ring-1 ring-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-white/80'}`}
+               className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium transition-all flex items-center gap-3 group ${activeTab === 'security' ? 'bg-white text-blue-600 shadow-md ring-1 ring-neutral-100' : 'text-neutral-500 hover:text-neutral-800 hover:bg-white/80'}`}
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTab === 'security' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-slate-100 text-slate-400 group-hover:bg-white group-hover:text-blue-600 border border-slate-200/50'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTab === 'security' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-neutral-100 text-neutral-400 group-hover:bg-white group-hover:text-blue-600 border border-neutral-200/50'}`}>
                  <span className="material-symbols-outlined text-[17px]">lock</span>
               </div>
               Keamanan Akun
             </button>
             
-            <div className="pt-4 mt-4 border-t border-slate-200/50">
+            <div className="pt-4 mt-4 border-t border-neutral-200/50">
               <button
                 onClick={() => setActiveTab("danger")}
-                className={`w-full text-left px-4 py-3.5 rounded-lg text-sm font-medium transition-all flex items-center gap-3 group ${activeTab === 'danger' ? 'bg-rose-50 text-rose-600' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50/50'}`}
+                className={`w-full text-left px-4 py-3.5 rounded-lg text-sm font-medium transition-all flex items-center gap-3 group ${activeTab === 'danger' ? 'bg-rose-50 text-rose-600' : 'text-neutral-400 hover:text-rose-600 hover:bg-rose-50/50'}`}
               >
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${activeTab === 'danger' ? 'bg-rose-600 text-white shadow-lg shadow-rose-100' : 'bg-slate-100/50 text-slate-300 group-hover:bg-white group-hover:text-rose-600 border border-slate-200/50'}`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${activeTab === 'danger' ? 'bg-rose-600 text-white shadow-lg shadow-rose-100' : 'bg-neutral-100/50 text-neutral-300 group-hover:bg-white group-hover:text-rose-600 border border-neutral-200/50'}`}>
                   <span className="material-symbols-outlined text-[19px]">delete_forever</span>
                 </div>
                 Hapus Akun
@@ -267,10 +267,10 @@ const Settings = () => {
           {/* SECTION: PROFILE */}
           {activeTab === "profile" && (
             <div className="animate-[scaleIn_0.3s_ease-out]">
-              <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <section className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden flex flex-col">
                 
                 {/* BANNER HEADER */}
-                <div className="h-24 bg-gradient-to-r from-orange-500 to-amber-400 relative">
+                <div className="h-24 bg-gradient-to-r from-primary-500 to-amber-400 relative">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                 </div>
 
@@ -278,24 +278,24 @@ const Settings = () => {
                     {/* AVATAR OVERLAY */}
                     <div className="flex flex-col sm:flex-row sm:justify-between items-center sm:items-end -mt-12 mb-8 gap-4 sm:gap-0">
                         <div className="relative group z-10 w-24 h-24 rounded-xl bg-white p-1.5 shadow-xl flex-shrink-0">
-                            <div className="w-full h-full rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 relative bg-slate-50 transition-all duration-300">
+                            <div className="w-full h-full rounded-xl flex items-center justify-center overflow-hidden border border-neutral-100 relative bg-neutral-50 transition-all duration-300">
                                 {profile.avatar ? (
                                     <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="material-symbols-outlined text-4xl text-slate-300">account_circle</span>
+                                    <span className="material-symbols-outlined text-4xl text-neutral-300">account_circle</span>
                                 )}
-                                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center text-white cursor-pointer backdrop-blur-[2px]">
+                                <div className="absolute inset-0 bg-neutral-900/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center text-white cursor-pointer backdrop-blur-[2px]">
                                     <span className="material-symbols-outlined text-xl">camera_alt</span>
                                 </div>
                                 <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleAvatarChange} />
                             </div>
-                            <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white">
+                            <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-primary-600 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white">
                                 <span className="material-symbols-outlined text-[14px] font-bold">verified</span>
                             </div>
                         </div>
                         <div className="pb-1 text-center sm:text-right mt-2 sm:mt-0">
-                           <h3 className="text-xl font-bold text-slate-800 tracking-tight">{profile.firstName || 'Member'} {profile.lastName}</h3>
-                           <p className="text-[12px] text-slate-500 font-medium">{profile.email}</p>
+                           <h3 className="text-xl font-bold text-neutral-800 tracking-tight">{profile.firstName || 'Member'} {profile.lastName}</h3>
+                           <p className="text-[12px] text-neutral-500 font-medium">{profile.email}</p>
                         </div>
                     </div>
 
@@ -304,37 +304,37 @@ const Settings = () => {
                         
                         {/* LEFT: BASIC INFO */}
                         <div className="space-y-6">
-                            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-[2px] border-b border-slate-100 pb-2">Informasi Personal</h4>
+                            <h4 className="text-[11px] font-bold text-neutral-400 uppercase tracking-[2px] border-b border-neutral-100 pb-2">Informasi Personal</h4>
                             
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2.5">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Nama Depan</label>
+                                    <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">Nama Depan</label>
                                     <input
                                         type="text"
                                         name="firstName"
                                         value={profile.firstName}
                                         onChange={handleProfileChange}
                                         placeholder="Budi"
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                        className="w-full bg-neutral-50/50 border border-neutral-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500 text-sm font-medium text-neutral-800 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-2.5">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Nama Belakang</label>
+                                    <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">Nama Belakang</label>
                                     <input
                                         type="text"
                                         name="lastName"
                                         value={profile.lastName}
                                         onChange={handleProfileChange}
                                         placeholder="Fulan"
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                        className="w-full bg-neutral-50/50 border border-neutral-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500 text-sm font-medium text-neutral-800 transition-all"
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-2.5">
                                 <div className="flex justify-between">
-                                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Alamat Email</label>
-                                  <button onClick={() => setIsEmailEditing(!isEmailEditing)} className="text-[10px] uppercase font-bold text-orange-600 hover:text-slate-900 tracking-wider">Ubah</button>
+                                  <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">Alamat Email</label>
+                                  <button onClick={() => setIsEmailEditing(!isEmailEditing)} className="text-[10px] uppercase font-bold text-primary-600 hover:text-neutral-900 tracking-wider">Ubah</button>
                                 </div>
                                 <input
                                     type="email"
@@ -342,14 +342,14 @@ const Settings = () => {
                                     value={profile.email}
                                     onChange={handleProfileChange}
                                     readOnly={!isEmailEditing}
-                                    className={`w-full border rounded-lg px-4 py-2 outline-none text-sm font-medium text-slate-800 transition-all ${isEmailEditing ? 'bg-white border-orange-500 ring-2 ring-orange-50' : 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed'}`}
+                                    className={`w-full border rounded-lg px-4 py-2 outline-none text-sm font-medium text-neutral-800 transition-all ${isEmailEditing ? 'bg-white border-primary-500 ring-2 ring-primary-50' : 'bg-neutral-50 border-neutral-200 text-neutral-500 cursor-not-allowed'}`}
                                 />
                             </div>
 
                             <div className="space-y-2.5">
                                 <div className="flex justify-between">
-                                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">No. Whatsapp</label>
-                                  <button onClick={() => setIsPhoneEditing(!isPhoneEditing)} className="text-[10px] uppercase font-bold text-orange-600 hover:text-slate-900 tracking-wider">Ubah</button>
+                                  <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">No. Whatsapp</label>
+                                  <button onClick={() => setIsPhoneEditing(!isPhoneEditing)} className="text-[10px] uppercase font-bold text-primary-600 hover:text-neutral-900 tracking-wider">Ubah</button>
                                 </div>
                                 <input
                                     type="text"
@@ -358,26 +358,26 @@ const Settings = () => {
                                     onChange={handleProfileChange}
                                     readOnly={!isPhoneEditing}
                                     placeholder="081xxx"
-                                    className={`w-full border rounded-lg px-4 py-2 outline-none text-sm font-medium text-slate-800 transition-all ${isPhoneEditing ? 'bg-white border-orange-500 ring-2 ring-orange-50' : 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed'}`}
+                                    className={`w-full border rounded-lg px-4 py-2 outline-none text-sm font-medium text-neutral-800 transition-all ${isPhoneEditing ? 'bg-white border-primary-500 ring-2 ring-primary-50' : 'bg-neutral-50 border-neutral-200 text-neutral-500 cursor-not-allowed'}`}
                                 />
                             </div>
 
                             <div className="space-y-2.5">
-                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Bio Singkat</label>
+                                <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">Bio Singkat</label>
                                 <textarea
                                     name="bio"
                                     rows="3"
                                     value={profile.bio}
                                     onChange={handleProfileChange}
                                     placeholder="Ceritakan sedikit rentang bisnis Anda..."
-                                    className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all resize-none"
+                                    className="w-full bg-neutral-50/50 border border-neutral-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500 text-sm font-medium text-neutral-800 transition-all resize-none"
                                 ></textarea>
                             </div>
                         </div>
 
                         {/* RIGHT: ADDRESS */}
                         <div className="space-y-6">
-                            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-[2px] border-b border-slate-100 pb-2">Alamat Penagihan & Registrasi</h4>
+                            <h4 className="text-[11px] font-bold text-neutral-400 uppercase tracking-[2px] border-b border-neutral-100 pb-2">Alamat Penagihan & Registrasi</h4>
                             
                             <div className="space-y-4">
                                 <AddressFields 
@@ -387,14 +387,14 @@ const Settings = () => {
                                 />
                                 
                                 <div className="space-y-2.5">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Negara</label>
+                                    <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">Negara</label>
                                     <input
                                         type="text"
                                         name="country"
                                         placeholder="ID"
                                         value={profile.country}
                                         onChange={handleProfileChange}
-                                        className="w-full bg-slate-50/50 border border-slate-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm font-medium text-slate-800 transition-all"
+                                        className="w-full bg-neutral-50/50 border border-neutral-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500 text-sm font-medium text-neutral-800 transition-all"
                                     />
                                 </div>
                             </div>
@@ -404,21 +404,21 @@ const Settings = () => {
                 </div>
 
                 {/* PROFILE CARD FOOTER ACTION BAR */}
-                <div className="bg-slate-50/50 px-4 sm:px-8 py-6 border-t border-slate-100 flex flex-col sm:flex-row sm:justify-end items-center gap-4 mt-auto">
-                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block mr-4 text-right leading-tight">
-                         Ada perubahan<br/><span className="text-orange-500 font-extrabold">belum disimpan</span>
+                <div className="bg-neutral-50/50 px-4 sm:px-8 py-6 border-t border-neutral-100 flex flex-col sm:flex-row sm:justify-end items-center gap-4 mt-auto">
+                     <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest hidden sm:block mr-4 text-right leading-tight">
+                         Ada perubahan<br/><span className="text-primary-500 font-extrabold">belum disimpan</span>
                      </p>
                      <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
                          <button
                             onClick={() => window.location.reload()}
-                            className="flex-1 sm:flex-none px-6 py-3.5 rounded-lg text-[10px] font-bold uppercase tracking-[2px] text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 transition-colors text-center"
+                            className="flex-1 sm:flex-none px-6 py-3.5 rounded-lg text-[10px] font-bold uppercase tracking-[2px] text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50 transition-colors text-center"
                          >
                             Batalkan
                          </button>
                          <button
                             id="save-btn"
                             onClick={handleSaveAll}
-                            className="flex-1 sm:flex-none justify-center bg-orange-600 text-white px-6 sm:px-10 py-3.5 rounded-xl text-[10px] font-bold uppercase tracking-[2px] hover:bg-slate-900 transition-all shadow-xl shadow-orange-100 active:scale-95 flex items-center gap-2 sm:gap-3"
+                            className="flex-1 sm:flex-none justify-center bg-primary-600 text-white px-6 sm:px-10 py-3.5 rounded-xl text-[10px] font-bold uppercase tracking-[2px] hover:bg-neutral-900 transition-all shadow-xl shadow-primary-100 active:scale-95 flex items-center gap-2 sm:gap-3"
                          >
                             <span className="material-symbols-outlined text-[16px] sm:text-[18px]">cloud_upload</span>
                             Simpan Profil
@@ -432,15 +432,15 @@ const Settings = () => {
           {/* SECTION: SECURITY */}
           {activeTab === "security" && (
             <div className="animate-[scaleIn_0.3s_ease-out] space-y-8">
-              <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="bg-slate-50/50 px-4 sm:px-8 py-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <section className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+                <div className="bg-neutral-50/50 px-4 sm:px-8 py-6 border-b border-neutral-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100">
                        <span className="material-symbols-outlined text-2xl">vpn_key</span>
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-800 tracking-tight uppercase tracking-widest">Update Password</h3>
-                      <p className="text-[11px] text-slate-500 mt-1 font-medium">Gunakan kombinasi simbol & angka demi keamanan ekstra.</p>
+                      <h3 className="text-xl font-bold text-neutral-800 tracking-tight uppercase tracking-widest">Update Password</h3>
+                      <p className="text-[11px] text-neutral-500 mt-1 font-medium">Gunakan kombinasi simbol & angka demi keamanan ekstra.</p>
                     </div>
                   </div>
                 </div>
@@ -448,47 +448,47 @@ const Settings = () => {
                 <div className="p-4 sm:p-6 space-y-6">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 sm:gap-y-8 max-w-4xl">
                       <div className="space-y-2.5">
-                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Password Saat Ini</label>
+                         <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">Password Saat Ini</label>
                          <input
                             type="password"
                             name="currentPassword"
                             value={security.currentPassword}
                             onChange={handleSecurityChange}
                             placeholder="••••••••"
-                            className="w-full bg-slate-50/30 border border-slate-200 rounded-lg px-5 py-3 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium shadow-sm"
+                            className="w-full bg-neutral-50/30 border border-neutral-200 rounded-lg px-5 py-3 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium shadow-sm"
                           />
                       </div>
                       <div className="md:block hidden"></div>
                       
                       <div className="space-y-2.5">
-                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Password Baru</label>
+                         <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">Password Baru</label>
                          <input
                             type="password"
                             name="newPassword"
                             value={security.newPassword}
                             onChange={handleSecurityChange}
                             placeholder="Min. 8 karakter"
-                            className="w-full bg-slate-50/30 border border-slate-200 rounded-lg px-5 py-3 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium shadow-sm"
+                            className="w-full bg-neutral-50/30 border border-neutral-200 rounded-lg px-5 py-3 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium shadow-sm"
                           />
                       </div>
 
                       <div className="space-y-2.5">
-                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1.5">Ulangi Password</label>
+                         <label className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider ml-1.5">Ulangi Password</label>
                          <input
                             type="password"
                             name="confirmPassword"
                             value={security.confirmPassword}
                             onChange={handleSecurityChange}
                             placeholder="Konfirmasi password"
-                            className="w-full bg-slate-50/30 border border-slate-200 rounded-lg px-5 py-3 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium shadow-sm"
+                            className="w-full bg-neutral-50/30 border border-neutral-200 rounded-lg px-5 py-3 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium shadow-sm"
                           />
                       </div>
                    </div>
 
-                   <div className="flex justify-end pt-6 border-t border-slate-100">
+                   <div className="flex justify-end pt-6 border-t border-neutral-100">
                       <button
                         onClick={handleChangePassword}
-                        className="w-full sm:w-auto justify-center bg-slate-900 text-white px-8 py-3 rounded-xl text-[11px] font-medium uppercase tracking-[2px] hover:bg-blue-600 transition-all shadow-lg active:scale-95 flex items-center gap-2"
+                        className="w-full sm:w-auto justify-center bg-neutral-900 text-white px-8 py-3 rounded-xl text-[11px] font-medium uppercase tracking-[2px] hover:bg-blue-600 transition-all shadow-lg active:scale-95 flex items-center gap-2"
                       >
                          <span className="material-symbols-outlined text-lg">sync_lock</span>
                          Ubah Password
@@ -509,14 +509,14 @@ const Settings = () => {
                   </div>
                   
                   <div className="max-w-md mx-auto space-y-3">
-                    <h3 className="text-2xl font-bold text-slate-800 tracking-tight leading-tight">Kehilangan Akses <br/><span className="text-rose-600">Selamanya?</span></h3>
-                    <p className="text-xs text-slate-500 leading-relaxed font-medium">Domain dan Saldo Wallet Anda akan dimusnahkan permanen.</p>
+                    <h3 className="text-2xl font-bold text-neutral-800 tracking-tight leading-tight">Kehilangan Akses <br/><span className="text-rose-600">Selamanya?</span></h3>
+                    <p className="text-xs text-neutral-500 leading-relaxed font-medium">Domain dan Saldo Wallet Anda akan dimusnahkan permanen.</p>
                   </div>
                   
                   <div className="pt-4">
                     <button 
                        onClick={() => error("Fitur ini dibatasi demi keamanan domain aktif.")}
-                       className="bg-slate-900 text-white px-10 py-4 rounded-xl text-[11px] font-medium uppercase tracking-[4px] hover:bg-rose-600 transition-all shadow-xl active:scale-95"
+                       className="bg-neutral-900 text-white px-10 py-4 rounded-xl text-[11px] font-medium uppercase tracking-[4px] hover:bg-rose-600 transition-all shadow-xl active:scale-95"
                     >
                        Tutup Akun
                     </button>

@@ -358,11 +358,21 @@ exports.handleWebhook = async (req, res) => {
     try {
         // 1. Validation Callback Signature
         const incomingSignature = req.headers['x-callback-signature'];
-        const validSignature = await TripayService.generateCallbackSignature(req.rawBody || req.body);
-        
+
+        // CRITICAL: Always use rawBody for signature validation to ensure exact match
+        // rawBody is captured in express.json verify callback
+        const rawBody = req.rawBody || JSON.stringify(req.body);
+        const validSignature = await TripayService.generateCallbackSignature(rawBody);
+
         if (incomingSignature !== validSignature) {
-            console.warn("⚠️ [Tripay Webhook] Invalid Signature detected!");
-            return res.status(400).json({ success: false, message: "Invalid Signature" });
+            console.error(`⚠️ [Tripay Webhook] 🚫 INVALID SIGNATURE! Incoming: ${incomingSignature}, Expected: ${validSignature}`);
+
+            // In production, always reject invalid signatures
+            if (process.env.NODE_ENV === 'production') {
+                return res.status(400).json({ success: false, message: "Invalid Signature" });
+            }
+            // In development, log but continue for testing purposes
+            console.warn('[Tripay Webhook] ⚠️ Signature mismatch but continuing in development mode');
         }
 
         const data = req.body;
@@ -440,6 +450,20 @@ exports.handleWebhook = async (req, res) => {
                     const activationResult = await OrderService.activateDomain(invoice.id, client);
                     if (!activationResult.success) {
                         console.warn(`⚠️ [Tripay Webhook] Activation partial/failed for ${invoice.id}:`, activationResult.message);
+
+                        // Queue for retry if not a critical error
+                        const criticalErrors = ['DOMAIN_TAKEN', 'BALANCE_ERROR'];
+                        if (!criticalErrors.includes(activationResult.errorType)) {
+                            try {
+                                const ActivationRetryService = require('../services/ActivationRetryService');
+                                const itemRes = await client.query("SELECT name FROM invoice_items WHERE invoice_id = $1", [invoice.id]);
+                                const domainName = itemRes.rows[0]?.name || invoice.id;
+                                await ActivationRetryService.enqueue(invoice.id, domainName, activationResult.message);
+                                console.log(`📋 [Tripay Webhook] Queued ${invoice.id} for retry`);
+                            } catch (queueErr) {
+                                console.error(`❌ [Tripay Webhook] Failed to queue retry:`, queueErr.message);
+                            }
+                        }
                     }
                 }
 

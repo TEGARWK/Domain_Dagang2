@@ -32,20 +32,26 @@ const Login = () => {
     setError("");
 
     try {
-
       // 1. Tembak API Login Backend
       const response = await api.post("/auth/login", formData);
       const result = response.data;
 
-      // 2. Login Sukses!
+      // 2. Check response status from body (backend returns 200 with success flag)
+      if (!result.success) {
+        // Login failed - show error message
+        setError(result.message || "Email atau password salah.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Login Sukses!
       // Simpan data user ke LocalStorage (sebagai "tiket" masuk)
-      // Result sudah mengandung { ...user, token }
       localStorage.setItem("user", JSON.stringify(result));
-      localStorage.setItem("token", result.token); // Fix: Store token separately for API calls
+      localStorage.setItem("token", result.token);
 
       success(`Selamat datang kembali!`);
 
-      // 3. Cek Redirect (Ke Admin, Checkout, atau Dashboard?)
+      // 4. Cek Redirect (Ke Admin, Checkout, atau Dashboard?)
       if (result.role === "admin") {
         navigate("/admin");
       } else if (location.state?.from === "checkout") {
@@ -53,10 +59,11 @@ const Login = () => {
       } else {
         navigate("/dashboard");
       }
-      
+
     } catch (err) {
       console.error(err);
-      const msg = err.response?.data?.message || err.response?.data || "Email atau password salah.";
+      // Handle network errors or 5xx server errors
+      const msg = err.response?.data?.message || err.message || "Terjadi kesalahan. Silakan coba lagi.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
     } finally {
       setIsLoading(false);

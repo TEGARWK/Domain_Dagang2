@@ -1,6 +1,85 @@
-node_modules/
-dist/
+# =============================================
+#  Environment & Secrets
+# =============================================
 .env
-.DS_Store
+.env.local
+.env.production
+.env.*.local
+backend/.env
+backend/.env.*
+*.pem
+*.key
+
+# =============================================
+#  Logs
+# =============================================
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# =============================================
+#  Database & SQL Dumps
+# =============================================
+*.sql
+!backend/migrations/*.sql
+backend/db_queries.log
+backend/emergency_error.log
+backend/*.log
 backend/uploads/
+!backend/uploads/.gitkeep
+
+# =============================================
+#  Dependencies
+# =============================================
+node_modules/
+.jnode_repl/
+.pnp
+.pnp.js
+
+# =============================================
+#  Build Output
+# =============================================
+dist/
+build/
+*.tgz
+
+# =============================================
+#  OS Files
+# =============================================
+.DS_Store
+Thumbs.db
+
+# =============================================
+#  IDE & Editor
+# =============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# =============================================
+#  Testing
+# =============================================
+coverage/
+.nyc_output/
+
+# =============================================
+#  Temporary Files
+# =============================================
+tmp/
+temp/
+*.tmp
+scratch/
+.anchored-summary.md
+
+# =============================================
+#  Environment Examples (Keep these!)
+# =============================================
+# backend/.env.example - KEEP (template)
+# .env.example - KEEP (template)

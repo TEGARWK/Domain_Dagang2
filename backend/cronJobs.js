@@ -22,8 +22,23 @@ const initCronJobs = () => {
         }
     });
 
-    // 2. Setiap Hari (Jam 00:00): Kadaluwarsa Voucher Claim yang tidak terpakai
-    cron.schedule('0 0 * * *', async () => {
+    // 2. Setiap 5 Menit: Process Failed Activation Retries
+    cron.schedule('*/5 * * * *', async () => {
+        const start = new Date();
+        console.log(`⏰ [${start.toISOString()}] [CRON] Starting: processActivationRetries`);
+        try {
+            const ActivationRetryService = require('./services/ActivationRetryService');
+            const result = await ActivationRetryService.processPendingRetries();
+            if (result.processed > 0) {
+                console.log(`✅ [${new Date().toISOString()}] [Cron] processActivationRetries: Processed ${result.processed}, Success: ${result.success}, Failed: ${result.failed}`);
+            }
+        } catch (err) {
+            console.error(`❌ [${new Date().toISOString()}] [Cron] processActivationRetries FAILED:`, err.message);
+        }
+    });
+
+    // 3. Setiap Jam (Menit 15): Expire Unused Voucher Claims
+    cron.schedule('15 * * * *', async () => {
         const start = new Date();
         console.log(`⏰ [${start.toISOString()}] [CRON] Starting: expireUnusedVoucherClaims`);
         try {

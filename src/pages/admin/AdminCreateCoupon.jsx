@@ -6,7 +6,7 @@ const AdminCreateCoupon = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="space-y-6 animate-fade-in-up">
+        <div className="space-y-6 animate-fade-in">
             {/* BACK BUTTON */}
             <button 
                 onClick={() => navigate('/admin/promos')}

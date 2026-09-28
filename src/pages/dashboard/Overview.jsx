@@ -56,12 +56,11 @@ const Overview = () => {
     fetchData();
   }, []);
 
-  // --- TAMPILAN LOADING ---
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-        <div className="animate-spin w-10 h-10 border-4 border-slate-200 border-t-[#F97316] rounded-full"></div>
-        <p className="text-slate-400 text-sm font-bold animate-pulse">
+        <div className="animate-spin w-10 h-10 border-4 border-neutral-200 border-t-primary-500 rounded-full"></div>
+        <p className="text-neutral-400 text-sm font-semibold animate-pulse">
           Memuat Data...
         </p>
       </div>

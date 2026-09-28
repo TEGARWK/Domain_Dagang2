@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DomainDagang - Design System Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,0..200" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* =============================================
+     DESIGN SYSTEM TOKEN
+     ============================================= */
+  :root {
+    --primary-50: #fff7ed;
+    --primary-100: #ffedd5;
+    --primary-200: #fed7aa;
+    --primary-300: #fdba74;
+    --primary-400: #fb923c;
+    --primary-500: #f97316;
+    --primary-600: #ea580c;
+    --primary-700: #c2410c;
+
+    --neutral-50: #f8fafc;
+    --neutral-100: #f1f5f9;
+    --neutral-200: #e2e8f0;
+    --neutral-300: #cbd5e1;
+    --neutral-400: #94a3b8;
+    --neutral-500: #64748b;
+    --neutral-600: #475569;
+    --neutral-700: #334155;
+    --neutral-800: #1e293b;
+    --neutral-900: #0f172a;
+
+    --success: #22c55e;
+    --warning: #eab308;
+    --error: #ef4444;
+
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+
+    --font-xs: 0.733rem;    /* 11px */
+    --font-sm: 0.8rem;      /* 12px */
+    --font-base: 0.867rem;  /* 13px */
+    --font-lg: 0.933rem;    /* 14px */
+    --font-xl: 1rem;        /* 15px */
+    --font-2xl: 1.133rem;   /* 17px */
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+
+    --card-padding: var(--space-5);
+    --input-height: 38px;
+  }
+
+  /* =============================================
+     LAYOUT DEMO
+     ============================================= */
+  .demo-wrapper {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--space-6);
+  }
+
+  .demo-section {
+    margin-bottom: var(--space-8);
+  }
+
+  .demo-section h2 {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--neutral-400);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--neutral-100);
+  }
+
+  /* =============================================
+     PAGE HEADER
+     ============================================= */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+  }
+  .page-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .page-header-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius);
+    background: var(--primary-50);
+    color: var(--primary-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--primary-100);
+  }
+  .page-header-icon .material-symbols-outlined {
+    font-size: 18px;
+  }
+  .page-header-text h1 {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--neutral-800);
+    line-height: 1.3;
+  }
+  .page-header-text p {
+    font-size: var(--font-xs);
+    color: var(--neutral-400);
+    font-weight: 500;
+    margin-top: 1px;
+  }
+  .page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* =============================================
+     BUTTONS
+     ============================================= */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: var(--input-height);
+    padding: 0 var(--space-4);
+    border-radius: var(--radius);
+    font-size: var(--font-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .btn .material-symbols-outlined {
+    font-size: 16px;
+  }
+  .btn-default {
+    background: #fff;
+    border-color: var(--neutral-200);
+    color: var(--neutral-600);
+  }
+  .btn-default:hover {
+    background: var(--neutral-50);
+    border-color: var(--neutral-300);
+  }
+  .btn-primary {
+    background: var(--primary-500);
+    border-color: var(--primary-500);
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: var(--primary-600);
+  }
+  .btn-danger {
+    background: #fff;
+    border-color: #fecaca;
+    color: #dc2626;
+  }
+  .btn-danger:hover {
+    background: #fef2f2;
+  }
+  .btn-sm {
+    height: 32px;
+    padding: 0 var(--space-3);
+    font-size: 0.667rem;
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--neutral-400);
+  }
+  .btn-ghost:hover {
+    color: var(--neutral-600);
+    background: var(--neutral-50);
+  }
+  .btn-icon {
+    width: var(--input-height);
+    height: var(--input-height);
+    padding: 0;
+  }
+
+  /* =============================================
+     FORM ELEMENTS
+     ============================================= */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .form-label {
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .form-input,
+  .form-select,
+  .form-textarea {
+    height: var(--input-height);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius);
+    font-size: var(--font-sm);
+    font-family: inherit;
+    color: var(--neutral-700);
+    background: #fff;
+    transition: all 0.15s ease;
+    outline: none;
+    width: 100%;
+  }
+  .form-input:hover,
+  .form-select:hover {
+    border-color: var(--neutral-300);
+  }
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    border-color: var(--primary-300);
+    box-shadow: 0 0 0 3px var(--primary-100);
+  }
+  .form-input::placeholder {
+    color: var(--neutral-300);
+  }
+  .form-textarea {
+    height: auto;
+    padding: var(--space-3);
+    resize: vertical;
+    min-height: 80px;
+  }
+  .form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+    cursor: pointer;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-4);
+  }
+  .input-icon-wrap {
+    position: relative;
+  }
+  .input-icon-wrap .material-symbols-outlined {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: var(--neutral-400);
+    pointer-events: none;
+  }
+  .input-icon-wrap .form-input {
+    padding-left: 34px;
+  }
+
+  /* =============================================
+     CARDS
+     ============================================= */
+  .card {
+    background: #fff;
+    border: 1px solid var(--neutral-100);
+    border-radius: var(--radius-lg);
+    padding: var(--card-padding);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease;
+  }
+  .card:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-4);
+  }
+  .stats-card {
+    background: #fff;
+    border: 1px solid var(--neutral-100);
+    border-radius: var(--radius-lg);
+    padding: var(--card-padding);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease, transform 0.15s;
+  }
+  .stats-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+  .stats-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+  }
+  .stats-card-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .stats-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid;
+    flex-shrink: 0;
+  }
+  .stats-card-icon .material-symbols-outlined {
+    font-size: 20px;
+  }
+  .stats-card-info {
+    min-width: 0;
+  }
+  .stats-card-label {
+    font-size: var(--font-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--neutral-400);
+    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stats-card-value {
+    font-size: var(--font-2xl);
+    font-weight: 800;
+    color: var(--neutral-900);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .stats-card-trend {
+    font-size: 0.667rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .stats-card-link {
+    color: var(--neutral-300);
+    font-size: 14px;
+    transition: color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .stats-card:hover .stats-card-link {
+    color: var(--primary-500);
+    transform: translateX(2px);
+  }
+  .stats-card-trend {
+    font-size: 0.667rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .stats-card-link {
+    color: var(--neutral-300);
+    font-size: 14px;
+    transition: color 0.15s, transform 0.15s;
+  }
+  .stats-card:hover .stats-card-link {
+    color: var(--primary-500);
+    transform: translateX(2px);
+  }
+
+  /* =============================================
+     TABLES
+     ============================================= */
+  .table-wrap {
+    background: #fff;
+    border: 1px solid var(--neutral-100);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--neutral-50);
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+  .table-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex: 1;
+  }
+  .table-search {
+    position: relative;
+    max-width: 280px;
+    width: 100%;
+  }
+  .table-search .material-symbols-outlined {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    color: var(--neutral-400);
+    pointer-events: none;
+  }
+  .table-search .form-input {
+    padding-left: 32px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-sm);
+  }
+  thead th {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--neutral-400);
+    background: var(--neutral-50);
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    border-bottom: 1px solid var(--neutral-100);
+    white-space: nowrap;
+    user-select: none;
+  }
+  thead th.sortable {
+    cursor: pointer;
+  }
+  thead th.sortable:hover {
+    color: var(--neutral-600);
+  }
+  thead th .material-symbols-outlined {
+    font-size: 14px;
+    vertical-align: middle;
+    margin-left: 2px;
+    opacity: 0.3;
+  }
+  thead th.sortable:hover .material-symbols-outlined {
+    opacity: 0.6;
+  }
+  tbody td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--neutral-50);
+    color: var(--neutral-700);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  tbody tr:hover {
+    background: var(--neutral-50);
+  }
+  .table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--neutral-50);
+  }
+  .table-footer-info {
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--neutral-400);
+  }
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .pagination button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-size: var(--font-xs);
+    font-weight: 700;
+    color: var(--neutral-500);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .pagination button:hover {
+    background: var(--neutral-50);
+    color: var(--neutral-700);
+  }
+  .pagination button.active {
+    background: var(--primary-500);
+    color: #fff;
+  }
+  .pagination button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .pagination button .material-symbols-outlined {
+    font-size: 16px;
+  }
+
+  /* =============================================
+     STATUS BADGE
+     ============================================= */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.667rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid;
+  }
+  .badge .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .badge-success { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .badge-warning { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+  .badge-danger  { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+  .badge-info    { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+  .badge-neutral { background: var(--neutral-50); color: var(--neutral-500); border-color: var(--neutral-200); }
+  .badge-purple  { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+
+  /* =============================================
+     SIDEBAR MOCKUP (WHITE THEME)
+     ============================================= */
+  .layout-demo {
+    display: flex;
+    height: 500px;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .layout-sidebar {
+    width: 240px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    border-right: 1px solid var(--neutral-100);
+  }
+  .layout-sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-4);
+    border-bottom: 1px solid var(--neutral-100);
+  }
+  .layout-sidebar-logo .logo-box {
+    width: 34px;
+    height: 34px;
+    background: var(--primary-500);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: var(--font-sm);
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .layout-sidebar-logo .logo-text {
+    font-size: var(--font-base);
+    font-weight: 700;
+    color: var(--neutral-800);
+    line-height: 1.2;
+  }
+  .layout-sidebar-logo .logo-text span {
+    color: var(--primary-500);
+  }
+  .layout-sidebar-logo .logo-sub {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--neutral-400);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .layout-sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-3);
+  }
+  .nav-group {
+    margin-bottom: var(--space-4);
+  }
+  .nav-group-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  .nav-group-title .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    opacity: 0.4;
+  }
+  .nav-group-title span {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--neutral-400);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    color: var(--neutral-500);
+    text-decoration: none;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    transition: all 0.15s;
+    margin-bottom: 1px;
+  }
+  .nav-item:hover {
+    background: var(--neutral-50);
+    color: var(--neutral-700);
+  }
+  .nav-item.active {
+    background: var(--primary-50);
+    color: var(--primary-600);
+  }
+  .nav-item.active:hover {
+    background: var(--primary-100);
+  }
+  .nav-item .material-symbols-outlined {
+    font-size: 18px;
+  }
+  .layout-sidebar-footer {
+    padding: var(--space-3);
+    border-top: 1px solid var(--neutral-100);
+  }
+  .layout-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--neutral-50);
+  }
+  .layout-topbar {
+    height: 56px;
+    background: #fff;
+    border-bottom: 1px solid var(--neutral-100);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-5);
+    flex-shrink: 0;
+  }
+  .layout-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .layout-topbar-left .page-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--primary-50);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-600);
+  }
+  .layout-topbar-left .page-icon .material-symbols-outlined {
+    font-size: 16px;
+  }
+  .layout-topbar-breadcrumb {
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--neutral-400);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .layout-topbar-breadcrumb span { color: var(--primary-500); }
+  .layout-topbar-title {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--neutral-800);
+    text-transform: uppercase;
+  }
+  .layout-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .topbar-btn {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--neutral-400);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .topbar-btn:hover {
+    background: var(--primary-50);
+    color: var(--primary-500);
+  }
+  .topbar-btn .material-symbols-outlined { font-size: 18px; }
+  .topbar-user {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-left: var(--space-3);
+    border-left: 1px solid var(--neutral-100);
+  }
+  .topbar-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-50);
+    color: var(--primary-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-sm);
+    font-weight: 700;
+  }
+  .topbar-user-info p {
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--neutral-800);
+    line-height: 1.2;
+  }
+  .topbar-user-info span {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--primary-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .layout-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-6);
+  }
+
+  /* =============================================
+     MODAL
+     ============================================= */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    overflow: hidden;
+    animation: modalIn 0.2s ease-out;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-5) var(--space-6) var(--space-4);
+    border-bottom: 1px solid var(--neutral-50);
+  }
+  .modal-header h3 {
+    font-size: var(--font-lg);
+    font-weight: 700;
+    color: var(--neutral-800);
+  }
+  .modal-body {
+    padding: var(--space-5) var(--space-6);
+  }
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--neutral-50);
+  }
+
+  /* =============================================
+     EMPTY STATE
+     ============================================= */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8) var(--space-4);
+  }
+  .empty-state .icon-wrap {
+    width: 56px;
+    height: 56px;
+    background: var(--neutral-50);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-4);
+  }
+  .empty-state .icon-wrap .material-symbols-outlined {
+    font-size: 28px;
+    color: var(--neutral-300);
+  }
+  .empty-state h3 {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--neutral-400);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--space-1);
+  }
+  .empty-state p {
+    font-size: var(--font-xs);
+    color: var(--neutral-300);
+    font-weight: 500;
+    margin-bottom: var(--space-5);
+  }
+
+  /* =============================================
+     BACKGROUND COLOR VARIANTS FOR ICONS
+     ============================================= */
+  .icon-orange { background: var(--primary-50); color: var(--primary-600); border-color: var(--primary-100); }
+  .icon-blue   { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+  .icon-green  { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .icon-amber  { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+  .icon-rose   { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+  .icon-purple { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+
+  .trend-orange { background: var(--primary-50); color: var(--primary-600); }
+  .trend-blue   { background: #eff6ff; color: #2563eb; }
+  .trend-green  { background: #ecfdf5; color: #059669; }
+  .trend-amber  { background: #fffbeb; color: #d97706; }
+  .trend-rose   { background: #fef2f2; color: #dc2626; }
+
+  .mt-3 { margin-top: var(--space-3); }
+  .mb-4 { margin-bottom: var(--space-4); }
+  .gap-3 { gap: var(--space-3); }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .flex-1 { flex: 1; }
+  .w-full { width: 100%; }
+  .max-w-xs { max-width: 280px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4); }
+
+  /* color swatch */
+  .color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .swatch { width: 48px; height: 48px; border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="demo-wrapper">
+
+  <!-- =============================================
+       INTRO
+       ============================================= -->
+  <div style="text-align:center;margin-bottom:48px;padding:40px 0 32px;border-bottom:2px solid #f1f5f9;">
+    <div style="width:48px;height:48px;background:#f97316;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#fff;font-weight:800;font-size:20px;">DD</div>
+    <h1 style="font-size:18px;font-weight:800;color:#0f172a;letter-spacing:-0.03em;">DomainDagang — Design System</h1>
+    <p style="font-size:13px;color:#64748b;margin-top:6px;">Redesain seragam: card, form, tabel, sidebar, dan komponen UI lainnya.</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-top:16px;font-size:12px;color:#94a3b8;font-weight:600;">
+      <span>✦ Simpel & minimal</span>
+      <span>✦ Teks kecil & konsisten</span>
+      <span>✦ Ukuran seragam</span>
+      <span>✦ <span style="color:#f97316;">Tidak merusak backend</span></span>
+    </div>
+  </div>
+
+  <!-- =============================================
+       COLOR PALETTE
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Color Palette</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div><span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:block;">Primary (Orange)</span>
+      <div class="color-row">
+        <div class="swatch" style="background:#fff7ed;color:#c2410c;">50</div>
+        <div class="swatch" style="background:#ffedd5;color:#c2410c;">100</div>
+        <div class="swatch" style="background:#fed7aa;color:#9a3412;">200</div>
+        <div class="swatch" style="background:#fdba74;color:#7c2d12;">300</div>
+        <div class="swatch" style="background:#fb923c;color:#fff;">400</div>
+        <div class="swatch" style="background:#f97316;color:#fff;">500</div>
+        <div class="swatch" style="background:#ea580c;color:#fff;">600</div>
+        <div class="swatch" style="background:#c2410c;color:#fff;">700</div>
+      </div></div>
+      <div><span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:block;">Neutral</span>
+      <div class="color-row">
+        <div class="swatch" style="background:#f8fafc;color:#64748b;">50</div>
+        <div class="swatch" style="background:#f1f5f9;color:#64748b;">100</div>
+        <div class="swatch" style="background:#e2e8f0;color:#334155;">200</div>
+        <div class="swatch" style="background:#cbd5e1;color:#1e293b;">300</div>
+        <div class="swatch" style="background:#94a3b8;color:#fff;">400</div>
+        <div class="swatch" style="background:#64748b;color:#fff;">500</div>
+        <div class="swatch" style="background:#475569;color:#fff;">600</div>
+        <div class="swatch" style="background:#334155;color:#fff;">700</div>
+        <div class="swatch" style="background:#1e293b;color:#fff;">800</div>
+        <div class="swatch" style="background:#0f172a;color:#fff;">900</div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       TYPOGRAPHY SCALE
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Typography Scale</h2>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="font-size:0.667rem;font-weight:700;color:#94a3b8;">10px — .text-\[10px\] — Micro (badge, meta)</div>
+      <div style="font-size:0.733rem;font-weight:700;color:#94a3b8;">11px — .text-xs — Label, table header</div>
+      <div style="font-size:0.8rem;font-weight:600;color:#475569;">12px — .text-sm — Body, input text, table cell</div>
+      <div style="font-size:0.867rem;font-weight:600;color:#475569;">13px — .text-base — Paragraf, nav item</div>
+      <div style="font-size:0.933rem;font-weight:700;color:#1e293b;">14px — .text-lg — Section title, page header</div>
+      <div style="font-size:1rem;font-weight:700;color:#1e293b;">15px — .text-xl — Card value, modal title</div>
+      <div style="font-size:1.133rem;font-weight:800;color:#0f172a;">17px — .text-2xl — Stat value</div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       PAGE HEADER
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Page Header</h2>
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-header-icon">
+          <span class="material-symbols-outlined">language</span>
+        </div>
+        <div class="page-header-text">
+          <h1>Domain Saya</h1>
+          <p>Kelola seluruh domain yang terdaftar</p>
+        </div>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-default">
+          <span class="material-symbols-outlined">download</span>
+          Export
+        </button>
+        <button class="btn btn-primary">
+          <span class="material-symbols-outlined">add</span>
+          Domain Baru
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       BUTTONS
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Buttons</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-default"><span class="material-symbols-outlined">download</span> Default</button>
+      <button class="btn btn-primary"><span class="material-symbols-outlined">add</span> Primary</button>
+      <button class="btn btn-danger"><span class="material-symbols-outlined">delete</span> Danger</button>
+      <button class="btn btn-ghost"><span class="material-symbols-outlined">more_vert</span> Ghost</button>
+      <button class="btn btn-default btn-sm"><span class="material-symbols-outlined">edit</span> Small</button>
+      <button class="btn btn-primary btn-sm">Tersimpan</button>
+      <button class="btn btn-icon btn-default"><span class="material-symbols-outlined">search</span></button>
+      <button class="btn btn-icon btn-primary"><span class="material-symbols-outlined">refresh</span></button>
+      <button class="btn btn-default" disabled><span class="material-symbols-outlined">block</span> Disabled</button>
+    </div>
+  </div>
+
+  <!-- =============================================
+       FORM ELEMENTS
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Form Elements (Seragam)</h2>
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:640px;">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap</label>
+          <input type="text" class="form-input" placeholder="Masukkan nama" value="John Doe">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select">
+            <option>Aktif</option>
+            <option>Tidak Aktif</option>
+            <option>Pending</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-icon-wrap">
+            <span class="material-symbols-outlined">mail</span>
+            <input type="email" class="form-input" placeholder="email@domain.com" value="user@domaindagang.com">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select class="form-select">
+            <option>Admin</option>
+            <option selected>Customer</option>
+            <option>Reseller</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Alamat</label>
+        <textarea class="form-textarea" placeholder="Masukkan alamat lengkap">Jl. Merdeka No. 123, Jakarta Pusat</textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary"><span class="material-symbols-outlined">save</span> Simpan</button>
+        <button class="btn btn-default">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       STATS CARDS (UNIFORM)
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Stats Cards — Ukuran & Tampilan Sama Semua</h2>
+    <div class="stats-grid">
+      <div class="stats-card">
+        <div class="stats-card-top">
+          <div class="stats-card-left">
+            <div class="stats-card-icon icon-orange"><span class="material-symbols-outlined">language</span></div>
+            <div class="stats-card-info">
+              <div class="stats-card-label">Domain Aktif</div>
+              <div class="stats-card-value">1,234</div>
+            </div>
+          </div>
+          <span class="stats-card-trend trend-orange">+12%</span>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-top">
+          <div class="stats-card-left">
+            <div class="stats-card-icon icon-blue"><span class="material-symbols-outlined">group</span></div>
+            <div class="stats-card-info">
+              <div class="stats-card-label">Total Pengguna</div>
+              <div class="stats-card-value">5,678</div>
+            </div>
+          </div>
+          <span class="stats-card-trend trend-blue">+8%</span>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-top">
+          <div class="stats-card-left">
+            <div class="stats-card-icon icon-green"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+            <div class="stats-card-info">
+              <div class="stats-card-label">Saldo Tersedia</div>
+              <div class="stats-card-value">Rp 45,8 Jt</div>
+            </div>
+          </div>
+          <span class="stats-card-trend trend-green">Available</span>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-top">
+          <div class="stats-card-left">
+            <div class="stats-card-icon icon-amber"><span class="material-symbols-outlined">receipt_long</span></div>
+            <div class="stats-card-info">
+              <div class="stats-card-label">Invoice Pending</div>
+              <div class="stats-card-value">12</div>
+            </div>
+          </div>
+          <span class="stats-card-trend trend-amber">Perlu Ditagih</span>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-top">
+          <div class="stats-card-left">
+            <div class="stats-card-icon icon-rose"><span class="material-symbols-outlined">warning</span></div>
+            <div class="stats-card-info">
+              <div class="stats-card-label">Domain Issue</div>
+              <div class="stats-card-value">3</div>
+            </div>
+          </div>
+          <span class="stats-card-trend trend-rose">Resolve</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       CARD (GENERIC)
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Generic Card + Alert Cards</h2>
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
+      <div class="card" style="display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#fef2f2;color:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="material-symbols-outlined" style="font-size:18px;">support_agent</span>
+        </div>
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;line-height:1;margin-bottom:3px;">Tiket Terbuka</p>
+          <p style="font-size:15px;font-weight:800;color:#dc2626;line-height:1;">7</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#fffbeb;color:#d97706;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="material-symbols-outlined" style="font-size:18px;">payments</span>
+        </div>
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;line-height:1;margin-bottom:3px;">Verif Manual</p>
+          <p style="font-size:15px;font-weight:800;color:#d97706;line-height:1;">4</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#ecfdf5;color:#059669;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="material-symbols-outlined" style="font-size:18px;">api</span>
+        </div>
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;line-height:1;margin-bottom:3px;">API Health</p>
+          <p style="font-size:15px;font-weight:800;color:#059669;line-height:1;">ONLINE</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:#f1f5f9;color:#475569;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="material-symbols-outlined" style="font-size:18px;">verified_user</span>
+        </div>
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;line-height:1;margin-bottom:3px;">Shield</p>
+          <p style="font-size:15px;font-weight:800;color:#1e293b;line-height:1;">v4.0</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       TABLE (FULL)
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Data Table — Tampilan Seragam</h2>
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-header-left">
+          <div class="table-search">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" class="form-input" placeholder="Cari domain...">
+          </div>
+          <select class="form-select" style="width:160px;">
+            <option>Semua Status</option>
+            <option>Aktif</option>
+            <option>Expired</option>
+            <option>Pending</option>
+          </select>
+        </div>
+        <div class="btn btn-default btn-sm"><span class="material-symbols-outlined">download</span> Export</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable">Domain <span class="material-symbols-outlined">unfold_more</span></th>
+              <th class="sortable">Registrant <span class="material-symbols-outlined">unfold_more</span></th>
+              <th class="sortable">Status <span class="material-symbols-outlined">unfold_more</span></th>
+              <th class="sortable" style="text-align:right;">Harga <span class="material-symbols-outlined">unfold_more</span></th>
+              <th class="sortable" style="text-align:right;">Expired <span class="material-symbols-outlined">unfold_more</span></th>
+              <th style="text-align:center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span style="font-weight:600;color:#1e293b;">tokorame.com</span></td>
+              <td><span style="font-weight:500;">PT Toko Rame</span><br><span style="font-size:10px;color:#94a3b8;">ID: USR-001</span></td>
+              <td><span class="badge badge-success"><span class="dot" style="background:#059669;"></span> Aktif</span></td>
+              <td style="text-align:right;font-weight:600;">Rp 185.000</td>
+              <td style="text-align:right;font-weight:500;">12 Des 2026</td>
+              <td style="text-align:center;">
+                <button class="btn btn-ghost btn-icon btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">more_horiz</span></button>
+              </td>
+            </tr>
+            <tr>
+              <td><span style="font-weight:600;color:#1e293b;">sepatuku.net</span></td>
+              <td><span style="font-weight:500;">CV Sepatu Kita</span><br><span style="font-size:10px;color:#94a3b8;">ID: USR-045</span></td>
+              <td><span class="badge badge-success"><span class="dot" style="background:#059669;"></span> Aktif</span></td>
+              <td style="text-align:right;font-weight:600;">Rp 210.000</td>
+              <td style="text-align:right;font-weight:500;">3 Mar 2027</td>
+              <td style="text-align:center;">
+                <button class="btn btn-ghost btn-icon btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">more_horiz</span></button>
+              </td>
+            </tr>
+            <tr>
+              <td><span style="font-weight:600;color:#1e293b;">foodies.id</span></td>
+              <td><span style="font-weight:500;">Foodies Group</span><br><span style="font-size:10px;color:#94a3b8;">ID: USR-089</span></td>
+              <td><span class="badge badge-warning"><span class="dot" style="background:#d97706;"></span> Pending</span></td>
+              <td style="text-align:right;font-weight:600;">Rp 95.000</td>
+              <td style="text-align:right;font-weight:500;">—</td>
+              <td style="text-align:center;">
+                <button class="btn btn-ghost btn-icon btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">more_horiz</span></button>
+              </td>
+            </tr>
+            <tr>
+              <td><span style="font-weight:600;color:#1e293b;">oldblog.com</span></td>
+              <td><span style="font-weight:500;">Personal</span><br><span style="font-size:10px;color:#94a3b8;">ID: USR-012</span></td>
+              <td><span class="badge badge-danger"><span class="dot" style="background:#dc2626;"></span> Expired</span></td>
+              <td style="text-align:right;font-weight:600;">Rp 135.000</td>
+              <td style="text-align:right;font-weight:500;">15 Jan 2025</td>
+              <td style="text-align:center;">
+                <button class="btn btn-ghost btn-icon btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">more_horiz</span></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span class="table-footer-info">4 item</span>
+        <div class="pagination">
+          <button disabled><span class="material-symbols-outlined">chevron_left</span></button>
+          <button class="active">1</button>
+          <button>2</button>
+          <button>3</button>
+          <button><span class="material-symbols-outlined">chevron_right</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       STATUS BADGES
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Status Badges</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <span class="badge badge-success"><span class="dot" style="background:#059669;"></span> Active</span>
+      <span class="badge badge-success">Paid</span>
+      <span class="badge badge-success">Completed</span>
+      <span class="badge badge-warning"><span class="dot" style="background:#d97706;"></span> Pending</span>
+      <span class="badge badge-warning">Unpaid</span>
+      <span class="badge badge-danger"><span class="dot" style="background:#dc2626;"></span> Expired</span>
+      <span class="badge badge-danger">Failed</span>
+      <span class="badge badge-neutral">Cancelled</span>
+      <span class="badge badge-info"><span class="dot" style="background:#2563eb;"></span> Processing</span>
+      <span class="badge badge-purple">Pending Transfer</span>
+    </div>
+  </div>
+
+  <!-- =============================================
+       FULL LAYOUT (SIDEBAR + TOPBAR + CONTENT)
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Layout Portal (Sidebar + Topbar + Content)</h2>
+    <div class="layout-demo">
+      <!-- Sidebar -->
+      <div class="layout-sidebar">
+        <div class="layout-sidebar-logo">
+          <div class="logo-box">DD</div>
+          <div>
+            <div class="logo-text">Domain<span>Dagang</span></div>
+            <div class="logo-sub">Member Area</div>
+          </div>
+        </div>
+        <nav class="layout-sidebar-nav">
+          <div class="nav-group">
+            <div class="nav-group-title"><div class="dot"></div><span>Menu Utama</span></div>
+            <a href="#" class="nav-item active"><span class="material-symbols-outlined">grid_view</span> Dashboard</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">language</span> Domain Saya</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">search</span> Beli Domain</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">move_up</span> Transfer Domain</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">account_balance_wallet</span> Dompet & Saldo</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">receipt_long</span> Tagihan & Billing</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">settings</span> Pengaturan</a>
+          </div>
+          <div class="nav-group">
+            <div class="nav-group-title"><div class="dot"></div><span>Promo & Hemat</span></div>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">sell</span> Discovery Promo</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">confirmation_number</span> Voucher Saya</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">share</span> Referral & Cuan</a>
+          </div>
+          <div class="nav-group">
+            <div class="nav-group-title"><div class="dot"></div><span>Bantuan</span></div>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">support_agent</span> Tiket Bantuan</a>
+          </div>
+        </nav>
+        <div class="layout-sidebar-footer">
+          <a href="#" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--neutral-50);color:var(--neutral-500);text-decoration:none;font-size:12px;font-weight:600;transition:all 0.15s;border:1px solid var(--neutral-100);">
+            <span class="material-symbols-outlined" style="font-size:18px;">logout</span>
+            Keluar
+          </a>
+        </div>
+      </div>
+
+      <!-- Main Area -->
+      <div class="layout-main">
+        <div class="layout-topbar">
+          <div class="layout-topbar-left">
+            <button class="topbar-btn"><span class="material-symbols-outlined">menu</span></button>
+            <div class="page-icon"><span class="material-symbols-outlined">grid_view</span></div>
+            <div>
+              <div class="layout-topbar-breadcrumb">Member / <span>Dasbor</span></div>
+              <div class="layout-topbar-title">Dashboard</div>
+            </div>
+          </div>
+          <div class="layout-topbar-right">
+            <div style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:#f8fafc;border-radius:20px;border:1px solid #f1f5f9;font-size:10px;font-weight:600;color:#94a3b8;">
+              <span class="material-symbols-outlined" style="font-size:14px;">calendar_today</span>
+              26 Jun 2026 • 14:30
+            </div>
+            <button class="topbar-btn"><span class="material-symbols-outlined">notifications</span></button>
+            <div class="topbar-user">
+              <div class="topbar-user-info" style="display:none;">
+                <p style="font-size:12px;font-weight:600;color:#1e293b;">Tegar</p>
+                <span>Customer</span>
+              </div>
+              <div class="topbar-user-avatar">T</div>
+            </div>
+          </div>
+        </div>
+        <div class="layout-content">
+          <div class="page-header">
+            <div class="page-header-left">
+              <div class="page-header-icon"><span class="material-symbols-outlined">grid_view</span></div>
+              <div class="page-header-text">
+                <h1>Dashboard</h1>
+                <p>Selamat datang, Tegar! Kelola domain Anda di sini.</p>
+              </div>
+            </div>
+            <div class="page-header-actions">
+              <button class="btn btn-default btn-sm"><span class="material-symbols-outlined">refresh</span> Refresh</button>
+            </div>
+          </div>
+
+          <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stats-card">
+              <div class="stats-card-top">
+                <div class="stats-card-left">
+                  <div class="stats-card-icon icon-orange"><span class="material-symbols-outlined">language</span></div>
+                  <div class="stats-card-info">
+                    <div class="stats-card-label">Domain Aktif</div>
+                    <div class="stats-card-value">4</div>
+                  </div>
+                </div>
+                <span class="stats-card-trend trend-green">In Service</span>
+              </div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-top">
+                <div class="stats-card-left">
+                  <div class="stats-card-icon icon-amber"><span class="material-symbols-outlined">receipt_long</span></div>
+                  <div class="stats-card-info">
+                    <div class="stats-card-label">Invoice Pending</div>
+                    <div class="stats-card-value">2</div>
+                  </div>
+                </div>
+                <span class="stats-card-trend trend-amber">Perlu Dibayar</span>
+              </div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-top">
+                <div class="stats-card-left">
+                  <div class="stats-card-icon icon-green"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+                  <div class="stats-card-info">
+                    <div class="stats-card-label">Saldo Wallet</div>
+                    <div class="stats-card-value">Rp 145.000</div>
+                  </div>
+                </div>
+                <span class="stats-card-trend trend-green">Tersedia</span>
+              </div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-top">
+                <div class="stats-card-left">
+                  <div class="stats-card-icon icon-blue"><span class="material-symbols-outlined">share</span></div>
+                  <div class="stats-card-info">
+                    <div class="stats-card-label">Total Referral</div>
+                    <div class="stats-card-value">12</div>
+                  </div>
+                </div>
+                <span class="stats-card-trend trend-blue">+3 Bulan Ini</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <div class="table-header">
+              <div class="table-header-left">
+                <div class="table-search">
+                  <span class="material-symbols-outlined">search</span>
+                  <input type="text" class="form-input" placeholder="Cari domain...">
+                </div>
+              </div>
+              <div class="btn btn-primary btn-sm"><span class="material-symbols-outlined">add</span> Domain Baru</div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sortable">Domain <span class="material-symbols-outlined">unfold_more</span></th>
+                    <th class="sortable">Status <span class="material-symbols-outlined">unfold_more</span></th>
+                    <th class="sortable" style="text-align:right;">Expired <span class="material-symbols-outlined">unfold_more</span></th>
+                    <th style="text-align:center;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span style="font-weight:600;">tokorame.com</span></td>
+                    <td><span class="badge badge-success"><span class="dot"></span> Aktif</span></td>
+                    <td style="text-align:right;font-weight:500;">12 Des 2026</td>
+                    <td style="text-align:center;">
+                      <button class="btn btn-ghost btn-icon btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">more_horiz</span></button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><span style="font-weight:600;">sepatuku.net</span></td>
+                    <td><span class="badge badge-success"><span class="dot"></span> Aktif</span></td>
+                    <td style="text-align:right;font-weight:500;">3 Mar 2027</td>
+                    <td style="text-align:center;">
+                      <button class="btn btn-ghost btn-icon btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">more_horiz</span></button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><span style="font-weight:600;">oldblog.com</span></td>
+                    <td><span class="badge badge-danger"><span class="dot"></span> Expired</span></td>
+                    <td style="text-align:right;font-weight:500;">15 Jan 2025</td>
+                    <td style="text-align:center;">
+                      <button class="btn btn-ghost btn-icon btn-sm"><span class="material-symbols-outlined" style="font-size:16px;">more_horiz</span></button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-footer">
+              <span class="table-footer-info">3 domain</span>
+              <div class="pagination">
+                <button disabled><span class="material-symbols-outlined">chevron_left</span></button>
+                <button class="active">1</button>
+                <button><span class="material-symbols-outlined">chevron_right</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       MODAL
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Modal / Dialog</h2>
+    <div style="position:relative;border:1px dashed #e2e8f0;border-radius:12px;overflow:hidden;min-height:320px;">
+      <div class="modal-overlay" style="position:absolute;">
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Konfirmasi Hapus</h3>
+            <button class="btn btn-ghost btn-icon"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="modal-body">
+            <div style="display:flex;align-items:center;gap:16px;">
+              <div style="width:44px;height:44px;border-radius:12px;background:#fef2f2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span class="material-symbols-outlined" style="color:#dc2626;font-size:22px;">warning</span>
+              </div>
+              <div>
+                <p style="font-size:13px;font-weight:600;color:#334155;">Yakin ingin menghapus domain <strong>oldblog.com</strong>?</p>
+                <p style="font-size:11px;color:#94a3b8;font-weight:500;margin-top:4px;">Tindakan ini tidak dapat dibatalkan. Data akan hilang permanen.</p>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:16px;">
+              <label class="form-label">Alasan Penghapusan</label>
+              <select class="form-select">
+                <option>Tidak diperpanjang</option>
+                <option>Domain sudah tidak digunakan</option>
+                <option>Lainnya</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-default">Batal</button>
+            <button class="btn btn-danger"><span class="material-symbols-outlined">delete</span> Hapus</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       EMPTY STATE
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Empty State</h2>
+    <div class="table-wrap">
+      <div class="empty-state">
+        <div class="icon-wrap"><span class="material-symbols-outlined">inventory_2</span></div>
+        <h3>Belum Ada Domain</h3>
+        <p>Anda belum memiliki domain terdaftar. Yuk beli domain pertama!</p>
+        <button class="btn btn-primary"><span class="material-symbols-outlined">add</span> Beli Domain</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       ADMIN SIDEBAR (VARIANT)
+       ============================================= -->
+  <div class="demo-section">
+    <h2>Admin Sidebar Variant</h2>
+    <div style="display:flex;height:400px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+      <div class="layout-sidebar" style="width:220px;">
+        <div class="layout-sidebar-logo">
+          <div class="logo-box" style="background:linear-gradient(135deg,#f97316,#ea580c);">AD</div>
+          <div>
+            <div class="logo-text" style="text-transform:uppercase;font-size:12px;">Domain<span>Admin</span></div>
+            <div class="logo-sub">Control Center</div>
+          </div>
+        </div>
+        <nav class="layout-sidebar-nav">
+          <div class="nav-group">
+            <div class="nav-group-title"><div class="dot"></div><span>Utama</span></div>
+            <a href="#" class="nav-item active"><span class="material-symbols-outlined">dashboard</span> Overview</a>
+          </div>
+          <div class="nav-group">
+            <div class="nav-group-title"><div class="dot"></div><span>Operasional</span></div>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">receipt_long</span> Kelola Invoice</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">monitoring</span> Keuangan</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">payments</span> Metode Bayar</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">group</span> Daftar User</a>
+          </div>
+          <div class="nav-group">
+            <div class="nav-group-title"><div class="dot"></div><span>Core Business</span></div>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">language</span> Manajemen Domain</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">account_balance_wallet</span> Saldo Registrar</a>
+          </div>
+          <div class="nav-group">
+            <div class="nav-group-title"><div class="dot"></div><span>Marketing</span></div>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">payments</span> Atur Harga</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">campaign</span> Promo & Marketing</a>
+            <a href="#" class="nav-item"><span class="material-symbols-outlined">share</span> Atur Referral</a>
+          </div>
+        </nav>
+        <div class="layout-sidebar-footer">
+          <a href="#" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--neutral-50);color:var(--neutral-500);text-decoration:none;font-size:12px;font-weight:600;transition:all 0.15s;border:1px solid var(--neutral-100);">
+            <span class="material-symbols-outlined" style="font-size:18px;">logout</span>
+            Keluar
+          </a>
+        </div>
+      </div>
+      <div style="flex:1;background:#f8fafc;display:flex;align-items:center;justify-content:center;font-size:12px;color:#94a3b8;font-weight:600;">
+        Admin Content Area
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       FOOTER
+       ============================================= -->
+  <div style="text-align:center;padding:32px 0 16px;border-top:1px solid #f1f5f9;margin-top:48px;">
+    <p style="font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:0.04em;">DomainDagang — Design System Mockup v1.0</p>
+    <p style="font-size:10px;color:#cbd5e1;font-weight:500;margin-top:4px;">Dibuat untuk referensi redesign frontend. Backend tetap aman.</p>
+  </div>
+
+</div>
+
+</body>
+</html>

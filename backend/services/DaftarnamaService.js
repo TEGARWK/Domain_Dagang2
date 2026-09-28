@@ -40,16 +40,22 @@ class DaftarnamaService {
 
     /**
      * Helper untuk membuat axios client dengan config terbaru
+     * Includes timeout configuration to prevent hanging requests
      */
     async getClient() {
         const config = await this.getDynamicConfig();
-        
+
         if (!config.apiKey) {
             console.error("[DaftarnamaService] CRITICAL: API Key tidak ditemukan!");
         }
 
+        // Default timeout: 30 seconds
+        const timeout = parseInt(process.env.DAFTARNAMA_TIMEOUT_MS) || 30000;
+
         return axios.create({
             baseURL: config.baseURL,
+            timeout: timeout,
+            timeoutErrorMessage: `Daftarnama API timeout after ${timeout}ms`,
             headers: {
                 "X-API-Key": config.apiKey,
                 "Accept": "application/json",
@@ -73,7 +79,11 @@ class DaftarnamaService {
             const response = await client.get("/my/balance");
             return response.data;
         } catch (error) {
-            console.error("[DaftarnamaService] Error getting balance:", error.response?.data || error.message);
+            if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                console.error("[DaftarnamaService] Timeout getting balance:", error.message);
+            } else {
+                console.error("[DaftarnamaService] Error getting balance:", error.response?.data || error.message);
+            }
             if (error.response) {
                 console.error("[DaftarnamaService] Response Status:", error.response.status);
                 console.error("[DaftarnamaService] Response Data:", JSON.stringify(error.response.data, null, 2));

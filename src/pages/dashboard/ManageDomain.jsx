@@ -6,7 +6,7 @@ import { id as idLocale } from "date-fns/locale";
 import { useNotification } from "../../context/NotificationContext";
 import { useConfirm } from "../../context/ConfirmContext";
 import api from "../../services/api";
-import CustomSelect from "../../components/ui/CustomSelect";
+
 
 // Helper untuk format tanggal
 const formatDate = (dateString) => {
@@ -554,8 +554,19 @@ const ManageDomain = ({ isAdmin = false }) => {
 
   // --- RENDER SECTIONS (UPDATED TYPOGRAPHY) ---
 
-  if (loading) return <div className="flex flex-col items-center justify-center h-[60vh]"><div className="animate-spin w-10 h-10 border-4 border-slate-200 border-t-[#F97316] rounded-full mb-4"></div><p className="text-slate-400 font-medium animate-pulse">Memuat konfigurasi...</p></div>;
-  if (!domainData) return <div className="flex flex-col items-center justify-center h-[60vh]"><p className="text-slate-500 font-medium">Data domain tidak ditemukan.</p><button onClick={() => navigate("/dashboard/domains")} className="mt-4 text-[#F97316] hover:underline font-medium">Kembali</button></div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-[60vh]">
+      <div className="animate-spin w-8 h-8 border-2 border-neutral-200 border-t-primary-500 rounded-full mb-4"></div>
+      <p className="text-[12px] text-neutral-400">Memuat konfigurasi...</p>
+    </div>
+  );
+  if (!domainData) return (
+    <div className="empty-state h-[60vh]">
+      <p className="text-[14px] font-semibold text-neutral-900 mb-1">Data tidak ditemukan</p>
+      <p className="text-[12px] text-neutral-500 mb-4">Domain tidak tersedia atau telah dihapus.</p>
+      <button onClick={() => navigate("/dashboard/domains")} className="btn btn-primary">Kembali</button>
+    </div>
+  );
 
   const renderOverview = () => {
     const docInfo = getDocumentInfo();
@@ -563,190 +574,155 @@ const ManageDomain = ({ isAdmin = false }) => {
     const isCritical = docInfo.status === 'upload_required' || docInfo.status === 'rejected' || docInfo.status === 'expired_needs_verification';
 
     return (
-    <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-      {/* 1. Action Banners (Critical/Verification) */}
+    <div className="space-y-5">
       {isCritical && needsDocuments && (
-          <div className="bg-rose-600 text-white p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shadow-rose-100 animate-pulse">
-              <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                  </div>
-                  <p className="text-sm font-bold">⚠️ Action Required: Domain Anda membutuhkan verifikasi dokumen agar tetap aktif.</p>
-              </div>
-              <button onClick={() => setActiveTab('verifikasi')} className="text-xs font-bold bg-white text-rose-600 px-4 py-2 rounded-lg uppercase tracking-wider hover:bg-slate-50 transition-colors">
-                  Perbaiki Sekarang
-              </button>
-          </div>
-      )}
-
-      {/* Registrar Error Log (New) */}
-      {domainData.status !== 'active' && domainData.registrar_error_log && (
-          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-xl shadow-sm animate-[fadeIn_0.3s_ease-out]">
-              <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined">error</span>
-                  </div>
-                  <div className="flex-1">
-                      <h4 className="text-sm font-bold text-orange-900 uppercase tracking-wider mb-1">Registrar Sync Error</h4>
-                      <p className="text-sm text-orange-800 font-medium leading-relaxed">
-                          {translateRegistrarError(domainData.registrar_error_log)}
-                      </p>
-                      <p className="text-[10px] text-orange-400 mt-3 font-mono italic">
-                          Raw Log: {domainData.registrar_error_log.substring(0, 100)}...
-                      </p>
-                  </div>
-                  <button onClick={handleSync} disabled={syncing} className="bg-white border border-orange-200 text-orange-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-orange-100 transition-colors uppercase">
-                      Retry Sync
-                  </button>
-              </div>
-          </div>
-      )}
-
-      {/* Success Banner (If approved) */}
-      {docInfo.status === 'approved' && needsDocuments && (
-          <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-lg flex items-center gap-4 shadow-sm">
-            <div className="w-8 h-8 bg-emerald-500 text-white rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-emerald-900 uppercase tracking-widest">DOKUMEN DISETUJUI</p>
-              <p className="text-xs text-emerald-700 font-medium">Domain Anda telah diverifikasi dan aktif sepenuhnya.</p>
-            </div>
-          </div>
-      )}
-
-      {/* 2. Primary Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 group-hover:text-emerald-500 transition-colors">Status Domain</p>
+        <div className="flex items-center justify-between gap-4 p-4 bg-rose-50 border border-rose-200 rounded-lg">
           <div className="flex items-center gap-3">
-            <h3 className="text-3xl font-bold text-slate-900 capitalize">{domainData.status?.replace(/_/g, ' ') || ''}</h3>
-              <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${
-                domainData.status === 'active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 
-                domainData.status === 'pending_transfer' ? 'bg-blue-100 text-blue-700 border-blue-200 animate-pulse' :
-                'bg-slate-100 text-slate-600 border-slate-200'
-              }`}>
-                {domainData.status === 'active' ? '● Live' : domainData.status === 'pending_transfer' ? '● Transfer' : '● Status'}
-              </span>
+            <span className="material-symbols-outlined text-rose-600">warning</span>
+            <p className="text-[12px] font-medium text-rose-800">Domain Anda membutuhkan verifikasi dokumen agar tetap aktif.</p>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-200/60 flex justify-between items-center">
-            <p className="text-[10px] text-slate-500 font-bold uppercase">Kadaluarsa</p>
-            <p className="text-xs font-bold text-slate-900">{formatDate(domainData.expiration_date)}</p>
+          <button onClick={() => setActiveTab('verifikasi')} className="btn btn-danger btn-sm flex-shrink-0">Perbaiki</button>
+        </div>
+      )}
+
+      {domainData.status !== 'active' && domainData.registrar_error_log && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-amber-600 mt-0.5">error</span>
+            <div className="flex-1">
+              <p className="text-[12px] font-semibold text-amber-900 mb-0.5">Registrar Sync Error</p>
+              <p className="text-[12px] text-amber-800">{translateRegistrarError(domainData.registrar_error_log)}</p>
+            </div>
+            <button onClick={handleSync} disabled={syncing} className="btn btn-default btn-sm">Retry Sync</button>
+          </div>
+        </div>
+      )}
+
+      {docInfo.status === 'approved' && needsDocuments && (
+        <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <span className="material-symbols-outlined text-emerald-600">check_circle</span>
+          <p className="text-[12px] font-medium text-emerald-800">Dokumen disetujui. Domain Anda aktif sepenuhnya.</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="card">
+          <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-3">Status Domain</p>
+          <div className="flex items-center gap-2">
+            <span className="text-[24px] font-bold text-neutral-900 capitalize">{domainData.status?.replace(/_/g, ' ') || ''}</span>
+            <span className={`badge ${domainData.status === 'active' ? 'badge-success' : domainData.status === 'pending_transfer' ? 'badge-info' : 'badge-neutral'}`}>
+              {domainData.status === 'active' ? 'Live' : domainData.status === 'pending_transfer' ? 'Transfer' : 'Status'}
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-neutral-100 flex justify-between items-center">
+            <span className="text-[11px] text-neutral-500">Kadaluarsa</span>
+            <span className="text-[12px] font-semibold text-neutral-900">{formatDate(domainData.expiration_date)}</span>
           </div>
         </div>
 
-        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow group">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 group-hover:text-blue-500 transition-colors">Auto Renewal</p>
-              <h3 className="text-3xl font-bold text-slate-900">{domainData.auto_renew ? "Aktif" : "Mati"}</h3>
-            </div>
-            <button onClick={() => handleUpdate('auto_renew', !domainData.auto_renew)} className={`w-14 h-7 rounded-full p-1 transition-all duration-300 ring-4 ring-transparent active:scale-95 ${domainData.auto_renew ? 'bg-emerald-500 shadow-lg shadow-emerald-100' : 'bg-slate-300'}`}>
-                <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${domainData.auto_renew ? 'translate-x-7' : 'translate-x-0'}`}></div>
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Auto Renewal</p>
+            <button onClick={() => handleUpdate('auto_renew', !domainData.auto_renew)} className={`w-11 h-6 rounded-full p-0.5 transition-all ${domainData.auto_renew ? 'bg-emerald-500' : 'bg-neutral-300'}`}>
+              <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${domainData.auto_renew ? 'translate-x-5' : 'translate-x-0'}`}></div>
             </button>
           </div>
-          <p className="text-[10px] text-slate-400 mt-4 font-bold uppercase italic">Perpanjangan otomatis via Saldo.</p>
+          <span className="text-[24px] font-bold text-neutral-900">{domainData.auto_renew ? "Aktif" : "Mati"}</span>
+          <p className="text-[11px] text-neutral-400 mt-2 italic">Perpanjangan otomatis via Saldo.</p>
         </div>
 
-        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow group">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 group-hover:text-rose-500 transition-colors">Transfer Lock</p>
-              <h3 className="text-3xl font-bold text-slate-900">{domainData.is_locked ? "On" : "Off"}</h3>
-            </div>
-            <button onClick={() => handleUpdate('is_locked', !domainData.is_locked)} className={`w-14 h-7 rounded-full p-1 transition-all duration-300 ring-4 ring-transparent active:scale-95 ${domainData.is_locked ? 'bg-blue-600 shadow-lg shadow-blue-100' : 'bg-rose-500 shadow-lg shadow-rose-100'}`}>
-                <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${domainData.is_locked ? 'translate-x-7' : 'translate-x-0'}`}></div>
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Transfer Lock</p>
+            <button onClick={() => handleUpdate('is_locked', !domainData.is_locked)} className={`w-11 h-6 rounded-full p-0.5 transition-all ${domainData.is_locked ? 'bg-blue-600' : 'bg-rose-500'}`}>
+              <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${domainData.is_locked ? 'translate-x-5' : 'translate-x-0'}`}></div>
             </button>
           </div>
-          <p className="text-[10px] text-slate-400 mt-4 font-bold uppercase italic">Proteksi transfer ke registrar lain.</p>
+          <span className="text-[24px] font-bold text-neutral-900">{domainData.is_locked ? "On" : "Off"}</span>
+          <p className="text-[11px] text-neutral-400 mt-2 italic">Proteksi transfer ke registrar lain.</p>
         </div>
       </div>
 
-      {/* 3. Detailed Information Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Technical Info */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
-            <span className="material-symbols-outlined text-slate-400 text-lg">settings_ethernet</span>
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Informasi Teknis</h4>
+        <div className="card">
+          <div className="card-header">
+            <span className="material-symbols-outlined text-neutral-400 text-[16px]">settings_ethernet</span>
+            <span>Informasi Teknis</span>
           </div>
           <div className="p-4 space-y-4">
-            <div className="flex justify-between items-start pb-4 border-b border-slate-50">
-               <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Nameservers Aktif</p>
-                  <div className="space-y-1">
-                    {(Array.isArray(nameservers) ? nameservers : []).filter(ns => ns).length > 0 ? 
-                      nameservers.filter(ns => ns).map((ns, i) => (
-                        <p key={i} className="text-xs font-mono text-slate-700 bg-slate-50 px-2 py-0.5 rounded inline-block mr-2">{ns}</p>
-                      )) : <p className="text-xs text-slate-400 italic">Belum diset (Default)</p>
-                    }
-                  </div>
-               </div>
-               <button onClick={() => setActiveTab('ns')} className="text-[10px] font-bold text-blue-600 hover:underline uppercase">Edit</button>
+            <div className="flex justify-between items-start pb-4 border-b border-neutral-100">
+              <div>
+                <p className="text-[11px] font-semibold text-neutral-500 mb-1">Nameservers Aktif</p>
+                <div className="space-y-1">
+                  {(Array.isArray(nameservers) ? nameservers : []).filter(ns => ns).length > 0 ?
+                    nameservers.filter(ns => ns).map((ns, i) => (
+                      <span key={i} className="text-[12px] font-mono text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded inline-block mr-1">{ns}</span>
+                    )) : <span className="text-[12px] text-neutral-400 italic">Default</span>
+                  }
+                </div>
+              </div>
+              <button onClick={() => setActiveTab('ns')} className="text-[11px] font-semibold text-primary-600 hover:underline">Edit</button>
             </div>
             <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Registrar API</p>
-                  <p className="text-xs font-bold text-slate-800">{domainData.registrar_name || "Daftarnama"} <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded ml-1 text-slate-500 tracking-tighter">API V2</span></p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Tgl Registrasi</p>
-                  <p className="text-xs font-bold text-slate-800">{formatDate(domainData.registration_date)}</p>
-                </div>
+              <div>
+                <p className="text-[11px] font-semibold text-neutral-500 mb-0.5">Registrar</p>
+                <p className="text-[12px] font-semibold text-neutral-800">{domainData.registrar_name || "Daftarnama"}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] font-semibold text-neutral-500 mb-0.5">Tgl Registrasi</p>
+                <p className="text-[12px] font-semibold text-neutral-800">{formatDate(domainData.registration_date)}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Contact Info */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
-            <span className="material-symbols-outlined text-slate-400 text-lg">contact_mail</span>
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Kontak Administratif</h4>
+        <div className="card">
+          <div className="card-header">
+            <span className="material-symbols-outlined text-neutral-400 text-[16px]">contact_mail</span>
+            <span>Kontak Administratif</span>
           </div>
           <div className="p-4">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
-                <span className="material-symbols-outlined text-2xl">person</span>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400">
+                <span className="material-symbols-outlined">person</span>
               </div>
               <div>
-                <h5 className="text-sm font-bold text-slate-900">{getContactInfo().name}</h5>
-                <p className="text-xs text-slate-500">{getContactInfo().email}</p>
+                <p className="text-[13px] font-semibold text-neutral-900">{getContactInfo().name}</p>
+                <p className="text-[12px] text-neutral-500">{getContactInfo().email}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-neutral-100">
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Telepon</p>
-                <p className="text-xs font-bold text-slate-800">{getContactInfo().phone}</p>
+                <p className="text-[11px] font-semibold text-neutral-500 mb-0.5">Telepon</p>
+                <p className="text-[12px] font-semibold text-neutral-800">{getContactInfo().phone}</p>
               </div>
               <div className="text-right">
-                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Organisasi</p>
-                 <p className="text-xs font-bold text-slate-800">{getContactInfo().org}</p>
+                <p className="text-[11px] font-semibold text-neutral-500 mb-0.5">Organisasi</p>
+                <p className="text-[12px] font-semibold text-neutral-800">{getContactInfo().org}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 4. Billing / Lifecycle Card */}
       {domainData.status === 'active' && (
-        <div className="p-6 rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50/50 to-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-          <div className="flex-1 relative z-10">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase tracking-widest rounded">Billing Info</span>
-              <h4 className="text-lg font-bold text-slate-900">Perpanjang Masa Aktif</h4>
+        <div className="card">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="badge badge-warning">Billing Info</span>
+                <span className="text-[14px] font-bold text-neutral-900">Perpanjang Masa Aktif</span>
+              </div>
+              <p className="text-[12px] text-neutral-500">Perpanjang sekarang untuk mencegah kehilangan akses dan biaya restore yang lebih mahal.</p>
             </div>
-            <p className="text-sm text-slate-600 max-w-xl leading-relaxed font-medium">
-              Amankan domain Anda lebih lama. Perpanjang sekarang untuk mencegah kehilangan akses dan biaya pemulihan (restore) yang lebih mahal di masa depan.
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-2 relative z-10">
-            <button onClick={handleRenew} disabled={isRenewing} className="h-14 bg-slate-900 hover:bg-[#F97316] text-white px-10 rounded-xl font-bold text-sm transition-all shadow-xl shadow-slate-100 disabled:opacity-50 flex items-center justify-center gap-3 active:scale-95 whitespace-nowrap w-full md:w-auto">
-              {isRenewing ? "Memproses..." : "Perpanjang Sekarang (+1Th)"}
-            </button>
-            {renewalPrice && (
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Est. Biaya: <span className="text-slate-900">Rp {new Intl.NumberFormat("id-ID").format(renewalPrice)}</span></p>
-            )}
+            <div className="flex flex-col items-end gap-1">
+              <button onClick={handleRenew} disabled={isRenewing} className="btn btn-primary">
+                {isRenewing ? "Memproses..." : "Perpanjang (+1 Thn)"}
+              </button>
+              {renewalPrice && (
+                <p className="text-[11px] text-neutral-500">Estimasi: <span className="font-semibold text-neutral-900">Rp {new Intl.NumberFormat("id-ID").format(renewalPrice)}</span></p>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -755,147 +731,90 @@ const ManageDomain = ({ isAdmin = false }) => {
   };
 
   const renderNameservers = () => (
-    <div className="animate-[fadeIn_0.3s_ease-out]">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 gap-4">
-        <div className="max-w-md">
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">Custom Nameservers</h3>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed">Arahkan domain ke penyedia hosting lain melalui nameserver kustom.</p>
-        </div>
-        <button className="h-9 px-4 flex items-center justify-center text-[10px] font-bold text-[#F97316] bg-orange-50 rounded-lg border border-orange-100 hover:bg-orange-100 transition-all active:scale-95 uppercase tracking-widest w-full sm:w-auto">Reset ke Default</button>
-      </div>
+    <div className="space-y-4">
+      <p className="text-[12px] text-neutral-500">Arahkan domain ke penyedia hosting lain melalui nameserver kustom.</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-3 sm:p-5 rounded-lg border border-slate-100">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {nameservers.map((ns, idx) => (
-          <div key={idx} className="flex items-center gap-3 transition-all">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white flex items-center justify-center border border-slate-200 text-[10px] sm:text-xs font-bold text-slate-400 shrink-0 shadow-sm">NS{idx + 1}</div>
+          <div key={idx} className="flex items-center gap-3">
+            <span className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center text-[11px] font-bold text-neutral-500 shrink-0">NS{idx + 1}</span>
             <input
               type="text"
               value={ns}
               onChange={(e) => { const newNs = [...nameservers]; newNs[idx] = e.target.value; setNameservers(newNs); }}
               placeholder={`ns${idx + 1}.hostinganda.com`}
-              className="flex-1 bg-white border border-slate-200 rounded-lg h-10 sm:h-12 px-4 sm:px-5 outline-none focus:border-[#F97316] focus:ring-2 focus:ring-orange-100 font-medium text-slate-700 text-sm transition-all placeholder:text-slate-300 shadow-sm"
+              className="form-input"
             />
           </div>
         ))}
       </div>
 
-      <div className="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-start gap-3 text-slate-400 max-w-md">
-          <svg className="w-5 h-5 flex-shrink-0 text-slate-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <p className="text-[10px] sm:text-xs font-normal italic leading-relaxed text-slate-400">Perubahan nameserver membutuhkan waktu propagasi 24-48 jam secara global.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        <p className="text-[11px] text-neutral-400 italic flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[14px]">info</span>
+          Perubahan nameserver membutuhkan waktu propagasi 24-48 jam.
+        </p>
+        <div className="flex gap-2">
+          <button className="btn btn-default btn-sm">Reset ke Default</button>
+          <button onClick={handleSaveNameservers} className="btn btn-primary btn-sm">Simpan</button>
         </div>
-        <button onClick={handleSaveNameservers} className="h-12 bg-slate-900 text-white px-10 rounded-lg font-bold text-sm hover:bg-[#F97316] transition-all shadow-lg shadow-slate-100 active:scale-95 whitespace-nowrap w-full md:w-auto">Simpan Konfigurasi</button>
       </div>
     </div>
   );
 
   const renderDns = () => (
-    <div className="animate-[fadeIn_0.3s_ease-out]">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">DNS Zone Management</h3>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed">Kelola record A, CNAME, MX, dan TXT secara mandiri.</p>
-        </div>
-        <button onClick={() => setShowDnsModal(true)} className="flex items-center justify-center gap-2 bg-slate-900 text-white h-12 px-6 rounded-lg font-bold text-sm hover:bg-[#F97316] transition-all shadow-lg shadow-slate-100 active:scale-95 w-full sm:w-auto">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          Add New Record
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[12px] text-neutral-500">Kelola record A, CNAME, MX, dan TXT secara mandiri.</p>
+        <button onClick={() => setShowDnsModal(true)} className="btn btn-primary btn-sm">
+          <span className="material-symbols-outlined text-[14px]">add</span>
+          Add Record
         </button>
       </div>
 
-      {/* Sandbox Notice */}
-      <div className="bg-orange-50 border border-orange-100 p-4 sm:p-6 rounded-lg mb-8 flex items-start gap-4">
-        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 shrink-0">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        </div>
-        <div>
-          <p className="text-[10px] sm:text-sm text-orange-900 font-bold uppercase tracking-widest mb-1 leading-none">Mode Pengembangan (Sandbox)</p>
-          <p className="text-xs sm:text-sm text-orange-800/80 leading-relaxed font-normal">Manajemen DNS berjalan di infrastruktur sandbox registrar.</p>
-        </div>
+      <div className="flex items-start gap-3 p-3 bg-primary-50 border border-primary-100 rounded-lg">
+        <span className="material-symbols-outlined text-primary-500 text-[16px]">info</span>
+        <p className="text-[11px] text-primary-700">Mode Sandbox: Manajemen DNS berjalan di infrastruktur sandbox registrar.</p>
       </div>
 
-      {/* DNS Error Alert */}
       {dnsError && (
-        <div className="bg-rose-50 border border-rose-100 p-4 rounded-lg mb-6 flex items-start gap-3 animate-shake">
-            <span className="material-symbols-outlined text-rose-500">warning</span>
-            <div>
-                <p className="text-xs font-bold text-rose-900 uppercase tracking-tight">Koneksi Registrar Bermasalah</p>
-                <p className="text-xs text-rose-700 font-medium">{dnsError}</p>
-            </div>
+        <div className="flex items-start gap-3 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+          <span className="material-symbols-outlined text-rose-500 text-[16px]">warning</span>
+          <div>
+            <p className="text-[11px] font-semibold text-rose-900">Koneksi Registrar Bermasalah</p>
+            <p className="text-[11px] text-rose-700">{dnsError}</p>
+          </div>
         </div>
       )}
 
-      {/* MOBILE DNS CARDS */}
-      <div className="block sm:hidden space-y-3">
-        {loadingDns ? (
-          <div className="p-10 text-center text-slate-400 text-sm font-bold animate-pulse">Loading Records...</div>
-        ) : dnsRecords.length === 0 ? (
-          <div className="p-10 text-center text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">Belum ada record DNS.</div>
-        ) : (
-          dnsRecords.map((rec) => (
-            <div key={rec.id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-slate-200 group-hover:bg-[#F97316] transition-colors"></div>
-              <div className="flex justify-between items-start mb-3">
-                <span className="font-bold bg-slate-100 px-2 py-0.5 rounded text-[10px] text-slate-600 border border-slate-200 uppercase">{rec.type}</span>
-                <button onClick={() => handleDeleteDns(rec.id)} className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
-              </div>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Host</p>
-                  <p className="text-sm font-bold text-slate-800 break-all">{getRecordHost(rec)}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Value</p>
-                  <p className="text-xs font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 break-all">{getRecordValue(rec)}</p>
-                </div>
-                <div className="flex gap-6 pt-2">
-                  <div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">TTL</p>
-                    <p className="text-xs font-bold text-slate-700">{rec.ttl}</p>
-                  </div>
-                  {(rec.preference || rec.priority) && (
-                    <div>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Priority</p>
-                      <p className="text-xs font-bold text-slate-700">{rec.preference || rec.priority}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* DESKTOP TABLE */}
-      <div className="hidden sm:block border border-slate-200 rounded-lg overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
+      <div className="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <th className="p-4 font-semibold text-slate-500">Type</th>
-              <th className="p-4 font-semibold text-slate-500">Host</th>
-              <th className="p-4 font-semibold text-slate-500">Value</th>
-              <th className="p-4 font-semibold text-slate-500">TTL</th>
-              <th className="p-4 font-semibold text-slate-500 text-center">Priority</th>
-              <th className="p-4 font-semibold text-slate-500 text-center"></th>
+              <th>Type</th>
+              <th>Host</th>
+              <th>Value</th>
+              <th>TTL</th>
+              <th className="text-center">Priority</th>
+              <th className="text-center"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white">
+          <tbody>
             {loadingDns ? (
-              <tr><td colSpan="6" className="p-8 text-center text-slate-400">Loading DNS Records...</td></tr>
+              <tr><td colSpan="6" className="p-8 text-center text-neutral-400">Loading...</td></tr>
             ) : dnsRecords.length === 0 ? (
-              <tr><td colSpan="6" className="p-8 text-center text-slate-400">Belum ada record DNS.</td></tr>
+              <tr><td colSpan="6" className="p-8 text-center text-neutral-400">Belum ada record DNS.</td></tr>
             ) : (
               dnsRecords.map((rec) => (
-                <tr key={rec.id} className="hover:bg-slate-50 transition">
-                  <td className="p-4"><span className="font-semibold bg-slate-100 px-2.5 py-1 rounded text-xs text-slate-600 border border-slate-200">{rec.type}</span></td>
-                  <td className="p-4 font-semibold text-slate-700">{getRecordHost(rec)}</td>
-                  <td className="p-4 text-slate-600 font-mono text-xs truncate max-w-[150px]" title={getRecordValue(rec)}>{getRecordValue(rec)}</td>
-                  <td className="p-4 text-slate-400 text-xs font-medium">{rec.ttl}</td>
-                  <td className="p-4 text-center text-slate-400 text-xs font-medium">{rec.preference || rec.priority || "-"}</td>
-                  <td className="p-4 text-center">
-                    <button onClick={() => handleDeleteDns(rec.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <tr key={rec.id}>
+                  <td><span className="badge badge-neutral">{rec.type}</span></td>
+                  <td className="font-medium text-neutral-700">{getRecordHost(rec)}</td>
+                  <td className="text-neutral-500 font-mono text-[12px] max-w-[200px] truncate" title={getRecordValue(rec)}>{getRecordValue(rec)}</td>
+                  <td className="text-neutral-400">{rec.ttl}</td>
+                  <td className="text-center text-neutral-400">{rec.preference || rec.priority || "-"}</td>
+                  <td className="text-center">
+                    <button onClick={() => handleDeleteDns(rec.id)} className="btn-icon btn-sm text-neutral-400 hover:text-red-500 hover:bg-red-50">
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
                     </button>
                   </td>
                 </tr>
@@ -915,10 +834,10 @@ const ManageDomain = ({ isAdmin = false }) => {
 
     if (!isIdDomain) return (
       <div className="py-20 text-center">
-        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
         </div>
-        <p className="text-slate-400 font-medium">Domain ini tidak memerlukan verifikasi dokumen tambahan.</p>
+        <p className="text-neutral-400 font-medium">Domain ini tidak memerlukan verifikasi dokumen tambahan.</p>
       </div>
     );
 
@@ -927,23 +846,23 @@ const ManageDomain = ({ isAdmin = false }) => {
     return (
       <div className="space-y-6 sm:space-y-8 animate-[fadeIn_0.3s_ease-out]">
         {/* 1. Detail Header (Ketik Ulang Biar Presisi) */}
-        <div className="bg-slate-50/50 p-4 sm:p-8 rounded-lg border border-slate-100">
+        <div className="bg-neutral-50/50 p-4 sm:p-8 rounded-lg border border-neutral-100">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
             <div>
-              <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 sm:mb-2">Nama Domain</p>
-              <p className="text-sm sm:text-base font-bold text-slate-900 truncate">{domainData.name}</p>
+              <p className="text-[8px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1 sm:mb-2">Nama Domain</p>
+              <p className="text-sm sm:text-base font-bold text-neutral-900 truncate">{domainData.name}</p>
             </div>
             <div>
-              <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 sm:mb-2">Registrar</p>
-              <p className="text-sm sm:text-base font-bold text-slate-900 uppercase truncate">{domainData.registrar_name || "Daftarnama"}</p>
+              <p className="text-[8px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1 sm:mb-2">Registrar</p>
+              <p className="text-sm sm:text-base font-bold text-neutral-900 uppercase truncate">{domainData.registrar_name || "Daftarnama"}</p>
             </div>
             <div>
-              <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 sm:mb-2">Registrasi</p>
-              <p className="text-sm sm:text-base font-bold text-slate-900">{formatDate(domainData.registration_date)}</p>
+              <p className="text-[8px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1 sm:mb-2">Registrasi</p>
+              <p className="text-sm sm:text-base font-bold text-neutral-900">{formatDate(domainData.registration_date)}</p>
             </div>
             <div>
-              <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 sm:mb-2">Kadaluarsa</p>
-              <p className="text-sm sm:text-base font-bold text-slate-900">{formatDate(domainData.expiration_date)}</p>
+              <p className="text-[8px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1 sm:mb-2">Kadaluarsa</p>
+              <p className="text-sm sm:text-base font-bold text-neutral-900">{formatDate(domainData.expiration_date)}</p>
             </div>
           </div>
         </div>
@@ -964,8 +883,8 @@ const ManageDomain = ({ isAdmin = false }) => {
               </div>
             </div>
 
-            <h3 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Identitas Terverifikasi</h3>
-            <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6 max-w-sm">
+            <h3 className="text-2xl font-bold text-neutral-900 mb-2 tracking-tight">Identitas Terverifikasi</h3>
+            <p className="text-sm text-neutral-500 font-medium leading-relaxed mb-6 max-w-sm">
               Seluruh syarat dokumen telah terpenuhi. Domain Anda telah diverifikasi secara resmi oleh Registrar.
             </p>
             
@@ -974,14 +893,14 @@ const ManageDomain = ({ isAdmin = false }) => {
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                 Status: Approved
               </div>
-              <button onClick={handleSync} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest flex items-center gap-1.5">
+              <button onClick={handleSync} className="text-[10px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors uppercase tracking-widest flex items-center gap-1.5">
                 <svg className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                 Sync
               </button>
             </div>
           </div>
         ) : (
-          <div className={`p-6 sm:p-8 rounded-xl border-2 shadow-xl shadow-slate-100 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-6 transition-all ${
+          <div className={`p-6 sm:p-8 rounded-xl border-2 shadow-xl shadow-neutral-100 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-6 transition-all ${
               docInfo.color === 'amber' ? 'bg-amber-50 border-amber-100' :
                 docInfo.color === 'rose' ? 'bg-rose-50 border-rose-100' :
                   'bg-blue-50 border-blue-100'
@@ -998,16 +917,16 @@ const ManageDomain = ({ isAdmin = false }) => {
               </div>
               <div>
                 <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 mb-2">
-                  <h4 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{docInfo.title}</h4>
+                  <h4 className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight">{docInfo.title}</h4>
                   <span className={`px-3 py-1 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.2em] border ${docInfo.badge}`}>
                     Aksi Dibutuhkan
                   </span>
                 </div>
-                <p className="text-xs sm:text-base text-slate-600 leading-relaxed font-normal max-w-2xl">{docInfo.desc}</p>
+                <p className="text-xs sm:text-base text-neutral-600 leading-relaxed font-normal max-w-2xl">{docInfo.desc}</p>
 
                 {countdown && (
                   <div className="mt-3 flex items-center justify-center sm:justify-start gap-2">
-                    <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sisa waktu:</span>
+                    <span className="text-[8px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Sisa waktu:</span>
                     <span className={`text-xs font-bold ${countdown.includes('Segera') ? 'text-rose-600 animate-pulse' : 'text-amber-600'}`}>{countdown}</span>
                   </div>
                 )}
@@ -1025,7 +944,7 @@ const ManageDomain = ({ isAdmin = false }) => {
               <button
                 onClick={isExpired ? handleRenew : handleUploadDocument}
                 disabled={uploadLoading}
-                className="h-12 sm:h-14 rounded-lg font-bold text-xs sm:text-sm shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 bg-slate-900 text-white hover:bg-[#F97316] shadow-orange-100 disabled:opacity-50"
+                className="btn btn-primary h-12"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isExpired ? "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" : "M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12"} /></svg>
                 {isExpired ? "Perpanjang + Upload" : "Upload Dokumen"}
@@ -1033,7 +952,7 @@ const ManageDomain = ({ isAdmin = false }) => {
 
               <button
                 onClick={handleSync}
-                className="h-10 sm:h-12 rounded-lg font-bold text-[10px] sm:text-xs text-slate-500 border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                className="h-10 sm:h-12 rounded-lg font-bold text-[10px] sm:text-xs text-neutral-500 border border-neutral-200 bg-white hover:bg-neutral-50 transition-all flex items-center justify-center gap-2"
               >
                 <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                 Cek Status Terbaru
@@ -1046,35 +965,35 @@ const ManageDomain = ({ isAdmin = false }) => {
   };
 
   const renderAuditLogs = () => (
-    <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Riwayat & Audit Trail</h3>
-        <button onClick={fetchAuditLogs} className="h-10 px-4 flex items-center justify-center text-xs font-bold text-[#F97316] bg-orange-50 rounded-lg border border-orange-100 hover:bg-orange-100 transition-all active:scale-95 uppercase tracking-widest">Refresh Data</button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[14px] font-bold text-neutral-900">Riwayat & Audit Trail</h3>
+        <button onClick={fetchAuditLogs} className="btn btn-default btn-sm">Refresh</button>
       </div>
-      <div className="bg-white rounded-lg border border-slate-100 overflow-hidden shadow-sm">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-100 border-b border-slate-200">
+      <div className="table-wrap">
+        <table>
+          <thead>
             <tr>
-              <th className="px-4 py-3 font-semibold text-slate-500 uppercase tracking-widest">Waktu</th>
-              <th className="px-4 py-3 font-semibold text-slate-500 uppercase tracking-widest">Transisi</th>
-              <th className="px-4 py-3 font-semibold text-slate-500 uppercase tracking-widest">Alasan</th>
+              <th>Waktu</th>
+              <th>Transisi</th>
+              <th>Alasan</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {auditLogs.length > 0 ? auditLogs.map(log => (
-              <tr key={log.id} className="hover:bg-white transition-colors">
-                <td className="px-4 py-3 text-slate-500 font-medium">{new Date(log.created_at).toLocaleString('id-ID')}</td>
-                <td className="px-6 py-4">
-                  <span className="flex items-center gap-2 font-bold">
-                    <span className="text-slate-400 capitalize bg-slate-100 px-2 py-0.5 rounded text-[10px] tracking-widest border border-slate-200">{log.from_status || 'initial'}</span>
-                    <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5-5 5M6 7l5 5-5 5" /></svg>
-                    <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] tracking-widest border border-emerald-100 uppercase">{log.to_status}</span>
+              <tr key={log.id}>
+                <td className="text-neutral-500">{new Date(log.created_at).toLocaleString('id-ID')}</td>
+                <td>
+                  <span className="flex items-center gap-2">
+                    <span className="badge badge-neutral">{log.from_status || 'initial'}</span>
+                    <span className="material-symbols-outlined text-[14px] text-neutral-300">chevron_right</span>
+                    <span className="badge badge-success">{log.to_status}</span>
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-600 italic">{log.reason}</td>
+                <td className="text-neutral-500 italic">{log.reason}</td>
               </tr>
             )) : (
-              <tr><td colSpan="3" className="px-4 py-8 text-center text-slate-400">Belum ada riwayat tercatat.</td></tr>
+              <tr><td colSpan="3" className="p-8 text-center text-neutral-400">Belum ada riwayat tercatat.</td></tr>
             )}
           </tbody>
         </table>
@@ -1083,153 +1002,118 @@ const ManageDomain = ({ isAdmin = false }) => {
   );
 
   const renderSecurity = () => (
-    <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Registrar Lock Card */}
-        <div className="bg-slate-50 p-8 rounded-xl border border-slate-100 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-sm ${domainData.is_locked ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                <span className="material-symbols-outlined text-2xl font-bold">{domainData.is_locked ? 'lock' : 'lock_open'}</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 tracking-tight">Registrar Transfer Lock</h4>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Proteksi Transfer Domain</p>
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="card">
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${domainData.is_locked ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>
+              <span className="material-symbols-outlined">{domainData.is_locked ? 'lock' : 'lock_open'}</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-[13px] font-semibold text-neutral-900">Registrar Transfer Lock</p>
+              <p className="text-[11px] text-neutral-500 mt-0.5 mb-3">Mencegah pemindahan domain ke registrar lain tanpa izin Anda.</p>
+              <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                <span className="text-[11px] font-semibold text-neutral-600">{domainData.is_locked ? 'Terkunci' : 'Terbuka'}</span>
+                <button
+                  onClick={() => handleUpdateLock(!domainData.is_locked)}
+                  disabled={lockLoading}
+                  className={`w-11 h-6 rounded-full p-0.5 transition-all ${domainData.is_locked ? 'bg-blue-600' : 'bg-neutral-300'} ${lockLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${domainData.is_locked ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                </button>
               </div>
             </div>
-            <p className="text-sm text-slate-600 leading-relaxed font-normal mb-8">
-              Mencegah pemindahan domain ke registrar lain tanpa izin Anda. Tetap aktifkan fitur ini kecuali jika Anda berniat melakukan transfer.
-            </p>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{domainData.is_locked ? 'Status: Terkunci' : 'Status: Terbuka'}</span>
-            <button
-              onClick={() => handleUpdateLock(!domainData.is_locked)}
-              disabled={lockLoading}
-              className={`w-14 h-7 rounded-full p-1.5 transition-all duration-300 relative ${domainData.is_locked ? 'bg-blue-600' : 'bg-slate-300'} ${lockLoading ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
-            >
-              <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300 ${domainData.is_locked ? 'translate-x-7' : 'translate-x-0'}`}></div>
-            </button>
           </div>
         </div>
 
-        {/* EPP Code Card */}
-        <div className="bg-slate-50 p-8 rounded-xl border border-slate-100 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-orange-50 text-[#F97316] flex items-center justify-center border border-orange-100 shadow-sm">
-                <span className="material-symbols-outlined text-2xl font-bold">vpn_key</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 tracking-tight">Domain Auth Code (EPP)</h4>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Kode Rahasia Transfer</p>
-              </div>
+        <div className="card">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-500 flex items-center justify-center">
+              <span className="material-symbols-outlined">vpn_key</span>
             </div>
-            <p className="text-sm text-slate-600 leading-relaxed font-normal mb-8">
-              Gunakan kode ini untuk memindahkan domain Anda ke provider lain. <span className="font-bold text-rose-600">Jangan pernah membagikan kode ini kepada siapa pun!</span>
-            </p>
-          </div>
-          <div className="space-y-3">
-            {eppCode ? (
-              <div className="p-4 bg-white border-2 border-dashed border-[#F97316]/30 rounded-xl flex items-center justify-between group">
-                <code className="text-sm font-bold text-slate-800 tracking-wider select-all">{eppCode}</code>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(eppCode); success("Kode EPP disalin!"); }}
-                  className="p-2 text-slate-400 hover:text-[#F97316] hover:bg-orange-50 rounded-lg transition"
-                  title="Salin Kode"
-                >
-                  <span className="material-symbols-outlined text-lg">content_copy</span>
+            <div className="flex-1">
+              <p className="text-[13px] font-semibold text-neutral-900">Domain Auth Code (EPP)</p>
+              <p className="text-[11px] text-neutral-500 mt-0.5 mb-3">Gunakan kode ini untuk memindahkan domain ke provider lain.</p>
+              {eppCode ? (
+                <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg border border-dashed border-primary-500/30">
+                  <code className="text-[12px] font-bold text-neutral-800 select-all">{eppCode}</code>
+                  <button onClick={() => { navigator.clipboard.writeText(eppCode); success("Kode EPP disalin!"); }} className="btn-icon btn-sm text-neutral-400 hover:text-primary-500">
+                    <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+              ) : (
+                <button onClick={handleShowEPP} disabled={fetchingEpp} className="btn btn-primary btn-sm w-full">
+                  {fetchingEpp ? (
+                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <>Tampilkan Kode EPP</>
+                  )}
                 </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleShowEPP}
-                disabled={fetchingEpp}
-                className="w-full h-12 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-[0.2em] hover:bg-[#F97316] transition-all shadow-lg shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-3 active:scale-95"
-              >
-                {fetchingEpp ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-lg">visibility</span>
-                    <span>Tampilkan Kode EPP</span>
-                  </>
-                )}
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Warning Alert */}
-      <div className="p-6 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined font-bold">warning</span>
-        </div>
-        <div>
-          <h5 className="text-sm font-bold text-rose-900 uppercase tracking-widest mb-1 leading-none">Peringatan Keamanan</h5>
-          <p className="text-xs text-rose-700/80 leading-relaxed font-medium italic">
-            Proses transfer domain keluar membutuhkan Unlocked Status dan Kode EPP. Domain yang dipindah keluar tidak dapat dikontrol lagi melalui panel ini.
-          </p>
-        </div>
+      <div className="flex items-start gap-3 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+        <span className="material-symbols-outlined text-rose-500 text-[16px]">warning</span>
+        <p className="text-[11px] text-rose-700">Transfer domain keluar membutuhkan Unlocked Status dan Kode EPP. Domain yang dipindah keluar tidak dapat dikontrol lagi melalui panel ini.</p>
       </div>
     </div>
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 md:space-y-6 pb-20 animate-[fadeIn_0.5s_ease-out] px-1 sm:px-0">
+    <div className="px-6 pb-20 animate-fade-in">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(isAdmin ? "/admin/domains" : "/dashboard/domains")} className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#F97316] hover:border-[#F97316] transition shadow-sm shrink-0">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+        <div className="flex items-start gap-3">
+          <button onClick={() => navigate(isAdmin ? "/admin/domains" : "/dashboard/domains")} className="btn btn-default btn-icon shrink-0 mt-0.5">
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           </button>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-3xl font-bold text-slate-900 tracking-tight truncate">{domainData.name || domainData.domain_name}</h1>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs font-bold mt-1.5">
-              <span className={`px-2 py-0.5 border flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest rounded-md ${domainData.status === 'active' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : (domainData.status === 'provisioned' || domainData.status === 'registering') ? 'text-blue-600 bg-blue-50 border-blue-100' : domainData.status === 'paid' ? 'text-orange-600 bg-orange-50 border-orange-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
-                <span className={`w-1 h-1 rounded-full ${domainData.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`}></span>
+          <div>
+            <h1 className="text-[16px] font-bold text-neutral-900">{domainData.name || domainData.domain_name}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className={`badge ${domainData.status === 'active' ? 'badge-success' : domainData.status === 'provisioned' || domainData.status === 'registering' ? 'badge-info' : domainData.status === 'paid' ? 'badge-warning' : 'badge-danger'}`}>
                 {domainData.status === 'registering' ? 'REGISTERING' : domainData.status === 'provisioned' ? 'MENUNGGU DOKUMEN' : domainData.status === 'paid' ? 'AWAITING' : (domainData.status || "").toUpperCase()}
               </span>
-              <span className="text-slate-300 hidden sm:inline">•</span>
-              <span className="text-slate-500 font-medium">Registrar: <span className="text-slate-900 font-bold uppercase">{domainData.registrar_name || "Daftarnama"}</span></span>
+              <span className="text-[12px] text-neutral-500">Registrar: <span className="font-semibold text-neutral-700">{domainData.registrar_name || "Daftarnama"}</span></span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3 sm:ml-auto">
-          <button onClick={handleSync} disabled={syncing} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-500 hover:bg-white hover:text-[#F97316] hover:border-[#F97316] hover:shadow-md transition-all disabled:opacity-50">
-            <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        <div className="flex items-center gap-2">
+          <button onClick={handleSync} disabled={syncing} className="btn btn-default">
+            <span className="material-symbols-outlined text-[16px]">sync</span>
             <span>{syncing ? 'Sync...' : 'Refresh'}</span>
           </button>
-          <a href={`https://${domainData.domain_name}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none h-[38px] flex items-center justify-center gap-2 px-4 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:text-[#F97316] hover:border-[#F97316] transition shadow-sm">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+          <a href={`https://${domainData.domain_name}`} target="_blank" rel="noreferrer" className="btn btn-default">
+            <span className="material-symbols-outlined text-[16px]">open_in_new</span>
             <span>Visit</span>
           </a>
         </div>
       </div>
 
-      {/* TABS */}
-      <div className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden min-h-[500px]">
-        <div className="bg-slate-50/50 border-b border-slate-100 p-2">
-          <div className="flex gap-1 overflow-x-auto no-scrollbar">
-            {[
-              { id: "overview", label: "Overview", icon: "M4 6h16M4 12h16m-7 6h7" },
-              needsDocuments && { id: "verifikasi", label: "Verifikasi", icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" },
-              { id: "ns", label: "Nameservers", icon: "M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" },
-              { id: "dns", label: "DNS Records", icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" },
-              isAdmin && { id: "audit", label: "Audit Log", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
-              { id: "security", label: "Keamanan", icon: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" },
-            ].filter(Boolean).map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-semibold transition whitespace-nowrap ${activeTab === tab.id ? "bg-white text-slate-800 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"}`}>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} /></svg>
-                {tab.label}
-              </button>
-            ))}
-          </div>
+      {/* TABS + CONTENT CARD */}
+      <div className="card">
+        <div className="flex gap-1 border-b border-neutral-100 px-4 pt-3 pb-0 overflow-x-auto">
+          {[
+            { id: "overview", label: "Overview" },
+            needsDocuments && { id: "verifikasi", label: "Verifikasi" },
+            { id: "ns", label: "Nameservers" },
+            { id: "dns", label: "DNS Records" },
+            isAdmin && { id: "audit", label: "Audit Log" },
+            { id: "security", label: "Keamanan" },
+          ].filter(Boolean).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-[12px] font-semibold transition border-b-2 -mb-px ${activeTab === tab.id ? 'text-primary-600 border-primary-500' : 'text-neutral-400 border-transparent hover:text-neutral-600'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Content Body */}
-        <div className={`p-6 md:p-8 ${(domainData.status || "").toLowerCase() !== 'active' && (domainData.status || "").toLowerCase() !== 'provisioned' && activeTab !== 'verifikasi' && activeTab !== 'overview' ? 'opacity-70 pointer-events-none grayscale-[0.5]' : ''}`}>
+        <div className={`p-5 ${(domainData.status || "").toLowerCase() !== 'active' && (domainData.status || "").toLowerCase() !== 'provisioned' && activeTab !== 'verifikasi' && activeTab !== 'overview' ? 'opacity-70 pointer-events-none grayscale-[0.5]' : ''}`}>
           {activeTab === "overview" && renderOverview()}
           {activeTab === "verifikasi" && renderVerification()}
           {activeTab === "ns" && renderNameservers()}
@@ -1239,52 +1123,49 @@ const ManageDomain = ({ isAdmin = false }) => {
         </div>
       </div>
 
-      {/* MODAL ADD DNS (Typography Updated) */}
       {showDnsModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md overflow-hidden animate-[fadeIn_0.2s_ease-out]">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-slate-800">Add DNS Record</h3>
-              <button onClick={() => setShowDnsModal(false)} className="text-slate-400 hover:text-red-500"><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3 className="text-[14px] font-bold text-neutral-900">Add DNS Record</h3>
+              <button onClick={() => setShowDnsModal(false)} className="btn-icon btn-sm text-neutral-400 hover:text-red-500"><span className="material-symbols-outlined text-[18px]">close</span></button>
             </div>
-            <form onSubmit={handleAddDns} className="p-8 space-y-6 bg-slate-50/30">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2 px-1">Record Type</label>
-                <CustomSelect
-                  value={newRecord.type}
-                  onChange={val => setNewRecord({ ...newRecord, type: val })}
-                  options={[
-                    { value: "A", label: "A (IPv4 Address)" },
-                    { value: "CNAME", label: "CNAME (Canonical Name)" },
-                    { value: "MX", label: "MX (Mail Exchange)" },
-                    { value: "TXT", label: "TXT (Text Record)" },
-                    { value: "NS", label: "NS (Nameserver)" }
-                  ]}
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2 px-1">Host / Subdomain</label>
-                <input type="text" placeholder="e.g. @ or www" value={newRecord.name} onChange={(e) => setNewRecord({ ...newRecord, name: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg h-12 px-5 outline-none focus:border-[#F97316] focus:ring-2 focus:ring-orange-50 font-medium text-slate-700 transition-all shadow-sm placeholder:text-slate-300" required />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2 px-1">Points To / Value</label>
-                <input type="text" placeholder="e.g. 192.168.1.1" value={newRecord.value} onChange={(e) => setNewRecord({ ...newRecord, value: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg h-12 px-5 outline-none focus:border-[#F97316] focus:ring-2 focus:ring-orange-50 font-medium text-slate-700 transition-all shadow-sm placeholder:text-slate-300" required />
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2 px-1">TTL</label>
-                  <input type="number" value={newRecord.ttl} onChange={(e) => setNewRecord({ ...newRecord, ttl: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg h-12 px-5 outline-none focus:border-[#F97316] focus:ring-2 focus:ring-orange-50 font-medium text-slate-700 transition-all shadow-sm" />
+            <form onSubmit={handleAddDns}>
+              <div className="modal-body space-y-4">
+                <div className="form-group">
+                  <label className="form-label">Record Type</label>
+                  <select value={newRecord.type} onChange={(e) => setNewRecord({ ...newRecord, type: e.target.value })} className="form-select">
+                    <option value="A">A (IPv4 Address)</option>
+                    <option value="CNAME">CNAME (Canonical Name)</option>
+                    <option value="MX">MX (Mail Exchange)</option>
+                    <option value="TXT">TXT (Text Record)</option>
+                    <option value="NS">NS (Nameserver)</option>
+                  </select>
                 </div>
-                {newRecord.type === 'MX' && (
-                  <div className="flex-1">
-                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2 px-1">Priority</label>
-                    <input type="number" value={newRecord.priority || 10} onChange={(e) => setNewRecord({ ...newRecord, priority: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg h-12 px-5 outline-none focus:border-[#F97316] focus:ring-2 focus:ring-orange-50 font-medium text-slate-700 transition-all shadow-sm" />
+                <div className="form-group">
+                  <label className="form-label">Host / Subdomain</label>
+                  <input type="text" placeholder="e.g. @ or www" value={newRecord.name} onChange={(e) => setNewRecord({ ...newRecord, name: e.target.value })} className="form-input" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Points To / Value</label>
+                  <input type="text" placeholder="e.g. 192.168.1.1" value={newRecord.value} onChange={(e) => setNewRecord({ ...newRecord, value: e.target.value })} className="form-input" required />
+                </div>
+                <div className="flex gap-4">
+                  <div className="form-group flex-1">
+                    <label className="form-label">TTL</label>
+                    <input type="number" value={newRecord.ttl} onChange={(e) => setNewRecord({ ...newRecord, ttl: e.target.value })} className="form-input" />
                   </div>
-                )}
+                  {newRecord.type === 'MX' && (
+                    <div className="form-group flex-1">
+                      <label className="form-label">Priority</label>
+                      <input type="number" value={newRecord.priority || 10} onChange={(e) => setNewRecord({ ...newRecord, priority: e.target.value })} className="form-input" />
+                    </div>
+                  )}
+                </div>
               </div>
-              <button type="submit" className="w-full bg-slate-900 text-white h-12 rounded-lg font-bold text-sm hover:bg-[#F97316] transition-all shadow-lg shadow-slate-100 active:scale-95 flex items-center justify-center gap-3 mt-4">
-                Simpan Record DNS
-              </button>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary">Simpan Record DNS</button>
+              </div>
             </form>
           </div>
         </div>

@@ -103,13 +103,27 @@ exports.login = async (req, res) => {
     const sql = "SELECT * FROM users WHERE email = $1";
     const data = await db.query(sql, [req.body.email]);
 
-    if (data.length === 0) return res.status(404).json({ message: "User tidak ditemukan!" });
+    // Return 200 with success:false for "user not found" - this is NOT a 404
+    // 404 should only be used when the endpoint/route doesn't exist
+    if (data.length === 0) {
+      return res.status(200).json({ success: false, message: "Email atau password salah!" });
+    }
 
     const user = data[0];
-    if (!user.is_verified) return res.status(403).json({ message: "Harap verifikasi email Anda." });
+
+    // Check if email is verified
+    if (!user.is_verified) {
+      return res.status(200).json({
+        success: false,
+        message: "Harap verifikasi email Anda terlebih dahulu.",
+        needsVerification: true
+      });
+    }
 
     const isPasswordValid = bcrypt.compareSync(req.body.password, user.password);
-    if (!isPasswordValid) return res.status(400).json({ message: "Kata sandi salah!" });
+    if (!isPasswordValid) {
+      return res.status(200).json({ success: false, message: "Email atau password salah!" });
+    }
 
     const payload = { id: user.id, role: user.role || 'user' };
     const token = jwt.sign(payload, process.env.JWT_SECRET || 'secretkey', { expiresIn: '7d' });
@@ -125,9 +139,9 @@ exports.login = async (req, res) => {
     } catch (logErr) {}
 
     const { password: _, ...userWithoutPassword } = user;
-    return res.status(200).json({ ...userWithoutPassword, token });
+    return res.status(200).json({ success: true, ...userWithoutPassword, token });
   } catch (err) {
-    return res.status(500).json(err.message || "Internal Server Error");
+    return res.status(500).json({ success: false, message: err.message || "Internal Server Error" });
   }
 };
 

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { formatRupiah, Breadcrumb, formatInputRupiah, parseRupiah } from "./SharedComponents";
 import api from "../../../services/api";
 import { toast } from "react-hot-toast";
+import { ActionButton } from "../../ui/ActionBar";
 
 const ConfigView = ({ data: initialData, onBack, onRefresh }) => {
   const [configs, setConfigs] = useState(initialData.configs || []);
@@ -9,80 +10,54 @@ const ConfigView = ({ data: initialData, onBack, onRefresh }) => {
   const [locations, setLocations] = useState(initialData.locations || []);
   const [loading, setLoading] = useState(false);
 
-  const savingTotal = configs.filter(c => c.type === 'SAVING').reduce((acc, curr) => acc + parseFloat(curr.percentage || 0), 0);
+  const savingTotal = configs.filter((c) => c.type === "SAVING").reduce((acc, curr) => acc + parseFloat(curr.percentage || 0), 0);
   const shareTotal = holders.reduce((acc, curr) => acc + parseFloat(curr.share_percentage || 0), 0);
 
-  // --- LOGIC: CONFIGS (SAVING) ---
   const handleConfigChange = (index, field, value) => {
     const newConfigs = [...configs];
-    newConfigs[index][field] = field === 'percentage' ? parseFloat(value) || 0 : value;
+    newConfigs[index][field] = field === "percentage" ? parseFloat(value) || 0 : value;
     setConfigs(newConfigs);
   };
 
-  const addSavingPos = () => {
-    setConfigs([...configs, { type: 'SAVING', name: 'Pos Baru', percentage: 0 }]);
-  };
+  const addSavingPos = () => setConfigs([...configs, { type: "SAVING", name: "Pos Baru", percentage: 0 }]);
+  const removeConfig = (index) => setConfigs(configs.filter((_, i) => i !== index));
 
-  const removeConfig = (index) => {
-    setConfigs(configs.filter((_, i) => i !== index));
-  };
-
-  // --- LOGIC: HOLDERS (BAGI HASIL) ---
   const handleHolderChange = (index, field, value) => {
     const newHolders = [...holders];
-    newHolders[index][field] = field === 'share_percentage' ? parseFloat(value) || 0 : value;
+    newHolders[index][field] = field === "share_percentage" ? parseFloat(value) || 0 : value;
     setHolders(newHolders);
   };
 
-  const addHolder = () => {
-    setHolders([...holders, { name: 'Stakeholder Baru', share_percentage: 0 }]);
-  };
+  const addHolder = () => setHolders([...holders, { name: "Stakeholder Baru", share_percentage: 0 }]);
+  const removeHolder = (index) => setHolders(holders.filter((_, i) => i !== index));
 
-  const removeHolder = (index) => {
-    setHolders(holders.filter((_, i) => i !== index));
-  };
-
-  // --- LOGIC: LOCATIONS (UANG TERSEDIA) ---
   const handleLocationChange = (index, field, value) => {
     const newLocations = [...locations];
-    if (field === 'is_main') {
-      newLocations.forEach((l, i) => l.is_main = i === index);
+    if (field === "is_main") {
+      newLocations.forEach((l, i) => (l.is_main = i === index));
     } else {
-      const val = (field === 'balance' || field === 'base_balance') ? parseFloat(value) || 0 : value;
-      newLocations[index][field] = val;
+      newLocations[index][field] = (field === "balance" || field === "base_balance") ? parseFloat(value) || 0 : value;
     }
     setLocations(newLocations);
   };
 
-  const addLocation = () => {
-    setLocations([...locations, { name: 'Lokasi Baru', is_main: false, balance: 0 }]);
-  };
+  const addLocation = () => setLocations([...locations, { name: "Lokasi Baru", is_main: false, balance: 0 }]);
+  const removeLocation = (index) => setLocations(locations.filter((_, i) => i !== index));
 
-  const removeLocation = (index) => {
-    setLocations(locations.filter((_, i) => i !== index));
-  };
-
-  // --- LOGIC: SAVE ---
   const handleSave = async () => {
     try {
       setLoading(true);
       const payload = {
         period_id: initialData.period.id,
-        configs: [
-            ...configs,
-            ...holders.map(h => ({ type: 'DISTRIBUTION', name: h.name, percentage: h.share_percentage }))
-        ],
-        locations: locations,
-        holders: holders
+        configs: [...configs, ...holders.map((h) => ({ type: "DISTRIBUTION", name: h.name, percentage: h.share_percentage }))],
+        locations, holders,
       };
-
-      const response = await api.post('/finance/configs', payload);
+      const response = await api.post("/finance/configs", payload);
       if (response.data.success) {
         toast.success("Konfigurasi berhasil disimpan!");
         if (onRefresh) onRefresh();
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error("Gagal menyimpan konfigurasi.");
     } finally {
       setLoading(false);
@@ -90,233 +65,176 @@ const ConfigView = ({ data: initialData, onBack, onRefresh }) => {
   };
 
   return (
-    <div className="animate-fade-in pb-10">
+    <div className="space-y-5 animate-fade-in pb-10">
       <Breadcrumb current="Konfigurasi Keuangan" onBack={onBack} />
 
-      {/* TITLE & PERIOD FILTER */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 mb-1">Konfigurasi Bulanan</h2>
-          <p className="text-slate-500 text-[10px] font-medium">Periode {new Date(initialData.period.year, initialData.period.month - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}. Detail bagian ini tersambung dengan arus kas dan mutasi.</p>
-        </div>
-        <div className="flex gap-4 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-           <div className="flex flex-col">
-              <label className="text-[7px] font-bold text-slate-400 uppercase mb-0.5 tracking-tight">Periode</label>
-              <select className="bg-transparent text-[10px] font-bold outline-none"><option>Bulanan</option></select>
-           </div>
-           <div className="w-px h-6 bg-slate-200"></div>
-           <div className="flex flex-col">
-              <label className="text-[7px] font-bold text-slate-400 uppercase mb-0.5 tracking-tight">Bulan</label>
-              <select className="bg-transparent text-[10px] font-bold outline-none">
-                <option>{new Date(initialData.period.year, initialData.period.month - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</option>
-              </select>
-           </div>
+      <div className="card">
+        <div className="flex items-center gap-3">
+          <span className="w-1 h-5 rounded-full bg-primary-500" />
+          <div>
+            <h2 className="text-sm font-bold text-neutral-800">Konfigurasi Bulanan</h2>
+            <p className="text-[11px] text-neutral-400">
+              Periode {new Date(initialData.period.year, initialData.period.month - 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-         {[
-           { label: "Periode Aktif", val: new Date(initialData.period.year, initialData.period.month - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }), sub: "Pengaturan dipakai untuk bulan terpilih.", color: "text-slate-800" },
-           { label: "Data Saving", val: formatRupiah(initialData.period.data_saving_total), sub: "Total tersedia untuk dibayarkan.", color: "text-orange-600" },
-           { label: "Bagi Hasil", val: formatRupiah(initialData.period.net_profit), sub: "Total hak dibentuk periode ini.", color: "text-emerald-600" },
-           { label: "Lokasi Utama", val: locations.find(l => l.is_main)?.name || "-", sub: "Revenue otomatis masuk ke sini.", color: "text-blue-600" },
-         ].map((c, i) => (
-            <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-               <p className="text-[9px] font-bold text-slate-400 uppercase mb-1.5 tracking-widest">{c.label}</p>
-               <h3 className={`text-lg font-bold ${c.color} mb-1.5`}>{c.val}</h3>
-               <p className="text-[8px] text-slate-400 font-medium leading-relaxed italic">{c.sub}</p>
-            </div>
-         ))}
+      <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
+        {[
+          { label: "Periode Aktif", val: new Date(initialData.period.year, initialData.period.month - 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" }), sub: "Pengaturan dipakai untuk bulan terpilih", color: "text-neutral-800" },
+          { label: "Data Saving", val: formatRupiah(initialData.period.data_saving_total), sub: "Total tersedia untuk dibayarkan", color: "text-primary-500" },
+          { label: "Bagi Hasil", val: formatRupiah(initialData.period.net_profit), sub: "Total hak periode ini", color: "text-green-600" },
+          { label: "Lokasi Utama", val: locations.find((l) => l.is_main)?.name || "-", sub: "Revenue otomatis masuk ke sini", color: "text-blue-600" },
+        ].map((c, i) => (
+          <div key={i} className="card">
+            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-1">{c.label}</p>
+            <p className={`text-base font-bold ${c.color} mb-1`}>{c.val}</p>
+            <p className="text-[10px] text-neutral-400 italic">{c.sub}</p>
+          </div>
+        ))}
       </div>
 
-      {/* GUIDELINE BANNER */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mb-6 flex justify-between items-center group">
-         <div>
-            <h4 className="font-bold text-slate-800 text-sm mb-1 flex items-center gap-2">
-               <span className="material-symbols-outlined text-orange-500 text-base">lightbulb</span> Panduan konfigurasi bulanan
-            </h4>
-            <p className="text-[10px] text-blue-600 font-medium max-w-2xl">Bagian ini mengatur persentase Data Saving, pembagian Bagi Hasil, dan saldo dasar lokasi uang tersedia. Pastikan total persentase sesuai kebutuhan.</p>
-         </div>
-         <button 
-            disabled={loading}
-            onClick={handleSave}
-            className="text-[9px] font-bold text-white bg-blue-600 px-5 py-2.5 rounded-xl hover:bg-blue-700 transition uppercase tracking-tighter disabled:opacity-50"
-         >
-            {loading ? 'Menyimpan...' : 'Simpan per bulan'}
-         </button>
+      <div className="card flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <span className="material-symbols-outlined text-primary-500 mt-0.5">lightbulb</span>
+          <div>
+            <h4 className="text-xs font-bold text-neutral-700 mb-1">Panduan konfigurasi bulanan</h4>
+            <p className="text-[11px] text-blue-600 max-w-2xl">Atur persentase Data Saving, pembagian Bagi Hasil, dan saldo dasar lokasi uang tersedia.</p>
+          </div>
+        </div>
+        <ActionButton icon="save" label={loading ? "Menyimpan..." : "Simpan"} onClick={handleSave} disabled={loading} variant="primary" />
       </div>
 
-      {/* CONFIG GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-         {/* DATA SAVING CONFIG */}
-         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                  <h4 className="font-bold text-slate-800 text-sm mb-1">Data Saving Bulanan</h4>
-                  <p className="text-[10px] text-slate-400 font-medium italic">Atur pembagian target biaya untuk tiap pos.</p>
-               </div>
-               <div className="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-xl border border-orange-100 text-center">
-                  <p className="text-[7px] font-bold uppercase tracking-tighter">Total Persen</p>
-                  <p className="text-xs font-bold">{savingTotal.toFixed(2)}%</p>
-               </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Data Saving */}
+        <div className="card">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h4 className="text-xs font-bold text-neutral-700 mb-1">Data Saving Bulanan</h4>
+              <p className="text-[11px] text-neutral-400 italic">Atur pembagian target biaya untuk tiap pos.</p>
             </div>
-            
-            <div className="w-full h-1 bg-slate-50 rounded-full mb-3 overflow-hidden">
-               <div className="h-full bg-orange-500 transition-all duration-500" style={{ width: `${Math.min(savingTotal, 100)}%` }}></div>
+            <div className="bg-primary-50 text-primary-600 px-3 py-1.5 rounded-lg border border-primary-100 text-center">
+              <p className="text-[9px] font-bold uppercase tracking-tighter">Total</p>
+              <p className="text-xs font-bold">{savingTotal.toFixed(2)}%</p>
             </div>
-            <p className="text-[9px] font-semibold text-orange-600 mb-6 italic tracking-tight">Total Ideal 100%. Saat ini Data Saving {savingTotal.toFixed(2)}%.</p>
-
-            <div className="space-y-4">
-               {configs.filter(c => c.type === 'SAVING').map((c, i) => (
-                  <div key={i} className="group border-b border-slate-50 pb-4 last:border-0">
-                     <div className="flex gap-3 items-end">
-                        <div className="flex-1">
-                           <label className="text-[8px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Nama Pos</label>
-                           <input 
-                              type="text" 
-                              value={c.name} 
-                              onChange={(e) => handleConfigChange(i, 'name', e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-[10px] font-bold outline-none focus:border-orange-200 transition-all" 
-                           />
-                        </div>
-                        <div className="w-20">
-                           <label className="text-[8px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Persen</label>
-                           <div className="relative">
-                              <input 
-                                type="number" 
-                                value={c.percentage} 
-                                onChange={(e) => handleConfigChange(i, 'percentage', e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-[10px] font-bold outline-none text-right pr-6" 
-                              />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-400">%</span>
-                           </div>
-                        </div>
-                        <button onClick={() => removeConfig(i)} className="text-red-400 border border-red-50 p-2 rounded-xl hover:bg-red-50 transition"><span className="material-symbols-outlined text-base">delete</span></button>
-                     </div>
+          </div>
+          <div className="w-full h-1.5 bg-neutral-50 rounded-full mb-2 overflow-hidden">
+            <div className="h-full bg-primary-500 transition-all duration-500 rounded-full" style={{ width: `${Math.min(savingTotal, 100)}%` }} />
+          </div>
+          <p className="text-[10px] font-semibold text-primary-600 mb-4 italic">Total ideal 100%</p>
+          <div className="space-y-3">
+            {configs.filter((c) => c.type === "SAVING").map((c, i) => (
+              <div key={i} className="flex gap-3 items-end pb-3 border-b border-neutral-50 last:border-0">
+                <div className="flex-1 form-group">
+                  <label className="form-label">Nama Pos</label>
+                  <input type="text" className="form-input" value={c.name} onChange={(e) => handleConfigChange(i, "name", e.target.value)} />
+                </div>
+                <div className="w-20 form-group">
+                  <label className="form-label">Persen</label>
+                  <div className="relative">
+                    <input type="number" className="form-input text-right pr-6" value={c.percentage} onChange={(e) => handleConfigChange(i, "percentage", e.target.value)} />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold text-neutral-400">%</span>
                   </div>
-               ))}
-               <button onClick={addSavingPos} className="w-full border-2 border-dashed border-slate-100 p-3 rounded-xl text-[10px] font-bold text-slate-400 hover:border-orange-200 hover:text-orange-600 transition-all flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-sm">add_circle</span> Tambah Pos Data Saving
-               </button>
-            </div>
-         </div>
-
-         {/* BAGI HASIL CONFIG */}
-         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
-            <div className="flex justify-between items-start mb-4">
-               <div>
-                  <h4 className="font-bold text-slate-800 text-sm mb-1">Bagi Hasil Pengelola</h4>
-                  <p className="text-[10px] text-slate-400 font-medium italic">Atur porsi pembagian keuntungan bersih.</p>
-               </div>
-               <div className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-xl border border-emerald-100 text-center">
-                  <p className="text-[7px] font-bold uppercase tracking-tighter">Total Persen</p>
-                  <p className="text-xs font-bold">{shareTotal.toFixed(2)}%</p>
-               </div>
-            </div>
-            
-            <div className="w-full h-1 bg-slate-50 rounded-full mb-3 overflow-hidden">
-               <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.min(shareTotal, 100)}%` }}></div>
-            </div>
-            <p className="text-[9px] font-semibold text-emerald-600 mb-6 italic tracking-tight">Total Ideal 100%. Saat ini Bagi Hasil {shareTotal.toFixed(2)}%.</p>
-
-            <div className="space-y-4">
-               {holders.map((h, i) => (
-                  <div key={i} className="group border-b border-slate-50 pb-4 last:border-0">
-                     <div className="flex gap-3 items-end">
-                        <div className="flex-1">
-                           <label className="text-[8px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Stakeholder</label>
-                           <input 
-                              type="text" 
-                              value={h.name} 
-                              onChange={(e) => handleHolderChange(i, 'name', e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-[10px] font-bold outline-none focus:border-emerald-200 transition-all" 
-                           />
-                        </div>
-                        <div className="w-20">
-                           <label className="text-[8px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Persen</label>
-                           <div className="relative">
-                              <input 
-                                type="number" 
-                                value={h.share_percentage} 
-                                onChange={(e) => handleHolderChange(i, 'share_percentage', e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-[10px] font-bold outline-none text-right pr-6" 
-                              />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-400">%</span>
-                           </div>
-                        </div>
-                        <button onClick={() => removeHolder(i)} className="text-red-400 border border-red-50 p-2 rounded-xl hover:bg-red-50 transition"><span className="material-symbols-outlined text-base">delete</span></button>
-                     </div>
-                  </div>
-               ))}
-               <button onClick={addHolder} className="w-full border-2 border-dashed border-slate-100 p-3 rounded-xl text-[10px] font-bold text-slate-400 hover:border-emerald-200 hover:text-emerald-600 transition-all flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-sm">add_circle</span> Tambah Stakeholder
-               </button>
-            </div>
-         </div>
-      </div>
-
-      {/* MONEY LOCATION CONFIG (Uang Tersedia) */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mt-6">
-         <div className="mb-6">
-            <h4 className="font-bold text-slate-800 text-sm mb-1">Uang Tersedia (Money Manager)</h4>
-            <p className="text-[10px] text-slate-400 font-medium italic">Set saldo dasar dan pilih lokasi yang akan menerima revenue otomatis.</p>
-         </div>
-
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {locations.map((l, i) => (
-               <div key={i} className={`p-6 rounded-2xl border transition-all ${l.is_main ? 'bg-blue-50/30 border-blue-100' : 'bg-white border-slate-100'}`}>
-                  <div className="flex justify-between items-start mb-4">
-                     <div>
-                        <h5 className="font-bold text-slate-900 text-xs mb-1">{l.name}</h5>
-                        <p className="text-[9px] text-slate-400 font-medium italic">{l.is_main ? 'Lokasi ini menerima revenue otomatis.' : 'Lokasi cadangan atau penampung saldo manual.'}</p>
-                     </div>
-                     {l.is_main && <span className="bg-blue-100 text-blue-600 text-[8px] px-2 py-1 rounded-lg font-bold uppercase tracking-tighter">Lokasi Utama</span>}
-                  </div>
-
-                  <div className="flex gap-3 items-end mb-4">
-                     <div className="flex-1">
-                        <label className="text-[8px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Nama Lokasi</label>
-                        <input 
-                           type="text" 
-                           value={l.name} 
-                           onChange={(e) => handleLocationChange(i, 'name', e.target.value)}
-                           className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-[10px] font-bold outline-none" 
-                        />
-                     </div>
-                     <div className="w-32">
-                        <label className="text-[8px] font-bold text-slate-400 uppercase ml-1 mb-1 block text-right pr-2">Saldo Dasar</label>
-                        <input 
-                           type="text" 
-                           value={formatInputRupiah(l.balance)} 
-                           onChange={(e) => handleLocationChange(i, 'balance', parseRupiah(e.target.value))}
-                           className="w-full bg-white border border-slate-200 p-2.5 rounded-xl text-[10px] font-bold outline-none text-right" 
-                        />
-                     </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                     {!l.is_main && <button onClick={() => handleLocationChange(i, 'is_main', true)} className="text-[9px] font-bold text-blue-600 border border-blue-100 px-4 py-2 rounded-xl hover:bg-blue-50 transition shadow-sm bg-white">Jadikan Utama</button>}
-                     <button onClick={() => removeLocation(i)} className="text-[9px] font-bold text-red-500 border border-red-100 px-4 py-2 rounded-xl hover:bg-red-50 transition shadow-sm bg-white">Hapus</button>
-                  </div>
-               </div>
+                </div>
+                <button onClick={() => removeConfig(i)} className="text-rose-400 hover:text-rose-600 p-2 rounded-lg hover:bg-rose-50 transition">
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                </button>
+              </div>
             ))}
-         </div>
-
-         <button onClick={addLocation} className="border-2 border-dashed border-slate-100 p-4 rounded-2xl text-[10px] font-bold text-slate-400 hover:border-orange-200 hover:text-orange-600 transition-all flex items-center gap-2 mb-6">
-            <span className="material-symbols-outlined text-sm">add_circle</span> Tambah Lokasi Baru
-         </button>
-
-         <div className="border-t border-slate-50 pt-6 flex justify-between items-center">
-            <p className="text-[10px] text-slate-400 font-medium italic">Simpan perubahan untuk periode ini. Konfigurasi akan dipakai pada bulan yang dipilih di filter atas.</p>
-            <button 
-               disabled={loading}
-               onClick={handleSave}
-               className="bg-orange-600 text-white px-10 py-3.5 rounded-2xl text-xs font-black shadow-lg shadow-orange-100 hover:bg-orange-700 transition-all hover:translate-y-[-2px] disabled:opacity-50"
-            >
-               {loading ? 'Proses menyimpan...' : 'Simpan Konfigurasi Bulanan'}
+            <button onClick={addSavingPos} className="w-full border-2 border-dashed border-neutral-100 p-3 rounded-lg text-[11px] font-bold text-neutral-400 hover:border-primary-200 hover:text-primary-500 transition-all flex items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-sm">add_circle</span> Tambah Pos
             </button>
-         </div>
+          </div>
+        </div>
+
+        {/* Bagi Hasil */}
+        <div className="card">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h4 className="text-xs font-bold text-neutral-700 mb-1">Bagi Hasil Pengelola</h4>
+              <p className="text-[11px] text-neutral-400 italic">Atur porsi pembagian keuntungan bersih.</p>
+            </div>
+            <div className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg border border-green-100 text-center">
+              <p className="text-[9px] font-bold uppercase tracking-tighter">Total</p>
+              <p className="text-xs font-bold">{shareTotal.toFixed(2)}%</p>
+            </div>
+          </div>
+          <div className="w-full h-1.5 bg-neutral-50 rounded-full mb-2 overflow-hidden">
+            <div className="h-full bg-green-500 transition-all duration-500 rounded-full" style={{ width: `${Math.min(shareTotal, 100)}%` }} />
+          </div>
+          <p className="text-[10px] font-semibold text-green-600 mb-4 italic">Total ideal 100%</p>
+          <div className="space-y-3">
+            {holders.map((h, i) => (
+              <div key={i} className="flex gap-3 items-end pb-3 border-b border-neutral-50 last:border-0">
+                <div className="flex-1 form-group">
+                  <label className="form-label">Stakeholder</label>
+                  <input type="text" className="form-input" value={h.name} onChange={(e) => handleHolderChange(i, "name", e.target.value)} />
+                </div>
+                <div className="w-20 form-group">
+                  <label className="form-label">Persen</label>
+                  <div className="relative">
+                    <input type="number" className="form-input text-right pr-6" value={h.share_percentage} onChange={(e) => handleHolderChange(i, "share_percentage", e.target.value)} />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold text-neutral-400">%</span>
+                  </div>
+                </div>
+                <button onClick={() => removeHolder(i)} className="text-rose-400 hover:text-rose-600 p-2 rounded-lg hover:bg-rose-50 transition">
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                </button>
+              </div>
+            ))}
+            <button onClick={addHolder} className="w-full border-2 border-dashed border-neutral-100 p-3 rounded-lg text-[11px] font-bold text-neutral-400 hover:border-green-200 hover:text-green-600 transition-all flex items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-sm">add_circle</span> Tambah Stakeholder
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Locations */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="w-1 h-4 rounded-full bg-blue-500" />
+          <h4 className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Uang Tersedia (Money Manager)</h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {locations.map((l, i) => (
+            <div key={i} className={`card ${l.is_main ? "bg-blue-50/30 border-blue-200" : ""}`}>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h5 className="text-xs font-bold text-neutral-700 mb-1">{l.name}</h5>
+                  <p className="text-[10px] text-neutral-400 italic">{l.is_main ? "Menerima revenue otomatis" : "Lokasi cadangan"}</p>
+                </div>
+                {l.is_main && <span className="badge badge-info">Lokasi Utama</span>}
+              </div>
+              <div className="flex gap-3 items-end mb-4">
+                <div className="flex-1 form-group">
+                  <label className="form-label">Nama Lokasi</label>
+                  <input type="text" className="form-input" value={l.name} onChange={(e) => handleLocationChange(i, "name", e.target.value)} />
+                </div>
+                <div className="w-32 form-group">
+                  <label className="form-label text-right">Saldo Dasar</label>
+                  <div className="input-icon-wrap">
+                    <span className="material-symbols-outlined">payments</span>
+                    <input type="text" className="form-input text-right" value={formatInputRupiah(l.balance)} onChange={(e) => handleLocationChange(i, "balance", parseRupiah(e.target.value))} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {!l.is_main && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => handleLocationChange(i, "is_main", true)}>Jadikan Utama</button>
+                )}
+                <button className="btn btn-danger btn-sm" onClick={() => removeLocation(i)}>Hapus</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={addLocation} className="border-2 border-dashed border-neutral-100 p-4 rounded-lg text-[11px] font-bold text-neutral-400 hover:border-primary-200 hover:text-primary-500 transition-all flex items-center gap-2 mb-6">
+          <span className="material-symbols-outlined text-sm">add_circle</span> Tambah Lokasi Baru
+        </button>
+        <div className="border-t border-neutral-100 pt-4 flex justify-between items-center">
+          <p className="text-[11px] text-neutral-400 italic">Simpan perubahan untuk periode ini.</p>
+          <ActionButton icon="save" label={loading ? "Menyimpan..." : "Simpan Konfigurasi"} onClick={handleSave} disabled={loading} variant="primary" />
+        </div>
       </div>
     </div>
   );

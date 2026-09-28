@@ -12,8 +12,6 @@ const AdminSupportTickets = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { success, error } = useNotification();
   const chatEndRef = useRef(null);
-
-  // Attachment States
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -25,39 +23,26 @@ const AdminSupportTickets = () => {
       setTickets(response.data);
     } catch (err) {
       error("Gagal memuat daftar tiket dukungan");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const fetchTicketDetails = async (ticketId) => {
     try {
       const response = await api.get(`/support/tickets/${ticketId}`);
       setSelectedTicket(response.data);
-      scrollToBottom();
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     } catch (err) {
       error("Gagal mengambil detail tiket");
     }
   };
 
-  useEffect(() => {
-    fetchTickets();
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [selectedTicket]);
-
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  useEffect(() => { fetchTickets(); }, []);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [selectedTicket]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        return error("Ukuran file maksimal 5MB");
-      }
+      if (file.size > 5 * 1024 * 1024) return error("Ukuran file maksimal 5MB");
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
@@ -73,46 +58,29 @@ const AdminSupportTickets = () => {
     if (e) e.preventDefault();
     if (!replyText.trim() && !selectedFile) return;
     if (!selectedTicket) return;
-
     setIsSubmitting(true);
     try {
       let attachments = [];
-      
-      // 1. Upload file if exists
       if (selectedFile) {
         setIsUploading(true);
         const formData = new FormData();
         formData.append('image', selectedFile);
         const uploadRes = await api.post('/upload/support', formData);
-        if (uploadRes.data.success) {
-          attachments = [uploadRes.data.imageUrl];
-        }
+        if (uploadRes.data.success) attachments = [uploadRes.data.imageUrl];
         setIsUploading(false);
       }
-
-      // 2. Send Reply
-      const res = await api.post(`/support/tickets/${selectedTicket.id}/replies`, {
-        message: replyText.trim(),
-        attachments
-      });
-      
-      // 3. Update local state
+      const res = await api.post(`/support/tickets/${selectedTicket.id}/replies`, { message: replyText.trim(), attachments });
       setSelectedTicket(prev => ({
-        ...prev,
-        replies: [...(prev.replies || []), { ...res.data.reply, sender_name: "Admin" }],
-        status: 'answered'
+        ...prev, replies: [...(prev.replies || []), { ...res.data.reply, sender_name: "Admin" }], status: 'answered'
       }));
-      
       setReplyText("");
       removeSelectedFile();
       success("Balasan terkirim");
-      fetchTickets(); // Refresh list to update status
+      fetchTickets();
     } catch (err) {
       error("Gagal mengirim balasan");
       setIsUploading(false);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } finally { setIsSubmitting(false); }
   };
 
   const updateStatus = async (newStatus) => {
@@ -122,257 +90,173 @@ const AdminSupportTickets = () => {
       setSelectedTicket(prev => ({ ...prev, status: newStatus }));
       success(`Status diubah menjadi ${newStatus}`);
       fetchTickets();
-    } catch (err) {
-      error("Gagal merubah status");
-    }
+    } catch (err) { error("Gagal merubah status"); }
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "open":
-        return <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[8px] font-bold uppercase tracking-widest border border-blue-100">TERBUKA</span>;
-      case "answered":
-        return <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[8px] font-bold uppercase tracking-widest border border-emerald-100">DIBALAS</span>;
-      case "closed":
-        return <span className="px-2 py-0.5 bg-slate-50 text-slate-400 rounded text-[8px] font-bold uppercase tracking-widest border border-slate-100">SELESAI</span>;
-      default:
-        return <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[8px] font-bold uppercase tracking-widest border border-slate-200">{status}</span>;
-    }
+  const statusBadge = (status) => {
+    const map = { open: "badge-info", answered: "badge-success", closed: "badge-neutral" };
+    return <span className={`badge ${map[status] || 'badge-neutral'}`}>{status === 'open' ? 'Terbuka' : status === 'answered' ? 'Dibalas' : 'Selesai'}</span>;
   };
 
   return (
-    <div className="p-1 md:p-2 lg:p-3 w-full h-[calc(100vh-90px)] animate-[fadeIn_0.5s_ease-out] flex flex-col">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 flex-1 overflow-hidden">
-        
-        {/* LEFT COLUMN: TICKET LIST (1/4 = 25%) */}
-        <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-full">
-          <div className="p-2 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between shrink-0">
-             <div>
-                <h3 className="font-bold text-slate-900 uppercase tracking-tighter text-[10px]">Tiket Masuk</h3>
-                <p className="text-[8px] text-slate-400 font-semibold uppercase tracking-widest leading-none">Total: {tickets.length}</p>
-             </div>
-             <div className="bg-[#F97316] text-white px-1.5 py-0.5 rounded text-[9px] font-bold">
-                {tickets.filter(t => t.status === 'open').length} New
-             </div>
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 animate-fade-in" style={{ height: 'calc(100vh - 96px)' }}>
+      {/* Left: Ticket List */}
+      <div className="lg:col-span-1 card flex flex-col overflow-hidden" style={{ padding: 0 }}>
+        <div className="flex items-center justify-between p-3 border-b border-neutral-100 bg-neutral-50/50 shrink-0">
+          <div>
+            <p className="text-[10px] font-bold text-neutral-700 uppercase tracking-wider">Tiket Masuk</p>
+            <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">Total: {tickets.length}</p>
           </div>
-          
-          <div className="overflow-y-auto custom-scrollbar flex-1 p-1 space-y-1.5">
-            {loading ? (
-                Array(6).fill(0).map((_, i) => (
-                    <div key={i} className="p-3 rounded-xl border border-slate-50 animate-pulse bg-white">
-                        <div className="flex justify-between mb-2">
-                            <div className="h-3 w-12 bg-slate-100 rounded"></div>
-                            <div className="h-3 w-10 bg-slate-50 rounded"></div>
-                        </div>
-                        <div className="h-4 w-3/4 bg-slate-100 rounded mb-3"></div>
-                        <div className="flex justify-between">
-                            <div className="h-3 w-20 bg-slate-50 rounded"></div>
-                            <div className="h-3 w-8 bg-slate-50 rounded"></div>
-                        </div>
-                    </div>
-                ))
-            ) : tickets.length === 0 ? (
-              <p className="text-center py-10 text-slate-400 font-bold text-[9px] uppercase">No Tickets Found</p>
-            ) : (
-               tickets.map(ticket => (
-                  <div 
-                    key={ticket.id}
-                    onClick={() => fetchTicketDetails(ticket.id)}
-                    className={`p-1.5 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                      selectedTicket?.id === ticket.id 
-                      ? 'bg-orange-50/30 border-[#F97316]' 
-                      : 'bg-white border-slate-50 hover:border-slate-100'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                       <span className="text-[8px] font-bold text-slate-400 opacity-60">#T-{String(ticket.id).padStart(5, '0')}</span>
-                       {getStatusBadge(ticket.status)}
-                    </div>
-                    <h4 className="font-bold text-[11px] leading-tight mb-2 line-clamp-1 text-slate-800">{ticket.subject}</h4>
-                    <div className="flex items-center justify-between">
-                       <div className="flex items-center gap-1.5">
-                          <div className="w-4 h-4 rounded bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">
-                             {ticket.user_name?.charAt(0).toUpperCase()}
-                          </div>
-                          <p className="text-[9px] text-slate-500 font-semibold truncate max-w-[80px]">{ticket.user_name}</p>
-                       </div>
-                       <span className="text-[8px] text-slate-300 font-semibold">{new Date(ticket.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</span>
-                    </div>
-                  </div>
-               ))
-            )}
-          </div>
+          <span className="badge badge-info">{tickets.filter(t => t.status === 'open').length} Baru</span>
         </div>
-
-        {/* RIGHT COLUMN: CHAT INTERFACE (3/4 = 75%) */}
-        <div className="lg:col-span-3 bg-white rounded-xl shadow-lg border border-slate-100 h-full flex flex-col overflow-hidden relative">
-           {!selectedTicket ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/20">
-                 <span className="material-symbols-outlined text-4xl mb-2 opacity-20">forum</span>
-                 <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Select a ticket to respond</p>
+        <div className="overflow-y-auto custom-scrollbar flex-1 p-2 space-y-1.5">
+          {loading ? (
+            Array(6).fill(0).map((_, i) => (
+              <div key={i} className="p-3 rounded-xl border border-neutral-50 animate-pulse">
+                <div className="flex justify-between mb-2"><div className="h-3 w-12 bg-neutral-100 rounded" /><div className="h-3 w-10 bg-neutral-50 rounded" /></div>
+                <div className="h-4 w-3/4 bg-neutral-100 rounded mb-3" />
+                <div className="flex justify-between"><div className="h-3 w-20 bg-neutral-50 rounded" /><div className="h-3 w-8 bg-neutral-50 rounded" /></div>
               </div>
-           ) : (
-              <>
-                 {/* Header Detail - COMPACT */}
-                 <div className="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 relative z-10">
-                    <div className="flex items-center gap-4">
-                       <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 border border-slate-100">
-                          <span className="material-symbols-outlined text-xl">person</span>
-                       </div>
-                       <div>
-                          <div className="flex items-center gap-2 mb-0.5">
-                             <h2 className="text-sm font-bold text-slate-900 tracking-tight leading-none">{selectedTicket.subject}</h2>
-                             {getStatusBadge(selectedTicket.status)}
-                          </div>
-                          <div className="flex items-center gap-2">
-                             <span className="text-[10px] font-semibold text-[#F97316]">{selectedTicket.user_name}</span>
-                             <span className="text-slate-300 text-[10px]">•</span>
-                             <span className="text-[10px] text-slate-400 font-medium">{selectedTicket.user_email}</span>
-                          </div>
-                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       {selectedTicket.status !== 'closed' ? (
-                          <button 
-                             onClick={() => updateStatus('closed')}
-                             className="px-4 py-2 rounded-lg text-[10px] font-bold bg-slate-50 text-slate-500 hover:bg-slate-100 transition border border-slate-200"
-                          >
-                             CLOSE TICKET
-                          </button>
-                       ) : (
-                          <button 
-                             onClick={() => updateStatus('open')}
-                             className="px-4 py-2 rounded-lg text-[10px] font-bold bg-orange-50 text-[#F97316] hover:bg-orange-100 transition border border-orange-100"
-                          >
-                             RE-OPEN TICKET
-                          </button>
-                       )}
-                    </div>
-                 </div>
-
-                 {/* Conversation Thread - FLEX-1 TO FILL SPACE */}
-                 <div className="flex-1 overflow-y-auto p-2 md:p-3 space-y-3 custom-scrollbar bg-[#FAFAFA]">
-                    {/* User's Original Message */}
-                    <div className="flex flex-col items-start max-w-[85%]">
-                       <div className="flex items-center gap-2 mb-1 px-1">
-                          <span className="text-[10px] font-semibold text-slate-900 uppercase tracking-widest">{selectedTicket.user_name}</span>
-                          <span className="text-[9px] text-slate-400 font-semibold">{new Date(selectedTicket.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                       </div>
-                       <div className="bg-white p-2.5 rounded-xl rounded-tl-none border border-slate-100 shadow-sm text-xs text-slate-700 leading-relaxed font-medium">
-                          {selectedTicket.attachments?.map((url, i) => (
-                            <div key={i} className="mb-3 overflow-hidden rounded-xl border border-slate-100 shadow-inner group relative cursor-zoom-in">
-                              <img 
-                                src={`${url}`} 
-                                alt="attachment" 
-                                className="max-w-full max-h-[400px] object-contain transition-transform duration-300" 
-                                onClick={() => window.open(`${url}`, '_blank')}
-                              />
-                            </div>
-                          ))}
-                          <div>{selectedTicket.message}</div>
-                       </div>
-                    </div>
-
-                    {/* Replies */}
-                    {selectedTicket.replies?.map((reply, idx) => (
-                       <div key={reply.id || idx} className={`flex flex-col ${reply.is_admin ? 'items-end ml-auto' : 'items-start'} max-w-[85%]`}>
-                          <div className={`flex items-center gap-2 mb-1 px-1 ${reply.is_admin ? 'flex-row-reverse' : ''}`}>
-                             <span className={`text-[10px] font-semibold uppercase tracking-widest ${reply.is_admin ? 'text-[#F97316]' : 'text-slate-900'}`}>
-                                {reply.is_admin ? 'Admin' : selectedTicket.user_name}
-                             </span>
-                             <span className="text-[9px] text-slate-400 font-semibold">{new Date(reply.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                          <div className={`p-2.5 rounded-xl text-xs leading-relaxed shadow-sm font-medium ${
-                             reply.is_admin 
-                             ? 'bg-slate-900 text-white rounded-tr-none' 
-                             : 'bg-[#F97316] text-white rounded-tl-none'
-                          }`}>
-                             {reply.attachments?.map((url, i) => (
-                                <div key={i} className={`mb-3 overflow-hidden rounded-xl border shadow-inner group relative cursor-zoom-in ${reply.is_admin ? 'border-slate-800' : 'border-orange-400'}`}>
-                                  <img 
-                                    src={`${url}`} 
-                                    alt="attachment" 
-                                    className="max-w-full max-h-[400px] object-contain transition-transform duration-300" 
-                                    onClick={() => window.open(`${url}`, '_blank')}
-                                  />
-                                </div>
-                              ))}
-                             <div>{reply.message}</div>
-                          </div>
-                       </div>
-                    ))}
-                    <div ref={chatEndRef} />
-                 </div>
-
-                 {/* Admin Reply Form - COMPACT */}
-                 <div className="p-2 border-t border-slate-100 bg-white shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
-                    {/* Preview Selected File */}
-                    {previewUrl && (
-                      <div className="mb-3 relative inline-block">
-                         <img src={previewUrl} alt="preview" className="w-20 h-20 object-cover rounded-xl border-2 border-slate-100 shadow-lg" />
-                         <button 
-                           onClick={removeSelectedFile}
-                           type="button"
-                           className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-all"
-                         >
-                           <span className="material-symbols-outlined text-[10px]">close</span>
-                         </button>
-                         {isUploading && (
-                           <div className="absolute inset-0 bg-white/60 rounded-xl flex items-center justify-center">
-                             <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
-                           </div>
-                         )}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleSendReply} className="relative flex items-center gap-3">
-                       <input 
-                         type="file"
-                         ref={fileInputRef}
-                         onChange={handleFileChange}
-                         accept="image/*"
-                         className="hidden"
-                       />
-                       <button 
-                         type="button"
-                         onClick={() => fileInputRef.current.click()}
-                         className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-[#F97316] hover:bg-orange-50 rounded-lg transition-all border border-slate-100"
-                       >
-                         <span className="material-symbols-outlined text-lg">attach_file</span>
-                       </button>
-
-                       <textarea 
-                          rows="1"
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSendReply();
-                            }
-                          }}
-                          placeholder="Type a message..."
-                          className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 outline-none focus:ring-2 ring-orange-100 transition-all focus:border-[#F97316] resize-none custom-scrollbar"
-                       />
-
-                       <button 
-                          type="submit"
-                          disabled={isSubmitting || (!replyText.trim() && !selectedFile)}
-                          className="w-10 h-10 bg-slate-900 text-white rounded-lg flex items-center justify-center hover:bg-black transition-all shadow-lg disabled:opacity-50"
-                       >
-                          {isSubmitting ? (
-                             <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                          ) : (
-                             <span className="material-symbols-outlined text-xl">send</span>
-                          )}
-                       </button>
-                    </form>
-                 </div>
-              </>
-           )}
+            ))
+          ) : tickets.length === 0 ? (
+            <div className="empty-state" style={{ padding: "40px 16px" }}>
+              <div className="empty-state-icon"><span className="material-symbols-outlined">forum</span></div>
+              <p>Belum ada tiket</p>
+            </div>
+          ) : tickets.map(ticket => (
+            <div key={ticket.id} onClick={() => fetchTicketDetails(ticket.id)}
+              className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${selectedTicket?.id === ticket.id ? 'bg-primary-50/30 border-primary-300' : 'bg-white border-neutral-50 hover:border-neutral-200'}`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[8px] font-bold text-neutral-400">#T-{String(ticket.id).padStart(5, '0')}</span>
+                {statusBadge(ticket.status)}
+              </div>
+              <p className="text-[11px] font-bold text-neutral-800 leading-tight mb-2 line-clamp-1">{ticket.subject}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded bg-neutral-100 flex items-center justify-center text-[8px] font-bold text-neutral-500">{ticket.user_name?.charAt(0).toUpperCase()}</div>
+                  <span className="text-[9px] text-neutral-500 font-semibold truncate max-w-[80px]">{ticket.user_name}</span>
+                </div>
+                <span className="text-[8px] text-neutral-300 font-semibold">{new Date(ticket.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+
+      {/* Right: Chat Interface */}
+      <div className="lg:col-span-3 card flex flex-col overflow-hidden" style={{ padding: 0 }}>
+          {!selectedTicket ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-neutral-400 bg-neutral-50/20">
+              <span className="material-symbols-outlined text-5xl mb-3 opacity-20">forum</span>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Pilih tiket untuk merespon</p>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="flex items-center justify-between p-3 border-b border-neutral-100 bg-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-neutral-50 text-neutral-400 flex items-center justify-center border border-neutral-100">
+                    <span className="material-symbols-outlined text-lg">person</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="text-sm font-bold text-neutral-800 tracking-tight">{selectedTicket.subject}</h3>
+                      {statusBadge(selectedTicket.status)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-primary-500">{selectedTicket.user_name}</span>
+                      <span className="text-neutral-300 text-[10px]">•</span>
+                      <span className="text-[10px] text-neutral-400 font-semibold">{selectedTicket.user_email}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedTicket.status !== 'closed' ? (
+                    <button onClick={() => updateStatus('closed')} className="btn btn-ghost btn-sm">Close Ticket</button>
+                  ) : (
+                    <button onClick={() => updateStatus('open')} className="btn btn-ghost btn-sm">Re-open Ticket</button>
+                  )}
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-neutral-50/30">
+                {/* Original Message */}
+                <div className="flex flex-col items-start max-w-[85%]">
+                  <div className="flex items-center gap-2 mb-1 px-1">
+                    <span className="text-[10px] font-bold text-neutral-700 uppercase tracking-wider">{selectedTicket.user_name}</span>
+                    <span className="text-[9px] text-neutral-400 font-semibold">{new Date(selectedTicket.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl rounded-tl-none border border-neutral-100 shadow-sm text-xs text-neutral-700 leading-relaxed font-medium">
+                    {selectedTicket.attachments?.map((url, i) => (
+                      <div key={i} className="mb-3 overflow-hidden rounded-xl border border-neutral-100 cursor-pointer">
+                        <img src={`${url}`} alt="attachment" className="max-w-full max-h-[400px] object-contain" onClick={() => window.open(`${url}`, '_blank')} />
+                      </div>
+                    ))}
+                    <div>{selectedTicket.message}</div>
+                  </div>
+                </div>
+
+                {/* Replies */}
+                {selectedTicket.replies?.map((reply, idx) => (
+                  <div key={reply.id || idx} className={`flex flex-col ${reply.is_admin ? 'items-end ml-auto' : 'items-start'} max-w-[85%]`}>
+                    <div className={`flex items-center gap-2 mb-1 px-1 ${reply.is_admin ? 'flex-row-reverse' : ''}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${reply.is_admin ? 'text-primary-500' : 'text-neutral-700'}`}>
+                        {reply.is_admin ? 'Admin' : selectedTicket.user_name}
+                      </span>
+                      <span className="text-[9px] text-neutral-400 font-semibold">{new Date(reply.created_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div className={`p-3 rounded-xl text-xs leading-relaxed shadow-sm font-medium ${reply.is_admin ? 'bg-neutral-800 text-white rounded-tr-none' : 'bg-primary-500 text-white rounded-tl-none'}`}>
+                      {reply.attachments?.map((url, i) => (
+                        <div key={i} className={`mb-3 overflow-hidden rounded-xl border cursor-pointer ${reply.is_admin ? 'border-neutral-700' : 'border-primary-400'}`}>
+                          <img src={`${url}`} alt="attachment" className="max-w-full max-h-[400px] object-contain" onClick={() => window.open(`${url}`, '_blank')} />
+                        </div>
+                      ))}
+                      <div>{reply.message}</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Reply Form */}
+              <div className="p-3 border-t border-neutral-100 bg-white shrink-0">
+                {previewUrl && (
+                  <div className="mb-3 relative inline-block">
+                    <img src={previewUrl} alt="preview" className="w-20 h-20 object-cover rounded-xl border-2 border-neutral-100 shadow" />
+                    <button onClick={removeSelectedFile} type="button"
+                      style={{ position: "absolute", top: -8, right: -8, width: 22, height: 22, background: "#ef4444", color: "#fff", borderRadius: "50%", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 12 }}>close</span>
+                    </button>
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-white/60 rounded-xl flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-neutral-800 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                )}
+                <form onSubmit={handleSendReply} className="flex items-center gap-3">
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                  <button type="button" onClick={() => fileInputRef.current.click()} className="btn btn-ghost btn-sm" style={{ width: 36, height: 36, padding: 0 }}>
+                    <span className="material-symbols-outlined text-sm">attach_file</span>
+                  </button>
+                  <textarea rows="1" value={replyText} onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(); } }}
+                    placeholder="Ketik pesan..." className="form-input" style={{ flex: 1, minHeight: 40, maxHeight: 100, resize: "none", borderRadius: 10 }} />
+                  <button type="submit" disabled={isSubmitting || (!replyText.trim() && !selectedFile)}
+                    className="btn btn-primary" style={{ width: 36, height: 36, padding: 0, minWidth: 36 }}>
+                    {isSubmitting ? (
+                      <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <span className="material-symbols-outlined text-sm">send</span>
+                    )}
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
   );
 };
 

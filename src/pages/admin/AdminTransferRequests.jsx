@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNotification } from "../../context/NotificationContext";
 import api from "../../services/api";
 import { exportToExcel, formatDataForExport } from "../../utils/exportUtils";
-import CustomSelect from "../../components/ui/CustomSelect";
 
 const AdminTransferRequests = () => {
   const { success, error } = useNotification();
@@ -25,188 +24,131 @@ const AdminTransferRequests = () => {
     } catch (err) {
       console.error("Error fetching transfers:", err);
       error("Gagal mengambil data pengajuan.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  useEffect(() => { fetchRequests(); }, []);
 
   const applyFilters = (data, filter, search) => {
     let result = [...data];
-    
-    if (filter !== "all") {
-      result = result.filter(r => r.status === filter);
-    }
-    
+    if (filter !== "all") result = result.filter(r => r.status === filter);
     if (search) {
       const s = search.toLowerCase();
-      result = result.filter(r => 
-        (r.domain_name || "").toLowerCase().includes(s) || 
-        (r.user_name || "").toLowerCase().includes(s) ||
-        (r.user_email || "").toLowerCase().includes(s)
-      );
+      result = result.filter(r => (r.domain_name || "").toLowerCase().includes(s) || (r.user_name || "").toLowerCase().includes(s) || (r.user_email || "").toLowerCase().includes(s));
     }
-    
     setFilteredRequests(result);
   };
 
-  const handleSearch = (e) => {
-    const val = e.target.value;
-    setSearchTerm(val);
-    applyFilters(requests, activeFilter, val);
-  };
+  const handleSearch = (e) => { const val = e.target.value; setSearchTerm(val); applyFilters(requests, activeFilter, val); };
+  const handleFilterChange = (e) => { const val = e.target.value; setActiveFilter(val); applyFilters(requests, val, searchTerm); };
 
-  const handleFilterChange = (val) => {
-    setActiveFilter(val);
-    applyFilters(requests, val, searchTerm);
-  };
-
-  const openEditModal = (req) => {
-      setSelectedReq(req);
-      setStatus(req.status);
-      setNotes(req.admin_notes || "");
-      setShowModal(true);
-  };
+  const openEditModal = (req) => { setSelectedReq(req); setStatus(req.status); setNotes(req.admin_notes || ""); setShowModal(true); };
 
   const handleUpdate = async () => {
-      try {
-          await api.put(`/transfers/admin/${selectedReq.id}`, {
-              status,
-              admin_notes: notes
-          });
-          success("Status pengajuan berhasil diperbarui!");
-          setShowModal(false);
-          fetchRequests();
-      } catch (err) {
-          error("Gagal memperbarui status.");
-      }
+    try {
+      await api.put(`/transfers/admin/${selectedReq.id}`, { status, admin_notes: notes });
+      success("Status pengajuan berhasil diperbarui!");
+      setShowModal(false);
+      fetchRequests();
+    } catch (err) { error("Gagal memperbarui status."); }
   };
 
   const handleExportExcel = () => {
-    const exportData = formatDataForExport(filteredRequests, {
-        domain_name: 'Domain',
-        user_name: 'User',
-        user_email: 'Email',
-        current_registrar: 'Registrar Asal',
-        status: 'Status',
-        created_at: 'Tanggal'
-    });
+    const exportData = formatDataForExport(filteredRequests, { domain_name: 'Domain', user_name: 'User', user_email: 'Email', current_registrar: 'Registrar Asal', status: 'Status', created_at: 'Tanggal' });
     exportToExcel(exportData, 'Transfer_Requests', 'Transfers');
   };
 
+  const statusBadge = (status) => {
+    if (status === 'COMPLETED') return 'badge-success';
+    if (status === 'REJECTED') return 'badge-danger';
+    if (status === 'PENDING_REVIEW') return 'badge-warning';
+    return 'badge-info';
+  };
+
   return (
-    <div className="space-y-3 animate-[fadeIn_0.5s_ease-out] pb-10">
-      <div className="bg-white rounded-xl border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
-        {/* Unified Header */}
-        <div className="p-4 border-b border-slate-50 bg-slate-50/30">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
-                <div className="flex-1 w-full max-w-xl relative group">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#f97316] transition-colors">search</span>
-                    <input 
-                        type="text" 
-                        placeholder="Cari Domain, Nama User, atau Email..." 
-                        value={searchTerm}
-                        onChange={handleSearch}
-                        className="w-full h-10 pl-11 pr-6 bg-white border border-slate-100 rounded-lg text-xs font-medium focus:outline-none focus:ring-4 focus:ring-[#f97316]/10 focus:border-[#f97316] transition-all placeholder:text-slate-300"
-                    />
-                </div>
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                    <button 
-                        onClick={handleExportExcel}
-                        className="h-10 px-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all shadow-sm flex items-center gap-2"
-                    >
-                        <span className="material-symbols-outlined text-lg">download</span>
-                        Export
-                    </button>
-                    <div className="w-48">
-                        <CustomSelect
-                            value={activeFilter}
-                            onChange={handleFilterChange}
-                            options={[
-                                { value: 'all', label: 'Semua Status' },
-                                { value: 'PENDING_REVIEW', label: 'Pending Review' },
-                                { value: 'APPROVED', label: 'Approved' },
-                                { value: 'PROCESSING', label: 'Processing' },
-                                { value: 'COMPLETED', label: 'Completed' },
-                                { value: 'REJECTED', label: 'Rejected' },
-                            ]}
-                        />
-                    </div>
-                </div>
+    <div className="space-y-4 animate-fade-in pb-10">
+      <div className="card" style={{ padding: 0 }}>
+        <div className="p-4 border-b border-neutral-100 bg-neutral-50/30">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex-1 w-full max-w-xl relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-lg">search</span>
+              <input type="text" placeholder="Cari Domain, Nama User, atau Email..." value={searchTerm} onChange={handleSearch} className="form-input" style={{ paddingLeft: 36, height: 40 }} />
             </div>
-            {searchTerm && (
-                <div className="mt-4 flex items-center gap-2">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        Menampilkan <span className="text-[#f97316]">{filteredRequests.length}</span> hasil pencarian untuk "{searchTerm}"
-                    </p>
-                    <button onClick={() => {setSearchTerm(""); applyFilters(requests, activeFilter, "");}} className="text-[10px] font-bold text-[#f97316] uppercase tracking-widest hover:underline">Reset</button>
-                </div>
-            )}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <button onClick={handleExportExcel} className="btn btn-sm" style={{ background: "#ecfdf5", color: "#059669", border: "1px solid #a7f3d0" }}>
+                <span className="material-symbols-outlined text-sm">download</span>
+                Export
+              </button>
+              <select value={activeFilter} onChange={handleFilterChange} className="form-select" style={{ width: 160 }}>
+                <option value="all">Semua Status</option>
+                <option value="PENDING_REVIEW">Pending Review</option>
+                <option value="APPROVED">Approved</option>
+                <option value="PROCESSING">Processing</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+          </div>
+          {searchTerm && (
+            <div className="mt-3 flex items-center gap-2">
+              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                Menampilkan <span className="text-primary-500">{filteredRequests.length}</span> hasil pencarian untuk "{searchTerm}"
+              </p>
+              <button onClick={() => { setSearchTerm(""); applyFilters(requests, activeFilter, ""); }} className="text-[10px] font-bold text-primary-500 uppercase tracking-wider hover:underline">Reset</button>
+            </div>
+          )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-separate border-spacing-0">
-            <thead className="bg-slate-50 border-b border-slate-100">
-              <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                <th className="px-4 py-2">Target Domain</th>
-                <th className="px-4 py-2">User Profile</th>
-                <th className="px-4 py-2">Registrar Asal</th>
-                <th className="px-4 py-2 text-center">Status Histori</th>
-                <th className="px-4 py-2">Tanggal Pengajuan</th>
-                <th className="px-4 py-2 text-center">Aksi</th>
+        <div className="table-wrap">
+          <table className="table-main">
+            <thead>
+              <tr>
+                <th>Target Domain</th>
+                <th>User Profile</th>
+                <th>Registrar Asal</th>
+                <th className="text-center">Status</th>
+                <th>Tanggal Pengajuan</th>
+                <th className="text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
+            <tbody>
               {loading ? (
-                 Array(5).fill(0).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                        <td className="px-4 py-4"><div className="h-10 w-40 bg-slate-100 rounded"></div></td>
-                        <td className="px-4 py-4"><div className="h-8 w-32 bg-slate-50 rounded"></div></td>
-                        <td className="px-4 py-4"><div className="h-4 w-24 bg-slate-50 rounded"></div></td>
-                        <td className="px-4 py-4 text-center"><div className="h-6 w-20 bg-slate-100 rounded-md mx-auto"></div></td>
-                        <td className="px-4 py-4"><div className="h-4 w-20 bg-slate-50 rounded"></div></td>
-                        <td className="px-4 py-4 text-center"><div className="h-8 w-16 bg-slate-100 rounded-lg mx-auto"></div></td>
-                    </tr>
-                 ))
+                Array(5).fill(0).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-4 py-4"><div className="h-10 w-40 bg-neutral-100 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-8 w-32 bg-neutral-50 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-24 bg-neutral-50 rounded" /></td>
+                    <td className="px-4 py-4 text-center"><div className="h-6 w-20 bg-neutral-100 rounded-md mx-auto" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-20 bg-neutral-50 rounded" /></td>
+                    <td className="px-4 py-4 text-center"><div className="h-8 w-16 bg-neutral-100 rounded-lg mx-auto" /></td>
+                  </tr>
+                ))
               ) : filteredRequests.length === 0 ? (
-                <tr><td colSpan="6" className="px-8 py-10 text-center text-slate-400 font-bold italic">Belum ada pengajuan migrasi.</td></tr>
+                <tr><td colSpan="6" className="px-4 py-12"><div className="empty-state"><div className="empty-state-icon"><span className="material-symbols-outlined">swap_horiz</span></div><p>Belum ada pengajuan migrasi.</p></div></td></tr>
               ) : (
                 filteredRequests.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-4 py-1.5">
-                        <p className="font-bold text-slate-900 text-sm">{r.domain_name}</p>
-                        <p className="text-[10px] text-[#f97316] font-bold uppercase tracking-tighter mt-0.5">EPP: {r.epp_code}</p>
+                  <tr key={r.id}>
+                    <td className="px-4 py-2">
+                      <p className="font-bold text-neutral-800 text-sm">{r.domain_name}</p>
+                      <p className="text-[10px] text-primary-500 font-bold uppercase tracking-tighter mt-0.5">EPP: {r.epp_code}</p>
                     </td>
-                    <td className="px-4 py-1.5">
-                        <p className="text-xs font-semibold text-slate-800">{r.user_name}</p>
-                        <p className="text-[10px] text-slate-400 font-medium">{r.user_email}</p>
+                    <td className="px-4 py-2">
+                      <p className="text-xs font-bold text-neutral-700">{r.user_name}</p>
+                      <p className="text-[10px] text-neutral-400 font-semibold">{r.user_email}</p>
                     </td>
-                    <td className="px-4 py-1.5">
-                         <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">{r.current_registrar || "-"}</p>
+                    <td className="px-4 py-2">
+                      <p className="text-xs font-bold text-neutral-500 uppercase tracking-tight">{r.current_registrar || "-"}</p>
                     </td>
-                    <td className="px-4 py-1.5 text-center">
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border transition-all ${
-                        r.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 group-hover:bg-emerald-100' :
-                        r.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border-rose-100 group-hover:bg-rose-100' :
-                        r.status === 'PENDING_REVIEW' ? 'bg-amber-50 text-amber-600 border-amber-100 group-hover:bg-amber-100' :
-                        'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-100'
-                      }`}>
-                        {(r.status || "UNKNOWN").replace('_', ' ')}
-                      </span>
+                    <td className="px-4 py-2 text-center">
+                      <span className={`badge ${statusBadge(r.status)}`}>{(r.status || "UNKNOWN").replace(/_/g, ' ')}</span>
                     </td>
-                    <td className="px-4 py-1.5">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
-                            {new Date(r.created_at).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </p>
+                    <td className="px-4 py-2">
+                      <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-tighter">
+                        {new Date(r.created_at).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
                     </td>
-                    <td className="px-4 py-1.5 text-center">
-                      <button 
-                        onClick={() => openEditModal(r)}
-                        className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#f97316] transition-all shadow-sm active:scale-95"
-                      >
+                    <td className="px-4 py-2 text-center">
+                      <button onClick={() => openEditModal(r)} className="btn btn-sm btn-primary">
                         Proses
                       </button>
                     </td>
@@ -218,64 +160,41 @@ const AdminTransferRequests = () => {
         </div>
       </div>
 
-      {/* EDIT MODAL */}
       {showModal && (
-          <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-[fadeIn_0.2s_ease-out]">
-              <div className="bg-white rounded-xl p-4 max-w-xl w-full shadow-xl border border-slate-100 animate-[scaleIn_0.3s_ease-out]">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-900 tracking-tight">Update Pengajuan</h2>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Domain: <span className="text-[#f97316]">{selectedReq.domain_name}</span></p>
-                    </div>
-                    <button onClick={() => setShowModal(false)} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-slate-100 transition-colors">
-                        <span className="material-symbols-outlined">close</span>
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Ubah Status Pengajuan</label>
-                        <CustomSelect 
-                            value={status} 
-                            onChange={val => setStatus(val)}
-                            options={[
-                                { value: "PENDING_REVIEW", label: "🔍 PENDING REVIEW" },
-                                { value: "APPROVED", label: "✅ APPROVED (Kirim Invoice)" },
-                                { value: "PROCESSING", label: "⚙️ PROCESSING" },
-                                { value: "COMPLETED", label: "🏁 COMPLETED" },
-                                { value: "REJECTED", label: "❌ REJECTED" }
-                            ]}
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Catatan Internal / Instruksi</label>
-                        <textarea 
-                            rows="3"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Tulis alasan reject atau instruksi teknis untuk tim/user..."
-                            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-[#f97316]/20 focus:border-[#f97316] transition-all text-xs font-medium text-slate-600 placeholder:text-slate-300"
-                        ></textarea>
-                      </div>
-                  </div>
-
-                  <div className="flex gap-3 mt-6">
-                      <button 
-                        onClick={() => setShowModal(false)}
-                        className="flex-1 h-10 bg-slate-100 text-slate-500 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
-                      >
-                          Batal
-                      </button>
-                      <button 
-                        onClick={handleUpdate}
-                        className="flex-1 h-10 bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-[#f97316] transition-all shadow-lg shadow-slate-900/10 active:scale-95"
-                      >
-                          Simpan Status
-                      </button>
-                  </div>
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3 className="text-sm font-bold text-neutral-800">Update Pengajuan</h3>
+                <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mt-0.5">Domain: <span className="text-primary-500">{selectedReq.domain_name}</span></p>
               </div>
+              <button onClick={() => setShowModal(false)} className="btn btn-ghost btn-sm" style={{ width: 32, height: 32, padding: 0 }}>
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+            <div className="modal-body space-y-3">
+              <div className="space-y-1">
+                <label className="form-label">Ubah Status Pengajuan</label>
+                <select value={status} onChange={e => setStatus(e.target.value)} className="form-select">
+                  <option value="PENDING_REVIEW">PENDING REVIEW</option>
+                  <option value="APPROVED">APPROVED (Kirim Invoice)</option>
+                  <option value="PROCESSING">PROCESSING</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                  <option value="REJECTED">REJECTED</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="form-label">Catatan Internal / Instruksi</label>
+                <textarea rows="3" value={notes} onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Tulis alasan reject atau instruksi teknis untuk tim/user..." className="form-input" style={{ resize: "none" }} />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowModal(false)} className="btn btn-ghost">Batal</button>
+              <button onClick={handleUpdate} className="btn btn-primary">Simpan Status</button>
+            </div>
           </div>
+        </div>
       )}
     </div>
   );

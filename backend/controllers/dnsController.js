@@ -38,6 +38,13 @@ exports.getRecords = (req, res) => {
                 return res.status(200).json([]);
             }
 
+            // [FIX] Handle 401 from Registrar (invalid/expired API key)
+            // Must NOT propagate 401 to frontend or axios interceptor will clear session.
+            if (status === 401) {
+                console.error(`[DNSController] Registrar API Key invalid/expired for ${domainName}. Check domain_api_key setting.`);
+                return res.status(200).json([]);
+            }
+
             // [FIX] Handle 500/502/503 from Registrar DNS API gracefully. 
             // Often occurs if DNS Zone is not yet initialized. Returning empty list allows user to ADD record.
             if (status >= 500) {
@@ -132,6 +139,10 @@ exports.createRecord = (req, res) => {
             console.error(`[DNSController] Create Error Details (${status}):`, JSON.stringify(errorData || error.message, null, 2));
             
             let userMessage = "Gagal menambah record DNS di sisi registrar.";
+            if (status === 401) {
+                userMessage = "Registrar API Key tidak valid. Hubungi administrator.";
+                return res.status(200).json({ success: false, message: userMessage });
+            }
             if (status === 500 || status === 502) {
                 userMessage = "Registrar DNS API sedang tidak menanggapi (Server Error). Silakan coba lagi dalam beberapa menit atau hubungi support.";
             } else if (errorData?.message) {
@@ -175,7 +186,11 @@ exports.deleteRecord = (req, res) => {
                 res.status(400).json({ success: false, message: apiRes?.message || "Gagal menghapus di registrar" });
             }
         } catch (error) {
+            const status = error.response?.status || 500;
             console.error("[DNSController] Delete Error:", error.response?.data || error.message);
+            if (status === 401) {
+                return res.status(200).json({ success: false, message: "Registrar API Key tidak valid." });
+            }
             res.status(500).json({ 
                 message: "Gagal hapus DNS di registrar", 
                 error: error.response?.data?.message || error.message 

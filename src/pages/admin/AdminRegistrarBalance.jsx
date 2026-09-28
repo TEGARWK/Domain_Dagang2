@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import api from "../../services/api";
 import { useNotification } from "../../context/NotificationContext";
 
-import { WalletIcon, ClockIcon, PlusCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-
 const AdminRegistrarBalance = () => {
   const [balanceData, setBalanceData] = useState(null);
   const [history, setHistory] = useState([]);
@@ -19,8 +17,8 @@ const AdminRegistrarBalance = () => {
         setBalanceData(res.data.balance);
         setHistory(res.data.history);
       }
-    } catch (error) {
-      console.error("Failed to fetch balance:", error);
+    } catch (err) {
+      console.error("Failed to fetch balance:", err);
     } finally {
       setLoading(false);
     }
@@ -35,7 +33,8 @@ const AdminRegistrarBalance = () => {
       setSyncing(true);
       const res = await api.post("/admin/registrar-balance/sync");
       if (res.data.success) {
-        fetchData(); // Refresh all
+        success("Sinkronisasi saldo berhasil!");
+        fetchData();
       }
     } catch (err) {
       error("Gagal sinkronisasi saldo: " + (err.response?.data?.message || err.message));
@@ -44,11 +43,12 @@ const AdminRegistrarBalance = () => {
     }
   };
 
-  const fmt = (num) =>  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
+  const fmt = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
 
   if (loading && !balanceData) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F97316]"></div>
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div className="w-8 h-8 border-2 border-neutral-100 border-t-primary-500 rounded-full animate-spin" />
+      <p className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest">Memuat saldo registrar...</p>
     </div>
   );
 
@@ -57,141 +57,135 @@ const AdminRegistrarBalance = () => {
   const isLow = currentBal < threshold;
 
   return (
-    <div className="space-y-3 animate-[fadeIn_0.5s_ease-out] pb-10">
-      <div className="flex justify-end">
-        <button 
-          onClick={handleSync}
-          disabled={syncing}
-          className="px-6 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#F97316] transition-all shadow-xl shadow-slate-900/10 active:scale-95 disabled:opacity-50 flex items-center gap-3 group"
-        >
-          <div className={`w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center ${syncing ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform`}>
-            <span className="material-symbols-outlined text-base">sync</span>
-          </div>
-          {syncing ? 'MENYINKRONKAN...' : 'SINKRONKAN SALDO'}
+    <div className="space-y-5 animate-fade-in pb-10">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <p className="text-[11px] font-bold text-primary-500 uppercase tracking-wider flex items-center gap-1.5 mb-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+            Registrar Balance
+          </p>
+          <h2 className="text-base font-bold text-neutral-800 tracking-tight">Saldo Daftarnama</h2>
+        </div>
+        <button onClick={handleSync} disabled={syncing} className="btn btn-primary">
+          <span className={`material-symbols-outlined text-sm ${syncing ? 'animate-spin' : ''}`}>sync</span>
+          {syncing ? "Sync..." : "Sync Saldo"}
         </button>
       </div>
 
-      {/* BALANCE CARD */}
-      <div className={`relative overflow-hidden p-6 rounded-xl shadow-xl border transition-all duration-500 ${
-        isLow ? 'bg-rose-50 border-rose-100 shadow-rose-200/50' : 'bg-white border-slate-100 shadow-slate-200/40'
-      }`}>
-         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${isLow ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`}></span>
-                  Saldo Tersedia Saat Ini
-               </h3>
-               <div className={`text-4xl font-bold tracking-tighter ${isLow ? 'text-rose-600' : 'text-slate-900'}`}>
-                   {fmt(currentBal)}
-               </div>
-               {isLow && (
-                   <div className="flex items-center gap-2 text-rose-600 mt-2 bg-white/60 px-3 py-1.5 rounded-lg border border-rose-100 w-fit">
-                       <ExclamationTriangleIcon className="w-4 h-4" />
-                       <span className="text-[10px] font-bold uppercase tracking-wide text-rose-500">Saldo Rendah! Isi segera di Daftarnama.</span>
-                   </div>
-               )}
+      {/* Balance Card */}
+      <div className={`card ${isLow ? '' : ''}`} style={{
+        ...(isLow ? { borderColor: "var(--color-rose-200)", background: "var(--color-rose-50)" } : {})
+      }}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="flex-1">
+            <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+              <span className={`w-2 h-2 rounded-full ${isLow ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+              Saldo Tersedia
+            </p>
+            <div className={`text-4xl font-bold tracking-tight ${isLow ? 'text-rose-600' : 'text-neutral-800'}`}>
+              {fmt(currentBal)}
             </div>
-            
-            <div className={`w-16 h-16 rounded-lg flex items-center justify-center text-2xl shadow-inner ${
-                isLow ? 'bg-rose-100 text-rose-500' : 'bg-orange-50 text-orange-500'
-            }`}>
-               <WalletIcon className="w-8 h-8" />
-            </div>
-         </div>
-         
-         <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50/50 rounded-full blur-3xl -mr-32 -mt-32 -z-0"></div>
+            {isLow && (
+              <div className="flex items-center gap-2 mt-3 bg-white/80 px-4 py-2 rounded-lg border border-rose-200 w-fit">
+                <span className="material-symbols-outlined text-rose-500 text-sm">warning</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600">Saldo Rendah — Isi segera di Daftarnama</span>
+              </div>
+            )}
+          </div>
+          <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${isLow ? 'bg-rose-100 text-rose-500' : 'bg-primary-50 text-primary-500'}`}>
+            <span className="material-symbols-outlined text-3xl">account_balance_wallet</span>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* HISTORY TABLE */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 shadow-lg shadow-slate-200/40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-slate-400 shadow-sm">
-                   <ClockIcon className="w-4 h-4" />
-                </div>
-                <div>
-                   <h3 className="text-[11px] font-bold text-slate-900 uppercase tracking-tight leading-none mb-0.5">Riwayat Mutasi Saldo</h3>
-                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Transaksi Akun</p>
-                </div>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* History Table */}
+        <div className="lg:col-span-2">
+          <div className="table-wrap">
+            <div className="table-header">
+              <div className="flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-primary-500" />
+                <h3 className="text-[11px] font-bold text-neutral-700 uppercase tracking-wider">Riwayat Mutasi Saldo</h3>
               </div>
-          </div>
-          <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-separate border-spacing-0">
-                  <thead>
-                      <tr className="bg-slate-50 text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                          <th className="px-4 py-2">Tanggal & Waktu</th>
-                          <th className="px-4 py-2">Tipe</th>
-                          <th className="px-4 py-2">Keterangan</th>
-                          <th className="px-4 py-2 text-right">Nominal</th>
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 text-slate-700 font-medium">
-                      {history.length === 0 ? (
-                          <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-300 font-bold italic uppercase tracking-widest text-[10px]">Belum ada catatan aktivitas saldo.</td></tr>
-                      ) : (
-                          history.map((item) => (
-                              <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                                  <td className="px-4 py-2">
-                                      <p className="text-[11px] font-bold text-slate-800">
-                                          {new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                      </p>
-                                      <p className="text-[9px] font-bold text-slate-400 uppercase">
-                                          {new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                      </p>
-                                  </td>
-                                  <td className="px-4 py-2">
-                                      <span className={`inline-flex px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border shadow-sm ${
-                                          item.type === 'credit' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                          item.type === 'debit' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-blue-50 text-blue-600 border-blue-100'
-                                      }`}>
-                                          {item.type}
-                                      </span>
-                                  </td>
-                                  <td className="px-4 py-2">
-                                      <p className="text-xs font-bold text-slate-700 tracking-tight">{item.description}</p>
-                                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">Ref: {item.reference_id || '-'}</p>
-                                  </td>
-                                  <td className={`px-4 py-2 text-right font-bold text-sm ${item.type === 'credit' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                      {item.type === 'debit' ? '-' : '+'}{fmt(item.amount)}
-                                  </td>
-                              </tr>
-                          ))
-                      )}
-                  </tbody>
-              </table>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Tipe</th>
+                  <th>Keterangan</th>
+                  <th style={{ textAlign: "right" }}>Nominal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.length === 0 ? (
+                  <tr><td colSpan="4" className="text-center py-12 text-neutral-400 text-xs font-semibold">Belum ada catatan mutasi saldo.</td></tr>
+                ) : (
+                  history.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <p className="font-semibold text-neutral-700 text-xs">
+                          {new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase">
+                          {new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </td>
+                      <td>
+                        <span className={`badge ${item.type === 'credit' ? 'badge-success' : item.type === 'debit' ? 'badge-danger' : 'badge-info'}`}>
+                          {item.type}
+                        </span>
+                      </td>
+                      <td>
+                        <p className="text-xs font-semibold text-neutral-700">{item.description}</p>
+                        <p className="text-[10px] font-bold text-neutral-400 tracking-wider mt-0.5">Ref: {item.reference_id || '-'}</p>
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <span className={`font-bold text-xs ${item.type === 'credit' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {item.type === 'debit' ? '-' : '+'}{fmt(item.amount)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* INFO SIDEBAR */}
-        <div className="space-y-3">
-            <div className="bg-slate-900 rounded-xl p-4 text-white shadow-xl shadow-slate-900/20">
-                <div className="flex items-center gap-3 mb-4">
-                    <span className="material-symbols-outlined text-orange-400">info</span>
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400">Informasi Penting</h3>
-                </div>
-                <div className="space-y-3">
-                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed italic">
-                        * Saldo ini adalah nominal saldo Anda di <strong>Daftarnama</strong>.
-                    </p>
-                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed italic">
-                        * DagangDomain hanya mencatat transaksi domain yang diproses melalui sistem.
-                    </p>
-                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed italic border-t border-slate-800 pt-4">
-                        * Untuk melakukan Top-Up, Anda harus login langsung ke Portal Daftarnama. Admin panel ini hanya berfungsi untuk memantau sisa saldo agar operasional tidak terhenti.
-                    </p>
-                </div>
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* Info Card */}
+          <div className="card" style={{ background: "var(--color-neutral-800)", borderColor: "var(--color-neutral-700)" }}>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="material-symbols-outlined text-primary-400">info</span>
+              <h3 className="text-[11px] font-bold text-white uppercase tracking-wider">Informasi Penting</h3>
             </div>
+            <div className="space-y-4 text-[11px] text-neutral-400 font-semibold leading-relaxed">
+              <p>Saldo ini adalah nominal Anda di <strong className="text-white">Daftarnama</strong>.</p>
+              <p>DagangDomain hanya mencatat transaksi domain yang diproses melalui sistem.</p>
+              <p className="border-t border-neutral-700 pt-4">
+                Untuk Top-Up, login langsung ke Portal Daftarnama. Panel ini hanya untuk memantau sisa saldo.
+              </p>
+            </div>
+          </div>
 
-            <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-xl shadow-slate-200/40">
-                 <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-4">Last Synced</h4>
-                 <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-slate-500">
-                        {balanceData?.updated_at ? new Date(balanceData.updated_at).toLocaleString("id-ID") : "-"}
-                    </p>
-                    <span className="material-symbols-outlined text-slate-200">schedule</span>
-                 </div>
+          {/* Last Synced */}
+          <div className="card">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-lg bg-neutral-100 text-neutral-500 flex items-center justify-center">
+                <span className="material-symbols-outlined text-lg">schedule</span>
+              </div>
+              <div>
+                <h3 className="text-[11px] font-bold text-neutral-700 uppercase tracking-wider">Last Synced</h3>
+              </div>
             </div>
+            <p className="text-xs font-bold text-neutral-500">
+              {balanceData?.updated_at ? new Date(balanceData.updated_at).toLocaleString("id-ID") : "-"}
+            </p>
+          </div>
         </div>
       </div>
     </div>
